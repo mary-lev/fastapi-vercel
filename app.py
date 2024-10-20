@@ -1,45 +1,30 @@
-from typing import Optional
-import httpx
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
-from models import GithubUserModel
-
-app = FastAPI()
-templates = Jinja2Templates(directory="templates")
-
-limits = httpx.Limits(max_keepalive_connections=5, max_connections=10)
-timeout = httpx.Timeout(timeout=5.0, read=15.0)
-client = httpx.AsyncClient(limits=limits, timeout=timeout)
+from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from routes import submission
+from routes import users
+from routes import solution
 
 
-@app.on_event("shutdown")
-async def shutdown_event():
-    print("shutting down...")
-    await client.aclose()
+### Create FastAPI instance with custom docs and OpenAPI URL
+app = FastAPI(docs_url="/api/py/docs", openapi_url="/api/py/openapi.json")
 
+origins = [
+    "http://localhost:3000",  # Next.js frontend on port 3000
+    "http://localhost:3001",  # If your frontend runs on port 3001
+    "http://localhost:3002",  # If your frontend runs on port 3002
+    "https://frontend-template-lilac.vercel.app",  # Vercel frontend address
+    "https://dhdk-trainer.vercel.app",  # Vercel frontend address
+    # Add any other origins that need access
+]
 
-@app.get("/", response_class=HTMLResponse)
-async def index(request: Request, username: str = None):
-    if not username:
-        return templates.TemplateResponse("index.html", context={"request": request})
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,  # Use the list of specific origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-    user = await get_github_profile(request, username)
-    if not user:
-        return templates.TemplateResponse("404.html", context={"request": request})
-
-    return templates.TemplateResponse("index.html", context={"request": request, "user": user})
-
-
-@app.get("/{username}", response_model=GithubUserModel)
-async def get_github_profile(request: Request, username: str) -> Optional[GithubUserModel]:
-    headers = {"accept": "application/vnd.github.v3+json"}
-
-    response = await client.get(f"https://api.github.com/users/{username}", headers=headers)
-
-    if response.status_code == 404:
-        return None
-
-    user = GithubUserModel(**response.json())
-
-    return user
+app.include_router(submission.router)
+app.include_router(users.router)
+app.include_router(solution.router)
