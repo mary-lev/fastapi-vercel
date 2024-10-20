@@ -6,7 +6,7 @@ from routes import solution
 
 
 ### Create FastAPI instance with custom docs and OpenAPI URL
-app = FastAPI(docs_url="/api/py/docs", openapi_url="/api/py/openapi.json")
+app = FastAPI(docs_url="/docs", openapi_url="/openapi.json")
 
 origins = [
     "http://localhost:3000",  # Next.js frontend on port 3000
