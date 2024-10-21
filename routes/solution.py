@@ -1,35 +1,76 @@
-from fastapi import APIRouter, Depends
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel
-from db import get_db
-from psycopg2.extras import RealDictCursor
+from fastapi import APIRouter, HTTPException, Request
+from sqlalchemy.sql import func
+from sqlalchemy.orm import Session
+from models import Task, TaskSolution, TaskAttempt, User  # Adjust model imports as needed
+from db import SessionLocal
 
+router = APIRouter()
 
-router = APIRouter(prefix="/api/py")
-
-@router.post("/tasksolution/")
-def insert_task_solution(user_id: str, lesson_name: str, db=Depends(get_db)):
-    cursor = db.cursor(cursor_factory=RealDictCursor)
+@router.post("/api/insertTaskSolution")
+async def insert_task_solution(request: Request):
+    db: Session = SessionLocal()
     try:
-        cursor.execute("""
-            INSERT INTO tasksolution (user_id, lesson_name)
-            VALUES (%s, %s)
-            RETURNING *;
-        """, (user_id, lesson_name))
-        new_task = cursor.fetchone()
+        data = await request.json()
+        internal_user_id = data.get("userId")  # UUID from the frontend
+        task_link = data.get("lessonName")
+        is_successful = data.get("isSuccessful", False)  # Whether the attempt was successful
+        solution_content = data.get("solutionContent", "")  # Solution content from the frontend
+
+        # Validate input
+        if not internal_user_id or not task_link:
+            raise HTTPException(status_code=400, detail="Invalid input data")
+
+        # Fetch the user ID using the UUID from the User model
+        user = db.query(User).filter(User.internal_user_id == internal_user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Get the task by task link
+        task = db.query(Task).filter(Task.task_link == task_link).first()
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+
+        # Fetch the number of previous attempts for this user-task pair
+        attempt_count = db.query(TaskAttempt).filter(
+            TaskAttempt.user_id == user.id,
+            TaskAttempt.task_id == task.id
+        ).count()
+
+        # Record the task attempt, including the attempt content
+        task_attempt = TaskAttempt(
+            user_id=user.id,
+            task_id=task.id,
+            attempt_number=attempt_count + 1,
+            is_successful=is_successful,
+            attempt_content=solution_content,  # Store the attempt content
+            submitted_at=func.now()
+        )
+
+        db.add(task_attempt)
+        
+        # If the attempt is successful and no solution exists, save it as a completed task
+        if is_successful:
+            existing_solution = db.query(TaskSolution).filter(
+                TaskSolution.user_id == user.id,
+                TaskSolution.task_id == task.id
+            ).first()
+
+            if not existing_solution:
+                task_solution = TaskSolution(
+                    user_id=user.id,
+                    task_id=task.id,
+                    solution_content=solution_content,  # Store the content of the successful attempt
+                    completed_at=func.now()
+                )
+                db.add(task_solution)
+
         db.commit()
-        return {"new_task": new_task}
-    finally:
-        cursor.close()
 
-# Endpoint to get solved tasks for a user
-@router.get("/tasksolution/{user_id}")
-def get_user_solved_tasks(user_id: str, db=Depends(get_db)):
-    cursor = db.cursor(cursor_factory=RealDictCursor)
-    try:
-        cursor.execute("SELECT lesson_name FROM tasksolution WHERE user_id = %s;", (user_id,))
-        tasks = cursor.fetchall()
-        lesson_names = [task['lesson_name'] for task in tasks]
-        return {"solved_tasks": lesson_names}
+        return {"message": "Task attempt recorded successfully"}
+    
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
     finally:
-        cursor.close()
+        db.close()

@@ -81,6 +81,7 @@ class TaskAttempt(Base):
     attempt_number = Column(Integer, nullable=False)
     submitted_at = Column(DateTime, default=func.now(), nullable=False)
     is_successful = Column(Boolean, default=False)
+    attempt_content = Column(String, nullable=True)
 
     user = relationship('User', backref='task_attempts')
     task = relationship('Task', backref='attempts')

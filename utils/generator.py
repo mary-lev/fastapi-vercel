@@ -43,7 +43,7 @@ def provide_feedback(
     print(system_prompt)
     user_prompt = f'''
         Here is the task description: {task}.
-        The student's answer is: {answer}.
+        The student's answer is: {answer}
         Generate the feedback. Be polite and laconic.
         '''
 
