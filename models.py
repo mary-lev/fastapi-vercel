@@ -117,21 +117,6 @@ class Lesson(Base):
     course_id = Column(Integer, ForeignKey('courses.id'), nullable=False)
     lesson_order = Column(Integer, nullable=False)
 
-class TextBook(Base):
-    __tablename__ = 'textbooks'
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, index=True)
-    author = Column(String, index=True)
-    book_link = Column(String, index=True)
-
-class TextBookChapter(Base):
-    __tablename__ = 'textbookchapters'
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, index=True)
-    content_file_md = Column(String, index=True)
-    textbook_id = Column(Integer, ForeignKey('textbooks.id'), nullable=False)
-    chapter_link = Column(String, index=True)
-    chapter_title = Column(String, index=True)
 
 class Topic(Base):
     __tablename__ = 'topics'
@@ -145,9 +130,9 @@ class Topic(Base):
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
     lesson_id = Column(Integer, ForeignKey('lessons.id'), nullable=False)
     topic_order = Column(Integer, nullable=False)
-    textbook_chapters = relationship('TextBookChapter', backref='topic', lazy='dynamic')
 
     tasks = relationship('Task', backref='topic', lazy='dynamic', order_by='Task.order')
+    summary = relationship('Summary', uselist=False, back_populates='topic')
 
 
 class Summary(Base):

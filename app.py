@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from routes import submission
 from routes import users
 from routes import solution
+from routes import lesson
 
 
 ### Create FastAPI instance with custom docs and OpenAPI URL
@@ -28,3 +29,4 @@ app.add_middleware(
 app.include_router(submission.router)
 app.include_router(users.router)
 app.include_router(solution.router)
+app.include_router(lesson.router)
