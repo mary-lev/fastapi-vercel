@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Request, Query
+from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy.orm import Session
 from models import Lesson, Topic, Task, Summary, TaskSolution, User
 from db import SessionLocal
@@ -11,7 +11,6 @@ def get_lesson_data(
     user_id: str = Query(..., alias="user_id"),  # Define user_id as a required query param
 ):
     db: Session = SessionLocal()
-    print(f"Fetching lesson data for lesson_id={lesson_id} and user_id={user_id}")
     try:
         # Get lesson by ID
         lesson = db.query(Lesson).filter(Lesson.id == lesson_id).first()
@@ -48,52 +47,93 @@ def get_lesson_data(
         # Fetch user's solved tasks
         solved_task_ids = {solution.task_id for solution in db.query(TaskSolution).filter(TaskSolution.user_id == user.id).all()}
 
-        # Serialize and organize the data
-        lesson_data = {
-            "lesson": [
-                {
-                    "id": topic.id,
-                    "title": topic.title,
-                    "summary": {
-                        "background": topic.background,
-                        "objectives": topic.objectives,
-                        "content": topic.content_file_md,
-                        "concepts": topic.concepts,
-                    },
-                    "listItem": (
-                        [
-                            {
-                                "lessonType": "Summary",
-                                "lssonLink": summaries[topic.id].lesson_link,
-                                "lessonName": summaries[topic.id].lesson_name,
-                                "data": summaries[topic.id].data,
-                                "points": 0,
-                                "order": 0,
-                                "isSolved": False,  # Summaries are not solvable
-                            }
-                        ] if topic.id in summaries else []
-                    ) + sorted(
-                        [
-                            {
-                                "lessonType": task.type,
-                                "lssonLink": task.task_link,
-                                "lessonName": task.task_name,
-                                "data": task.data,
-                                "points": task.points,
-                                "order": task.order,
-                                "isSolved": task.id in solved_task_ids,  # Check if task is solved
-                            }
-                            for task in tasks
-                            if task.topic_id == topic.id
-                        ],
-                        key=lambda x: x["order"]
-                    ),
+        lesson_data = {"lesson": []}
+
+        # Iterate over topics and add each to lesson_data
+        for topic_idx, topic in enumerate(topics):
+            topic_data = {
+                "id": topic.id,
+                "title": topic.title,
+                "summary": {
+                    "background": topic.background,
+                    "objectives": topic.objectives,
+                    "content": topic.content_file_md,
+                    "concepts": topic.concepts,
+                },
+                "listItem": [],
+            }
+
+            # Add the summary as the first item, if it exists
+            if topic.id in summaries:
+                summary = summaries[topic.id]
+                summary_data = {
+                    "lessonType": "Summary",
+                    "lssonLink": summary.lesson_link,
+                    "lessonName": summary.lesson_name,
+                    "data": summary.data,
+                    "points": 0,
+                    "order": 0,
+                    "isSolved": False,
                 }
-                for topic in topics
-            ]
-        }
+
+                # Set prevUrl for summary
+                if topic_idx > 0:
+                    prev_topic = topics[topic_idx - 1]
+                    last_task_of_prev_topic = max(
+                        [task for task in tasks if task.topic_id == prev_topic.id],
+                        key=lambda t: t.order,
+                        default=None
+                    )
+                    summary_data["prevUrl"] = last_task_of_prev_topic.task_link if last_task_of_prev_topic else None
+                else:
+                    summary_data["prevUrl"] = None
+
+                # Set nextUrl for summary
+                first_task_in_topic = next(
+                    (task for task in tasks if task.topic_id == topic.id), None
+                )
+                summary_data["nextUrl"] = first_task_in_topic.task_link if first_task_in_topic else None
+
+                topic_data["listItem"].append(summary_data)
+
+            # Get the tasks for the current topic and add nextUrl and prevUrl
+            topic_tasks = [task for task in tasks if task.topic_id == topic.id]
+            for task_idx, task in enumerate(topic_tasks):
+                task_data = {
+                    "lessonType": task.type,
+                    "lssonLink": task.task_link,
+                    "lessonName": task.task_name,
+                    "data": task.data,
+                    "points": task.points,
+                    "order": task.order,
+                    "isSolved": task.id in solved_task_ids,
+                }
+
+                # Set prevUrl
+                if task_idx == 0:
+                    task_data["prevUrl"] = summaries[topic.id].lesson_link if topic.id in summaries else None
+                else:
+                    task_data["prevUrl"] = topic_tasks[task_idx - 1].task_link
+
+                # Set nextUrl
+                if task_idx == len(topic_tasks) - 1:
+                    if topic_idx < len(topics) - 1:
+                        next_topic = topics[topic_idx + 1]
+                        task_data["nextUrl"] = summaries[next_topic.id].lesson_link if next_topic.id in summaries else None
+                    else:
+                        task_data["nextUrl"] = None
+                else:
+                    task_data["nextUrl"] = topic_tasks[task_idx + 1].task_link
+
+                topic_data["listItem"].append(task_data)
+
+            # Add topic data to lesson_data
+            lesson_data["lesson"].append(topic_data)
 
         return lesson_data
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+    finally:
+        db.close()
