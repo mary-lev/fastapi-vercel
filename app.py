@@ -14,7 +14,7 @@ origins = [
     "http://localhost:3001",  # If your frontend runs on port 3001
     "http://localhost:3002",  # If your frontend runs on port 3002
     "https://frontend-template-lilac.vercel.app",  # Vercel frontend address
-    "https://dhdk-trainer.vercel.app",  # Vercel frontend address
+    "https://dhdk.vercel.app",  # Vercel frontend address
     # Add any other origins that need access
 ]
 
