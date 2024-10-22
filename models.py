@@ -24,6 +24,7 @@ class Task(Base):
     __tablename__ = 'tasks'
 
     id = Column(Integer, primary_key=True, index=True)
+    is_active = Column(Boolean, default=True, nullable=False)
     task_name = Column(String, nullable=False)
     task_link = Column(String, nullable=False, index=True)  # Task identifier
     points = Column(Integer, nullable=True)  # Points achievable for the task
