@@ -118,6 +118,7 @@ class Lesson(Base):
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
     course_id = Column(Integer, ForeignKey('courses.id'), nullable=False)
     lesson_order = Column(Integer, nullable=False)
+    textbook = Column(String, nullable=True)
 
 
 class Topic(Base):

@@ -4,6 +4,9 @@ from routes import submission
 from routes import users
 from routes import solution
 from routes import lesson
+from routes import task_generator
+from routes import topics
+from routes import task
 
 
 ### Create FastAPI instance with custom docs and OpenAPI URL
@@ -13,6 +16,7 @@ origins = [
     "http://localhost:3000",  # Next.js frontend on port 3000
     "http://localhost:3001",  # If your frontend runs on port 3001
     "http://localhost:3002",  # If your frontend runs on port 3002
+    "http://localhost:8000",  # FastAPI backend on port 8000
     "https://frontend-template-lilac.vercel.app",  # Vercel frontend address
     "https://dhdk.vercel.app",  # Vercel frontend address
     # Add any other origins that need access
@@ -30,3 +34,6 @@ app.include_router(submission.router)
 app.include_router(users.router)
 app.include_router(solution.router)
 app.include_router(lesson.router)
+app.include_router(task_generator.router)
+app.include_router(topics.router)
+app.include_router(task.router)

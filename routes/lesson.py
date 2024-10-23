@@ -100,6 +100,7 @@ def get_lesson_data(
             topic_tasks = [task for task in tasks if task.topic_id == topic.id]
             for task_idx, task in enumerate(topic_tasks):
                 task_data = {
+                    "id": task.id,
                     "lessonType": task.type,
                     "lssonLink": task.task_link,
                     "lessonName": task.task_name,
@@ -107,6 +108,7 @@ def get_lesson_data(
                     "points": task.points,
                     "order": task.order,
                     "isSolved": task.id in solved_task_ids,
+                    "is_active": task.is_active,
                 }
 
                 # Set prevUrl
