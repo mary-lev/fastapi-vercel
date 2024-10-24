@@ -9,7 +9,8 @@ from openai import OpenAI
 from db import SessionLocal
 
 from models import Lesson, Topic
-from models import Task, TrueFalseQuiz, MultipleSelectQuiz, CodeTask, SingleQuestionTask
+from models import TrueFalseQuiz, MultipleSelectQuiz, CodeTask, SingleQuestionTask
+from models import Task as TaskReady
 
 
 from dotenv import load_dotenv
@@ -132,6 +133,7 @@ def generate_tasks(
     db = SessionLocal()
 
     add_quizzes = False
+    add_tasks = True
 
     # Fetch the current topic
     current_topic = db.query(Topic).filter(Topic.id == topic_id).first()
@@ -175,6 +177,15 @@ def generate_tasks(
     else:
         starting_text += "This is the first lesson in the course. Student don't have any previous knowledge about the course content."
     
+    if add_tasks:
+        import requests
+        task_data = requests.get(f"http://localhost:8000/api/topics/19").json()
+        questions = [task["question"] for task in task_data.get("tasks", [])]
+        starting_text += f'''
+            We already have the following tasks for this lesson:
+        {questions}
+        '''
+    
     starting_text += f'''
         Create tasks for the student that help them train their understanding of the topic, following this specific structure:
     '''
@@ -187,6 +198,25 @@ def generate_tasks(
             a) **Simple Coding Tasks:** Students write simple code using the new concepts.
             b) **Debugging Tasks:** Students fix bugs in provided code snippets.
             c) **Complex Coding Tasks:** Students implement complex tasks using the learned concepts.
+    '''
+
+    suggested_material = [
+        "Harry Potter",
+        "classical italian literature",
+        "Jane Austen",
+        "tv series",
+        "Game of Thrones",
+        "Lord of the Rings",
+        "Star Wars",
+        "The Simpsons",
+        "video games",
+    ]
+    # choose a random material
+    import random
+    material = random.choice(suggested_material)
+
+    starting_text += f'''
+        **Suggested Material:** Use the {material} material to create tasks that are engaging and relevant to the students.  
     '''
 
 
