@@ -121,6 +121,8 @@ class Lesson(Base):
     lesson_order = Column(Integer, nullable=False)
     textbook = Column(String, nullable=True)
 
+    topics = relationship('Topic', back_populates='lesson')  # Add this line
+
 
 class Topic(Base):
     __tablename__ = 'topics'
@@ -135,6 +137,7 @@ class Topic(Base):
     lesson_id = Column(Integer, ForeignKey('lessons.id'), nullable=False)
     topic_order = Column(Integer, nullable=False)
 
+    lesson = relationship('Lesson', back_populates='topics')  # Add this line
     tasks = relationship('Task', backref='topic', lazy='dynamic', order_by='Task.order')
     summary = relationship('Summary', uselist=False, back_populates='topic')
 

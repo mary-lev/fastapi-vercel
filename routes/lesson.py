@@ -147,3 +147,31 @@ def get_lesson_data(
 
     finally:
         db.close()
+
+
+
+@router.put("/lessons/{lesson_id}/rebuild-task-links", response_model=dict)
+def rebuild_task_links(lesson_id: int):
+    db: Session = SessionLocal()
+    # Fetch lesson with all topics and tasks
+    lesson = db.query(Lesson).filter(Lesson.id == lesson_id).first()
+
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Lesson not found")
+
+    # Loop through each topic in the lesson
+    for topic in lesson.topics:
+        # Get all tasks for the topic, ordered by created_at
+        tasks = db.query(Task).filter(Task.topic_id == topic.id).order_by(Task.created_at).all()
+
+        # Rebuild task_link and update task.order for each task
+        for index, task in enumerate(tasks, start=1):
+            new_task_link = f"{topic.id}-{index}"
+            task.task_link = new_task_link  # Update the task_link
+            task.order = index  # Update the task order
+
+        # Commit the changes to the database
+        db.commit()
+
+    return {"status": "Task links and order successfully rebuilt"}
+

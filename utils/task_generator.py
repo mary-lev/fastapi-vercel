@@ -66,10 +66,10 @@ def process_task(task, index, topic_id):
 
     # Generate lssonLink and lessonName based on task type and index
     if task_type == "code":
-        processed_task["lssonLink"] = f"code-task-{index+1}"
+        # processed_task["lssonLink"] = f"code-task-{index+1}"
         processed_task["lessonName"] = task.name or "Coding Exercise"
     else:
-        processed_task["lssonLink"] = f"question-{index+1}"
+        # processed_task["lssonLink"] = f"question-{index+1}"
         processed_task["lessonName"] = task.name or "Quiz Question"
 
     # Prepare the data field
@@ -110,7 +110,7 @@ def process_task(task, index, topic_id):
     
     new_task = task_model_class(
         task_name=processed_task["lessonName"],
-        task_link=processed_task["lssonLink"],
+        task_link=str(index + 1),  # Use the index as the task link
         points=processed_task["points"],
         order=index + 1,  # Ensure the tasks are ordered
         topic_id=topic_id,
@@ -130,6 +130,8 @@ def generate_tasks(
     num_tasks: int = 5
 ):
     db = SessionLocal()
+
+    add_quizzes = False
 
     # Fetch the current topic
     current_topic = db.query(Topic).filter(Topic.id == topic_id).first()
@@ -152,40 +154,57 @@ def generate_tasks(
 
     # Combine all collected concepts from previous lessons and topics
     previous_concepts_text = " ".join(previous_concepts)
+    text_about_previous_concepts = f"Students have already learned the following concepts from previous lessons: {previous_concepts_text}"
 
     # Read the content of the current topic
-    with open(f"data/textbook/{current_topic.content_file_md}", "r") as f:
-        topic_content = f.read()
+    try:
+        with open(f"data/textbook/{current_topic.content_file_md}", "r") as f:
+            topic_content = f.read()
+    except:
+        with open(f"data/lectures/{current_lesson.id}.txt", "r") as f:
+            topic_content = f.read()
 
-    # Modify system prompt to include previous concepts
-    system_prompt = f'''
-        You are to create a set of tasks for a "Basic Python for Digital Humanities" course.
+
+    starting_text = f'''
+         You are to create a set of tasks for a "Basic Python for Digital Humanities" course.
         Our current lesson is dedicated to the {current_topic.title}.
-        The students had to read this textbook chapter: {topic_content}
-        
-        Additionally, students have already learned the following concepts from previous lessons: {previous_concepts_text}
-        
+    '''
+
+    if previous_concepts:
+        starting_text += text_about_previous_concepts
+    else:
+        starting_text += "This is the first lesson in the course. Student don't have any previous knowledge about the course content."
+    
+    starting_text += f'''
         Create tasks for the student that help them train their understanding of the topic, following this specific structure:
-                
-        1. **Understanding Check:** Begin with multiple-choice question to assess students' understanding of the lesson content.
-        2. **Coding Exercises:**
+    '''
+    
+    if add_quizzes:
+        starting_text += "**Understanding Check:** Begin with multiple-choice question to assess students' understanding of the lesson content."
+    
+    structure_description = '''
+        **Create Coding Exercises:**
             a) **Simple Coding Tasks:** Students write simple code using the new concepts.
             b) **Debugging Tasks:** Students fix bugs in provided code snippets.
             c) **Complex Coding Tasks:** Students implement complex tasks using the learned concepts.
-        4. **Explanation Task:** Conclude with a question where students explain code or concepts in their own words.
-        
+    '''
+
+
+    # Modify system prompt to include previous concepts
+    system_prompt = f'''
+        {starting_text}
+        {structure_description}      
         **Instructions:**
         - Create the tasks for the topic {current_topic.title}.
-        - Ensure tasks are relevant to the topic content and objectives.
-        - Make tasks appropriate for the students' background.
-        - Ensure that tasks progress from easy (basic understanding) to difficult (complex problem-solving).
-        - Tailor the difficulty of coding tasks to the skill level of students, starting with foundational questions and leading up to more advanced problem-solving.
-        - Use for the coding tasks original and engaging material for the university student in Digital Humanities.
-        - Where appropriate, incorporate real-world examples related to Digital Humanities, such as analyzing texts, historical datasets, or processing cultural artifacts.
-        - Where appropriate, design tasks that combine knowledge from both current and previous topics to reinforce the integration of learned concepts.
-        - Scaffold tasks, starting with highly guided questions and reducing guidance over time to promote independent problem-solving.
-        - Provide a rubric or clear expectations for what a correct answer should contain, helping students understand how their work will be evaluated.
-        - Keep tasks clear, concise, and engaging.
+        - Create tasks for the topic {current_topic.title}.
+        - Ensure tasks are directly aligned with the topic’s content and learning objectives.
+        - Tasks should match the students’ skill level, progressing from simple to complex.
+        - Use engaging, original coding tasks tailored to Digital Humanities students.
+        - Integrate real-world Digital Humanities examples, such as text analysis, historical datasets, or cultural artifact processing, where appropriate.
+        - Incorporate knowledge from previous topics, promoting the integration of concepts.
+        - Scaffold the tasks, providing more guidance initially, and reducing it as tasks increase in complexity to encourage independent thinking.
+        - Provide clear evaluation criteria for each task, explaining what a correct answer should include.
+        - Keep all tasks concise, focused, and engaging.
     '''
     
     print(system_prompt)
@@ -195,6 +214,7 @@ def generate_tasks(
         Generate the {num_tasks} tasks for this part of the lesson following the instructions above.
         Be aware to include only the concepts mentioned in the topic content.
         Tasks have to include the main concepts of the topic: {current_topic.concepts}.
+        The students had to read this textbook chapter: {topic_content}.
     '''
     
     print(user_prompt)
@@ -222,4 +242,4 @@ def generate_tasks(
 
     return list_items
 
-#generate_tasks(6, 7)
+# generate_tasks(19, 5)

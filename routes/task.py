@@ -141,17 +141,25 @@ async def update_code_task(request: Request):
             raise HTTPException(status_code=404, detail="Task not found.")
 
         # Update the task fields
-        task.data["code"] = new_code
-        task.data["text"] = new_text
+        task_data = task.data.copy() if task.data else {}
+        task_data["code"] = new_code
+        task_data["text"] = new_text
         task.task_name = new_title
 
+        task.data = task_data
+
+        # Update the updated_at timestamp for the task
+        task.updated_at = func.now()
+
+        # Commit the changes
         db.commit()
+        db.refresh(task)  # Refresh the task to ensure it has the latest data
         return {"message": "Task updated successfully"}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@router.delete("/api/delete-task/{task_id}")
+@router.delete("/api/deactivate-task/{task_id}")
 def delete_task(task_id: int):
     db: Session = SessionLocal()
     try:
@@ -169,6 +177,30 @@ def delete_task(task_id: int):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/api/delete-task/{task_id}")
+def delete_task(task_id: int):
+    db: Session = SessionLocal()
+    try:
+        # Fetch the task from the database
+        task = db.query(Task).filter(Task.id == task_id).first()
+
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found.")
+
+        # Delete the task permanently
+        db.delete(task)
+        db.commit()
+
+        return {"message": "Task deleted permanently"}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    finally:
+        db.close()
+
 
 
 @router.put("/api/activate-task/{task_id}")
