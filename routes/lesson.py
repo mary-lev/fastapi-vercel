@@ -74,6 +74,7 @@ def get_lesson_data(
                     "points": 0,
                     "order": 0,
                     "isSolved": False,
+                    "is_active": True,
                 }
 
                 # Set prevUrl for summary
