@@ -17,6 +17,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     internal_user_id = Column(String, index=True)
     hashed_sub = Column(String, unique=True, index=True)
+    username = Column(String, unique=False, index=True, default="Anonymous") 
     status = Column(Enum(UserStatus), index=True, nullable=True)
 
 # Polymorphic Task Model

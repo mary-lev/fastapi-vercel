@@ -11,6 +11,7 @@ async def insert_task_solution(request: Request):
     db: Session = SessionLocal()
     try:
         data = await request.json()
+        print(data)
         internal_user_id = data.get("userId")  # UUID from the frontend
         task_link = data.get("lessonName")
         is_successful = data.get("isSuccessful", False)  # Whether the attempt was successful

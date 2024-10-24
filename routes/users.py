@@ -1,46 +1,92 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
-from db import get_db
-from psycopg2.extras import RealDictCursor
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
+from models import User  # Assuming you have a User model defined
+from db import get_db, SessionLocal
+from passlib.hash import bcrypt
+
+router = APIRouter()
 
 
-router = APIRouter(prefix="/api/py")
+class RegisterUser(BaseModel):
+    username: str = Field(..., min_length=3, max_length=30)
+    password: str = Field(..., min_length=6)
 
 
 @router.get("/users/")
-def find_user(hashed_sub: str = None, internal_user_id: str = None, db=Depends(get_db)):
+def find_user(
+    hashed_sub: str = None,
+    internal_user_id: str = None,
+    db: Session = Depends(get_db)
+):
+    if not (hashed_sub or internal_user_id):
+        raise HTTPException(status_code=400, detail="Must provide 'hashed_sub' or 'internal_user_id'")
+    
     if hashed_sub:
-        query = "SELECT * FROM users WHERE hashed_sub = %s"
-        param = hashed_sub
+        user = db.query(User).filter(User.hashed_sub == hashed_sub).first()
     elif internal_user_id:
-        query = "SELECT * FROM users WHERE internal_user_id = %s"
-        param = internal_user_id
-    else:
-        raise HTTPException(status_code=400, detail="Must provide either 'hashed_sub' or 'internal_user_id'")
+        user = db.query(User).filter(User.internal_user_id == internal_user_id).first()
 
-    with db.cursor(cursor_factory=RealDictCursor) as cursor:
-        cursor.execute(query, (param,))
-        user = cursor.fetchone()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
 
-        if user is None:
-            raise HTTPException(status_code=404, detail="User not found")
-
-        return {"user": user}
+    return {"user": user}
 
 
-# Endpoint to insert a new user
 @router.post("/users/")
-def insert_new_user(internal_user_id: str, hashed_sub: str, db=Depends(get_db)):
-    cursor = db.cursor(cursor_factory=RealDictCursor)
+def insert_new_user(
+    internal_user_id: str,
+    hashed_sub: str,
+    db: Session = Depends(get_db)
+):
     try:
-        cursor.execute("""
-            INSERT INTO users (internal_user_id, hashed_sub)
-            VALUES (%s, %s)
-            RETURNING *;
-        """, (internal_user_id, hashed_sub))
-        new_user = cursor.fetchone()
+        new_user = User(internal_user_id=internal_user_id, hashed_sub=hashed_sub)
+        db.add(new_user)
         db.commit()
+        db.refresh(new_user)
         return {"new_user": new_user}
-    finally:
-        cursor.close()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/users/register")
+def register_user(data: RegisterUser, db: Session = Depends(get_db)):
+    existing_user = db.query(User).filter(User.username == data.username).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Username already exists")
+
+    hashed_password = bcrypt.hash(data.password)
+    try:
+        new_user = User(
+            internal_user_id=data.username,
+            username=data.username,
+            hashed_sub=hashed_password
+        )
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        return {"message": "User registered successfully", "user": new_user}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+class LoginUser(BaseModel):
+    username: str = Field(..., min_length=3, max_length=30)
+    password: str = Field(..., min_length=6)
+
+
+@router.post("/users/login")
+def login_user(data: LoginUser):
+    db = SessionLocal()
+    user = db.query(User).filter(User.username == data.username).first()
+
+    if not user or not bcrypt.verify(data.password, user.hashed_sub):
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+
+    return {"message": "Login successful", "user": {
+        "username": user.username,
+        "internal_user_id": user.internal_user_id,
+        "status": user.status.value,
+        }}
