@@ -191,3 +191,62 @@ def activate_task(task_id: int):
 
     finally:
         db.close()
+
+
+@router.post("/api/add-code-task")
+async def add_code_task(request: Request):
+    db: Session = SessionLocal()
+    try:
+        # Read the JSON payload
+        data = await request.json()
+        print(data)
+        topic_id = data.get("topicId")  # Use lessonId for topic_id
+        new_code = data.get("data", {}).get("code")
+        new_text = data.get("data", {}).get("text")
+        new_title = data.get("lessonName")
+        points = data.get("points", 0)
+        is_active = data.get("is_active", True)
+        print("New code task data:", new_code, new_text, new_title, points, is_active)
+
+        # Validate required fields
+        if not topic_id or not new_code or not new_title:
+            raise HTTPException(status_code=400, detail="Topic ID, code, and title are required.")
+
+        # Fetch the topic from the database
+        topic = db.query(Topic).filter(Topic.id == topic_id).first()
+        if not topic:
+            raise HTTPException(status_code=404, detail="Topic not found.")
+        print("Topic", topic)
+
+        # Generate a unique task_link (can be improved to ensure uniqueness)
+        task_link = f"code-task-{topic_id}-{new_title.replace(' ', '-').lower()}"
+
+        # Determine the order of the new task
+        max_order = db.query(Task).filter(Task.topic_id == topic_id).order_by(Task.order.desc()).first()
+        new_order = max_order.order + 1 if max_order else 1
+
+        # Create a new CodeTask
+        new_task = CodeTask(
+            topic_id=topic_id,
+            type="code_task",
+            task_name=new_title,
+            task_link=task_link,
+            data={"code": new_code, "text": new_text},
+            points=points,
+            is_active=is_active,
+            order=new_order
+        )
+        print(new_task)
+
+        # Add and commit the new task to the database
+        db.add(new_task)
+        db.commit()
+        db.refresh(new_task)
+
+        return {"message": "Code task added successfully", "task_id": new_task.id}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    finally:
+        db.close()

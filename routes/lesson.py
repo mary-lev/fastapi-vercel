@@ -49,7 +49,6 @@ def get_lesson_data(
 
         # Determine if user is a student
         is_student = user.status == UserStatus.STUDENT
-        print(f"User {user_id} is a student: {user.status}")
 
         lesson_data = {"lesson": []}
 
