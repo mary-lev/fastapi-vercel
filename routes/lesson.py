@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy.orm import Session
-from models import Lesson, Topic, Task, Summary, TaskSolution, User
+from models import Lesson, Topic, Task, Summary, TaskSolution, User, UserStatus
 from db import SessionLocal
 
 router = APIRouter()
@@ -46,6 +46,10 @@ def get_lesson_data(
 
         # Fetch user's solved tasks
         solved_task_ids = {solution.task_id for solution in db.query(TaskSolution).filter(TaskSolution.user_id == user.id).all()}
+
+        # Determine if user is a student
+        is_student = user.status == UserStatus.STUDENT
+        print(f"User {user_id} is a student: {user.status}")
 
         lesson_data = {"lesson": []}
 
@@ -100,6 +104,10 @@ def get_lesson_data(
             # Get the tasks for the current topic and add nextUrl and prevUrl
             topic_tasks = [task for task in tasks if task.topic_id == topic.id]
             for task_idx, task in enumerate(topic_tasks):
+                # Filter out inactive tasks if the user is a student
+                if is_student and not task.is_active:
+                    continue
+
                 task_data = {
                     "id": task.id,
                     "lessonType": task.type,
