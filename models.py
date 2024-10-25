@@ -110,6 +110,8 @@ class Course(Base):
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
     professor_id = Column(Integer, ForeignKey('users.id'), nullable=False)
 
+    lessons = relationship('Lesson', back_populates='course')  # Add this line
+
 class Lesson(Base):
     __tablename__ = 'lessons'
     id = Column(Integer, primary_key=True, index=True)
@@ -120,8 +122,10 @@ class Lesson(Base):
     course_id = Column(Integer, ForeignKey('courses.id'), nullable=False)
     lesson_order = Column(Integer, nullable=False)
     textbook = Column(String, nullable=True)
+    start_date = Column(DateTime, nullable=True, default=func.now())
 
     topics = relationship('Topic', back_populates='lesson')  # Add this line
+    course = relationship('Course', back_populates='lessons')  # Add this line
 
 
 class Topic(Base):
