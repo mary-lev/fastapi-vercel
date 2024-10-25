@@ -124,7 +124,7 @@ class Lesson(Base):
     textbook = Column(String, nullable=True)
     start_date = Column(DateTime, nullable=True, default=func.now())
 
-    topics = relationship('Topic', back_populates='lesson')  # Add this line
+    topics = relationship("Topic", order_by="Topic.topic_order", back_populates="lesson")
     course = relationship('Course', back_populates='lessons')  # Add this line
 
 
