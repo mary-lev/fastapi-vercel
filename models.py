@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, func, Enum, Boolean, JSON
+from sqlalchemy import Table
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 import enum
@@ -20,6 +21,21 @@ class User(Base):
     username = Column(String, unique=False, index=True, default="Anonymous") 
     status = Column(Enum(UserStatus), index=True, nullable=True)
 
+
+class Tag(Base):
+    __tablename__ = 'tags'
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, nullable=False)  # Tag name, e.g., "easy", "data analysis"
+
+
+task_tags = Table(
+    'task_tags',
+    Base.metadata,
+    Column('task_id', Integer, ForeignKey('tasks.id'), primary_key=True),
+    Column('tag_id', Integer, ForeignKey('tags.id'), primary_key=True)
+)
+
 # Polymorphic Task Model
 class Task(Base):
     __tablename__ = 'tasks'
@@ -40,6 +56,8 @@ class Task(Base):
         'polymorphic_on': type,
         'polymorphic_identity': 'task'
     }
+
+    tags = relationship('Tag', secondary=task_tags, backref='tasks')
 
 
 class TrueFalseQuiz(Task):
