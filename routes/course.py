@@ -61,7 +61,7 @@ def get_course_data(course_id: int):
                 "title": "Course Content",
                 "contentList":  [{
                     "title": lesson.title,
-                    "time": lesson.start_date.strftime("%Y-%m-%d"),
+                    "time": lesson.start_date.strftime("%d/%m/%Y"),
                     "collapsed": False,
                     "isShow": True,
                     "expand": True,
