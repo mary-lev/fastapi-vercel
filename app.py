@@ -8,6 +8,7 @@ from routes import task_generator
 from routes import topics
 from routes import task
 from routes import course
+from routes import session
 
 
 ### Create FastAPI instance with custom docs and OpenAPI URL
@@ -39,3 +40,4 @@ app.include_router(task_generator.router)
 app.include_router(topics.router)
 app.include_router(task.router)
 app.include_router(course.router)
+app.include_router(session.router)

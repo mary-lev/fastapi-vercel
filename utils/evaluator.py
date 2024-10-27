@@ -22,7 +22,7 @@ class SubmissionGrader(BaseModel):
     is_solved: bool
 
 
-def provide_feedback(
+def provide_code_feedback(
         answer: str,
         output: str,
         task: dict,
@@ -45,6 +45,7 @@ def provide_feedback(
     user_prompt = f'''
         Here is the task description: {task}.
         The student's answer is: {answer}
+        The output of the code is: {output}
         Generate the feedback. Be polite and laconic.
         '''
 
@@ -64,6 +65,45 @@ def provide_feedback(
     
     return result
 
+def provide_text_feedback(
+        answer: str,
+        task: dict,
+    ):
+
+    system_prompt = f'''
+        You are an AI assistant tasked with evaluating a student's submission. 
+        You will be provided with the task description and the student's answer. 
+        Your job is to analyze the text and provide feedback based on the task requirements. 
+        Please follow these steps to evaluate the student's answer:
+
+        1. Carefully read the task description and the student's answer.
+        2. Check if the student's response addresses the task requirements.
+        3. Evaluate the text for clarity, coherence, and relevance to the task.
+        4. Provide constructive feedback that will help the student improve their writing skills.
+        Remember to be supportive and encouraging in your feedback, focusing on helping the student.
+        '''
+    print(system_prompt)
+    user_prompt = f'''
+        Here is the task description: {task}.
+        The student's answer is: {answer}
+        Generate the feedback. Be polite and laconic.
+        '''
+
+    print(user_prompt)
+
+    completion = client.beta.chat.completions.parse(
+        model="gpt-4o-2024-08-06",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+        response_format=SubmissionGrader,
+        max_tokens=300,
+    )
+    result = completion.choices[0].message.parsed
+    print(result)
+    
+    return result
 
 
 def evaluate_code_submission(submission, output, task):
@@ -74,6 +114,17 @@ def evaluate_code_submission(submission, output, task):
     :return: a dictionary with the evaluation results
     """
     answer = submission['code']
-    feedback = provide_feedback(answer, output, task)
+    feedback = provide_code_feedback(answer, output, task)
 
+    return feedback
+
+
+def evaluate_text_submission(answer, task):
+    """
+    Evaluate a text submission for a task.
+    :param answer: a text submission
+    :param task: a task
+    :return: a tuple with a boolean indicating correctness and a feedback message
+    """
+    feedback = provide_text_feedback(answer, task)
     return feedback

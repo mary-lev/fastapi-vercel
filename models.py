@@ -128,7 +128,7 @@ class Course(Base):
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
     professor_id = Column(Integer, ForeignKey('users.id'), nullable=False)
 
-    lessons = relationship('Lesson', back_populates='course')  # Add this line
+    lessons = relationship('Lesson', order_by="Lesson.id", back_populates='course')  # Add this line
 
 class Lesson(Base):
     __tablename__ = 'lessons'
@@ -142,7 +142,7 @@ class Lesson(Base):
     textbook = Column(String, nullable=True)
     start_date = Column(DateTime, nullable=True, default=func.now())
 
-    topics = relationship("Topic", order_by="Topic.topic_order", back_populates="lesson")
+    topics = relationship("Topic", order_by="Topic.id", back_populates="lesson")
     course = relationship('Course', back_populates='lessons')  # Add this line
 
 
@@ -178,3 +178,14 @@ class Summary(Base):
 
     # Relationship with Topic
     topic = relationship('Topic', back_populates='summary')
+
+
+class SessionRecording(Base):
+    __tablename__ = 'session_recordings'
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)  # Link to User
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    events = Column(JSON, nullable=False)  # Store recorded events in JSON format
+
+    user = relationship("User", backref="session_recordings")
