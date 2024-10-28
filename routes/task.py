@@ -292,6 +292,7 @@ async def get_task(task_id: int):
 
         return {
             "id": task.id,
+            "order": task.order,
             "title": task.task_name,
             "data": task.data,
             "points": task.points,

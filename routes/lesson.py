@@ -155,12 +155,12 @@ def rebuild_task_links(lesson_id: int):
 
 
 @router.get("/api/lessons/{lesson_id}/full_data")
-def get_full_lesson_data(lesson_id: int, user_id: str):
+def get_full_lesson_data(lesson_id: int, internal_user_id: str):
     db: Session = SessionLocal()
     try:
         # Get lesson and user by ID
         lesson = db.query(Lesson).filter(Lesson.id == lesson_id).first()
-        user = db.query(User).filter(User.username == user_id).first()
+        user = db.query(User).filter(User.internal_user_id == internal_user_id).first()
         if not lesson:
             raise HTTPException(status_code=404, detail="Lesson not found")
         if not user:
