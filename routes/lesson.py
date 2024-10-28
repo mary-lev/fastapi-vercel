@@ -156,7 +156,6 @@ def rebuild_task_links(lesson_id: int):
 
 @router.get("/api/lessons/{lesson_id}/full_data")
 def get_full_lesson_data(lesson_id: int, user_id: str):
-    print(f"Fetching lesson data for lesson_id: {lesson_id}, user_id: {user_id}")
     db: Session = SessionLocal()
     try:
         # Get lesson and user by ID
@@ -190,7 +189,6 @@ def get_full_lesson_data(lesson_id: int, user_id: str):
         solved_task_ids = {
             solution.task_id for solution in db.query(TaskSolution).filter(TaskSolution.user_id == user.id).all()
         }
-        print(f"Solved task IDs: {solved_task_ids}")
 
         # Build JSON-serializable lesson data
         lesson_data = {
@@ -204,7 +202,8 @@ def get_full_lesson_data(lesson_id: int, user_id: str):
                     "id": summary.id,
                     "title": summary.lesson_name,
                     "data": summary.data,
-                    "topic_id": summary.topic_id
+                    "topic_id": summary.topic_id,
+                    "topic_title": db.query(Topic.title).filter(Topic.id == summary.topic_id).scalar() 
                 }
                 for summary in summaries
             ],
@@ -259,7 +258,6 @@ def get_full_lesson_data(lesson_id: int, user_id: str):
         return lesson_data
 
     except Exception as e:
-        print(f"Error: {e}")  # Debugging output for error message
         raise HTTPException(status_code=500, detail=str(e))
 
     finally:

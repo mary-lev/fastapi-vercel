@@ -41,15 +41,12 @@ def provide_code_feedback(
         After your analysis, provide feedback to the student that will help him or her to improve their coding skills. 
         Remember to be constructive and supportive in your feedback, focusing on helping the student.
         '''
-    print(system_prompt)
     user_prompt = f'''
         Here is the task description: {task}.
         The student's answer is: {answer}
         The output of the code is: {output}
         Generate the feedback. Be polite and laconic.
         '''
-
-    print(user_prompt)
 
     completion = client.beta.chat.completions.parse(
         model="gpt-4o-2024-08-06",
@@ -61,7 +58,6 @@ def provide_code_feedback(
         max_tokens=300,
     )
     result = completion.choices[0].message.parsed
-    print(result.feedback)
     
     return result
 
@@ -82,14 +78,12 @@ def provide_text_feedback(
         4. Provide constructive feedback that will help the student improve their writing skills.
         Remember to be supportive and encouraging in your feedback, focusing on helping the student.
         '''
-    print(system_prompt)
+
     user_prompt = f'''
         Here is the task description: {task}.
         The student's answer is: {answer}
         Generate the feedback. Be polite and laconic.
         '''
-
-    print(user_prompt)
 
     completion = client.beta.chat.completions.parse(
         model="gpt-4o-2024-08-06",
@@ -101,7 +95,6 @@ def provide_text_feedback(
         max_tokens=300,
     )
     result = completion.choices[0].message.parsed
-    print(result)
     
     return result
 

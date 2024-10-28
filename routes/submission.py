@@ -151,8 +151,6 @@ async def submit_text(request: Request):
         is_solved = evaluation.is_solved
         feedback = evaluation.feedback
         
-        print(f"Answer: {answer}, Correct: {is_solved}, Feedback: {feedback}")
-
         # Record the task attempt
         attempt_count = db.query(TaskAttempt).filter(
             TaskAttempt.user_id == user.id,
@@ -206,7 +204,6 @@ async def submit_text(request: Request):
         )
 
     except Exception as e:
-        print(f"Error: {e}")
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 

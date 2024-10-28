@@ -60,7 +60,6 @@ async def update_true_false_task(request: Request):
         task_id = data.get("taskId")
         new_question = data.get("newQuestion")
         new_correct_answer = data.get("newCorrectAnswer")
-        print(data)
 
         if not task_id:
             raise HTTPException(status_code=400, detail="Task ID is required.")
@@ -98,7 +97,6 @@ async def update_single_question_task(request: Request):
     db: Session = SessionLocal()
     try:
         data = await request.json()
-        print(data)
         task_id = data.get("taskId")
         new_question = data.get("newQuestion")
         points = data.get("newPoints")
@@ -198,7 +196,6 @@ def delete_task(task_id: int):
         return {"message": "Task deleted permanently"}
 
     except Exception as e:
-        print(f"Error: {e}")
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -221,7 +218,6 @@ def activate_task(task_id: int):
         return {"message": "Task activated successfully"}
 
     except Exception as e:
-        print(f"Error: {e}")
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -235,14 +231,12 @@ async def add_code_task(request: Request):
     try:
         # Read the JSON payload
         data = await request.json()
-        print(data)
         topic_id = data.get("topicId")  # Use lessonId for topic_id
         new_code = data.get("data", {}).get("code")
         new_text = data.get("data", {}).get("text")
         new_title = data.get("lessonName")
         points = data.get("points", 0)
         is_active = data.get("is_active", True)
-        print("New code task data:", new_code, new_text, new_title, points, is_active)
 
         # Validate required fields
         if not topic_id or not new_code or not new_title:
@@ -252,7 +246,6 @@ async def add_code_task(request: Request):
         topic = db.query(Topic).filter(Topic.id == topic_id).first()
         if not topic:
             raise HTTPException(status_code=404, detail="Topic not found.")
-        print("Topic", topic)
 
         # Generate a unique task_link (can be improved to ensure uniqueness)
         task_link = f"code-task-{topic_id}-{new_title.replace(' ', '-').lower()}"
@@ -272,7 +265,6 @@ async def add_code_task(request: Request):
             is_active=is_active,
             order=new_order
         )
-        print(new_task)
 
         # Add and commit the new task to the database
         db.add(new_task)
@@ -308,7 +300,6 @@ async def get_task(task_id: int):
         }
 
     except Exception as e:
-        print(f"Error: {e}")
         raise HTTPException(status_code=500, detail="Error fetching task data")
     finally:
         db.close()

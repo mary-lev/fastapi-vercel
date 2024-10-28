@@ -237,8 +237,6 @@ def generate_tasks(
         - Keep all tasks concise, focused, and engaging.
     '''
     
-    print(system_prompt)
-
     # User prompt remains the same
     user_prompt = f'''
         Generate the {num_tasks} tasks for this part of the lesson following the instructions above.
@@ -247,8 +245,6 @@ def generate_tasks(
         The students had to read this textbook chapter: {topic_content}.
     '''
     
-    print(user_prompt)
-
     completion = client.beta.chat.completions.parse(
         model="gpt-4o-2024-08-06",
         messages=[
@@ -259,14 +255,12 @@ def generate_tasks(
         response_format=TaskGroup
     )
     tasks = completion.choices[0].message.parsed
-    print(tasks)
 
     list_items = []
     for index, task in enumerate(tasks.tasks):
         processed_task = process_task(task, index, current_topic.id)
         list_items.append(processed_task)
 
-    print(list_items)
     with open(f"data/tasks/topic_{topic_id}_tasks.json", "w") as file:
         json.dump(list_items, file, indent=4)
 
