@@ -14,41 +14,50 @@ class RegisterUser(BaseModel):
     password: str = Field(..., min_length=6)
 
 
-@router.get("/users/")
-def find_user(
-    hashed_sub: str = None,
-    internal_user_id: str = None,
-    db: Session = Depends(get_db)
-):
-    if not (hashed_sub or internal_user_id):
-        raise HTTPException(status_code=400, detail="Must provide 'hashed_sub' or 'internal_user_id'")
+# @router.get("/users/")
+# def find_user(
+#     hashed_sub: str = None,
+#     internal_user_id: str = None,
+#     username: str = None,
+#     db: Session = Depends(get_db)
+# ):
+#     if not (hashed_sub or internal_user_id):
+#         raise HTTPException(status_code=400, detail="Must provide 'hashed_sub' or 'internal_user_id'")
     
-    if hashed_sub:
-        user = db.query(User).filter(User.hashed_sub == hashed_sub).first()
-    elif internal_user_id:
-        user = db.query(User).filter(User.internal_user_id == internal_user_id).first()
+#     if hashed_sub:
+#         user = db.query(User).filter(User.hashed_sub == hashed_sub).first()
+#     elif internal_user_id:
+#         user = db.query(User).filter(User.internal_user_id == internal_user_id).first()
+#     elif username:
+#         user = db.query(User).filter(User.username == username).first()
 
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+#     if not user:
+#         raise HTTPException(status_code=404, detail="User not found")
 
-    return {"user": user}
+#     return {"user": user}
 
 
-@router.post("/users/")
-def insert_new_user(
-    internal_user_id: str,
-    hashed_sub: str,
-    db: Session = Depends(get_db)
-):
-    try:
-        new_user = User(internal_user_id=internal_user_id, hashed_sub=hashed_sub)
-        db.add(new_user)
-        db.commit()
-        db.refresh(new_user)
-        return {"new_user": new_user}
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+# @router.post("/users/")
+# def insert_new_user(
+#     internal_user_id: str,
+#     hashed_sub: str,
+#     username: str,
+#     db: Session = Depends(get_db)
+# ):
+#     try:
+#         new_user = User(
+#             internal_user_id=internal_user_id, 
+#             hashed_sub=hashed_sub, 
+#             username=username,
+#             status=UserStatus.STUDENT
+#         )
+#         db.add(new_user)
+#         db.commit()
+#         db.refresh(new_user)
+#         return {"new_user": new_user}
+#     except Exception as e:
+#         db.rollback()
+#         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/users/register")
@@ -63,7 +72,7 @@ def register_user(data: RegisterUser, db: Session = Depends(get_db)):
             internal_user_id=data.username,
             username=data.username,
             hashed_sub=hashed_password,
-            status=UserStatus.STUDENT
+            status=UserStatus.STUDENT,
         )
         db.add(new_user)
         db.commit()
@@ -72,6 +81,7 @@ def register_user(data: RegisterUser, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
 
 class LoginUser(BaseModel):
     username: str = Field(..., min_length=3, max_length=30)
