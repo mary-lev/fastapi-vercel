@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
-from models import User  # Assuming you have a User model defined
+from models import User, UserStatus  # Assuming you have a User model defined
 from db import get_db, SessionLocal
 from passlib.hash import bcrypt
 
@@ -62,7 +62,8 @@ def register_user(data: RegisterUser, db: Session = Depends(get_db)):
         new_user = User(
             internal_user_id=data.username,
             username=data.username,
-            hashed_sub=hashed_password
+            hashed_sub=hashed_password,
+            status=UserStatus.STUDENT
         )
         db.add(new_user)
         db.commit()

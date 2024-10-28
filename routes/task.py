@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query, Request
 from sqlalchemy.sql import func
 from sqlalchemy.orm import Session
-from models import Lesson, Topic, Task, CodeTask, Summary, TaskSolution, User
+from models import Lesson, Topic, Task, CodeTask, Summary, TaskSolution, User, TaskAttempt, MultipleSelectQuiz, TrueFalseQuiz, SingleQuestionTask, CodeTask 
 from db import SessionLocal
 
 router = APIRouter()
@@ -110,8 +110,13 @@ async def update_single_question_task(request: Request):
         if not task:
             raise HTTPException(status_code=404, detail="Task not found.")
 
-        task.data["question"] = new_question
+        task_data = task.data.copy() if task.data else {}
+        task_data["question"] = new_question
         task.points = points
+        task.data = task_data
+
+        # Update the updated_at timestamp for the task
+        task.updated_at = func.now()
 
         db.commit()
         return {"message": "Task updated successfully"}
@@ -183,24 +188,22 @@ def delete_task(task_id: int):
 def delete_task(task_id: int):
     db: Session = SessionLocal()
     try:
-        # Fetch the task from the database
+        # Fetch the task and delete it
         task = db.query(Task).filter(Task.id == task_id).first()
-
         if not task:
             raise HTTPException(status_code=404, detail="Task not found.")
 
-        # Delete the task permanently
         db.delete(task)
         db.commit()
-
         return {"message": "Task deleted permanently"}
 
     except Exception as e:
+        print(f"Error: {e}")
+        db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
     finally:
         db.close()
-
 
 
 @router.put("/api/activate-task/{task_id}")
@@ -218,6 +221,7 @@ def activate_task(task_id: int):
         return {"message": "Task activated successfully"}
 
     except Exception as e:
+        print(f"Error: {e}")
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -284,3 +288,27 @@ async def add_code_task(request: Request):
         db.close()
 
 
+
+@router.get("/api/tasks/{task_id}")
+async def get_task(task_id: int):
+    db: Session = SessionLocal()
+    try:
+        # Fetch the task
+        task = db.query(Task).filter(Task.id == task_id).first()
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+
+        return {
+            "id": task.id,
+            "title": task.task_name,
+            "data": task.data,
+            "points": task.points,
+            "is_active": task.is_active,
+            "task_link": task.task_link,
+        }
+
+    except Exception as e:
+        print(f"Error: {e}")
+        raise HTTPException(status_code=500, detail="Error fetching task data")
+    finally:
+        db.close()

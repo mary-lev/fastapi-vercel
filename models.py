@@ -32,9 +32,10 @@ class Tag(Base):
 task_tags = Table(
     'task_tags',
     Base.metadata,
-    Column('task_id', Integer, ForeignKey('tasks.id'), primary_key=True),
-    Column('tag_id', Integer, ForeignKey('tags.id'), primary_key=True)
+    Column('task_id', Integer, ForeignKey('tasks.id', ondelete="CASCADE"), primary_key=True),
+    Column('tag_id', Integer, ForeignKey('tags.id', ondelete="CASCADE"), primary_key=True)
 )
+
 
 # Polymorphic Task Model
 class Task(Base):
@@ -43,12 +44,12 @@ class Task(Base):
     id = Column(Integer, primary_key=True, index=True)
     is_active = Column(Boolean, default=True, nullable=False)
     task_name = Column(String, nullable=False)
-    task_link = Column(String, nullable=False, index=True)  # Task identifier
-    points = Column(Integer, nullable=True)  # Points achievable for the task
-    type = Column(String(50), nullable=False)  # Discriminator for task types
-    order = Column(Integer, nullable=False)  # Order within the topic
-    data = Column(JSON, nullable=False) 
-    topic_id = Column(Integer, ForeignKey('topics.id'), nullable=False)  # Foreign key to Topic
+    task_link = Column(String, nullable=False, index=True)
+    points = Column(Integer, nullable=True)
+    type = Column(String(50), nullable=False)
+    order = Column(Integer, nullable=False)
+    data = Column(JSON, nullable=False)
+    topic_id = Column(Integer, ForeignKey('topics.id'), nullable=False)
     created_at = Column(DateTime, default=func.now(), nullable=False)
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
 
@@ -57,20 +58,25 @@ class Task(Base):
         'polymorphic_identity': 'task'
     }
 
-    tags = relationship('Tag', secondary=task_tags, backref='tasks')
+    tags = relationship('Tag', secondary=task_tags, backref='tasks', cascade="all")
+    ai_feedbacks = relationship('AIFeedback', back_populates='related_task', cascade="all, delete-orphan")
+    attempts = relationship('TaskAttempt', back_populates='related_task', cascade="all, delete-orphan")
+    solutions = relationship('TaskSolution', back_populates='related_task', cascade="all, delete-orphan")
+
 
 
 class TrueFalseQuiz(Task):
     __tablename__ = 'true_false_quizzes'
-    id = Column(Integer, ForeignKey('tasks.id'), primary_key=True)
-
+    id = Column(Integer, ForeignKey('tasks.id', ondelete="CASCADE"), primary_key=True)
+    # Define the polymorphic identity and any additional properties for this model
     __mapper_args__ = {
         'polymorphic_identity': 'true_false_quiz'
     }
 
+
 class MultipleSelectQuiz(Task):
     __tablename__ = 'multiple_select_quizzes'
-    id = Column(Integer, ForeignKey('tasks.id'), primary_key=True)
+    id = Column(Integer, ForeignKey('tasks.id', ondelete="CASCADE"), primary_key=True)
 
     __mapper_args__ = {
         'polymorphic_identity': 'multiple_select_quiz'
@@ -78,7 +84,7 @@ class MultipleSelectQuiz(Task):
 
 class CodeTask(Task):
     __tablename__ = 'code_tasks'
-    id = Column(Integer, ForeignKey('tasks.id'), primary_key=True)
+    id = Column(Integer, ForeignKey('tasks.id', ondelete="CASCADE"), primary_key=True)
 
     __mapper_args__ = {
         'polymorphic_identity': 'code_task'
@@ -86,15 +92,15 @@ class CodeTask(Task):
 
 class SingleQuestionTask(Task):
     __tablename__ = 'single_question_tasks'
-    id = Column(Integer, ForeignKey('tasks.id'), primary_key=True)
+    id = Column(Integer, ForeignKey('tasks.id', ondelete="CASCADE"), primary_key=True)
 
     __mapper_args__ = {
         'polymorphic_identity': 'single_question_task'
     }
 
-
 class TaskAttempt(Base):
     __tablename__ = 'task_attempts'
+
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     task_id = Column(Integer, ForeignKey('tasks.id'), nullable=False)
@@ -104,19 +110,20 @@ class TaskAttempt(Base):
     attempt_content = Column(String, nullable=True)
 
     user = relationship('User', backref='task_attempts')
-    task = relationship('Task', backref='attempts')
+    related_task = relationship('Task', back_populates='attempts')
 
-# TaskSolution after successful attempt
+
 class TaskSolution(Base):
     __tablename__ = 'task_solutions'
+
     id = Column(Integer, primary_key=True, index=True)
     task_id = Column(Integer, ForeignKey('tasks.id'), nullable=False)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    solution_content = Column(String)  # Could be code, quiz answers, etc.
+    solution_content = Column(String)
     completed_at = Column(DateTime, default=func.now(), nullable=False)
 
     user = relationship('User', backref='task_solutions')
-    task = relationship('Task', backref='solutions')
+    related_task = relationship('Task', back_populates='solutions')
 
 # Existing Models for Courses, Lessons, etc.
 class Course(Base):
@@ -189,3 +196,17 @@ class SessionRecording(Base):
     events = Column(JSON, nullable=False)  # Store recorded events in JSON format
 
     user = relationship("User", backref="session_recordings")
+
+
+class AIFeedback(Base):
+    __tablename__ = 'ai_feedback'
+
+    id = Column(Integer, primary_key=True, index=True)
+    task_id = Column(Integer, ForeignKey('tasks.id'), nullable=False)
+    task_attempt_id = Column(Integer, ForeignKey('task_attempts.id'), nullable=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    feedback = Column(String, nullable=False)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+
+    user = relationship('User', backref='ai_feedbacks')
+    related_task = relationship('Task', back_populates='ai_feedbacks')

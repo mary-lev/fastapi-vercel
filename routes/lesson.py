@@ -156,11 +156,12 @@ def rebuild_task_links(lesson_id: int):
 
 @router.get("/api/lessons/{lesson_id}/full_data")
 def get_full_lesson_data(lesson_id: int, user_id: str):
+    print(f"Fetching lesson data for lesson_id: {lesson_id}, user_id: {user_id}")
     db: Session = SessionLocal()
     try:
         # Get lesson and user by ID
         lesson = db.query(Lesson).filter(Lesson.id == lesson_id).first()
-        user = db.query(User).filter(User.internal_user_id == user_id).first()
+        user = db.query(User).filter(User.username == user_id).first()
         if not lesson:
             raise HTTPException(status_code=404, detail="Lesson not found")
         if not user:
@@ -189,6 +190,7 @@ def get_full_lesson_data(lesson_id: int, user_id: str):
         solved_task_ids = {
             solution.task_id for solution in db.query(TaskSolution).filter(TaskSolution.user_id == user.id).all()
         }
+        print(f"Solved task IDs: {solved_task_ids}")
 
         # Build JSON-serializable lesson data
         lesson_data = {
@@ -215,6 +217,7 @@ def get_full_lesson_data(lesson_id: int, user_id: str):
             topic_tasks = [
                 {
                     "id": task.id,
+                    "order": task.order,
                     "title": task.task_name,
                     "type": task.type,
                     "data": task.data,

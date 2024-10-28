@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 from pydantic import BaseModel
-from models import Task, TaskAttempt, TaskSolution, User  # Import models as needed
+from models import Task, TaskAttempt, TaskSolution, User, AIFeedback
 from db import SessionLocal
 from utils.checker import run_code
 from utils.evaluator import evaluate_code_submission
@@ -95,6 +95,15 @@ async def submit_code(request: Request):
         db.commit()
 
         evaluation = evaluate_code_submission(code_submission, result.get("output"), task.data)
+        new_feedback = AIFeedback(
+            user_id=user.id,
+            task_id=task_id,
+            feedback=evaluation.feedback,
+            task_attempt_id=task_attempt.id
+        )
+        db.add(new_feedback)
+        db.commit()
+
         return evaluation
 
     except Exception as e:
@@ -141,6 +150,7 @@ async def submit_text(request: Request):
         evaluation = evaluate_text_submission(answer, task.data)
         is_solved = evaluation.is_solved
         feedback = evaluation.feedback
+        
         print(f"Answer: {answer}, Correct: {is_solved}, Feedback: {feedback}")
 
         # Record the task attempt
@@ -158,6 +168,16 @@ async def submit_text(request: Request):
             submitted_at=func.now()
         )
         db.add(task_attempt)
+
+        db.commit()
+
+        new_feedback = AIFeedback(
+            user_id=user.id,
+            task_id=task.id,
+            feedback=feedback,
+            task_attempt_id=task_attempt.id
+        )
+        db.add(new_feedback)
 
         # If the answer is correct, save it as a solution
         if is_solved:
