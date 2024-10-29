@@ -1,5 +1,6 @@
 import os
 import json
+import requests
 from enum import Enum
 from typing import List, Optional, Union, Literal
 from pydantic import BaseModel, Field
@@ -11,7 +12,6 @@ from db import SessionLocal
 from models import Lesson, Topic
 from models import TrueFalseQuiz, MultipleSelectQuiz, CodeTask, SingleQuestionTask
 from models import Task as TaskReady
-
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -126,14 +126,26 @@ def process_task(task, index, topic_id):
     return processed_task
 
 
+suggested_material = [
+        "Harry Potter",
+        "classical italian literature",
+        "Jane Austen",
+        "tv series",
+        "Game of Thrones",
+        "Lord of the Rings",
+        "Star Wars",
+        "The Simpsons",
+        "video games",
+    ]
+
 def generate_tasks(
     topic_id: int = 11,
-    num_tasks: int = 5
+    num_tasks: int = 5,
+    add_quizzes: bool = False,
+    add_previous_tasks: bool = True,
+    material: str = "Harry Potter",
 ):
     db = SessionLocal()
-
-    add_quizzes = False
-    add_tasks = True
 
     # Fetch the current topic
     current_topic = db.query(Topic).filter(Topic.id == topic_id).first()
@@ -166,10 +178,9 @@ def generate_tasks(
         with open(f"data/lectures/{current_lesson.id}.txt", "r") as f:
             topic_content = f.read()
 
-
     starting_text = f'''
-         You are to create a set of tasks for a "Basic Python for Digital Humanities" course.
-        Our current lesson is dedicated to the {current_topic.title}.
+        We are creating the set of tasks for the graduate students in the Digital Humanities program learning their first Python course.
+        Create tasks for the student that help them train their understanding of the topic, following this specific structure:
     '''
 
     if previous_concepts:
@@ -177,64 +188,45 @@ def generate_tasks(
     else:
         starting_text += "This is the first lesson in the course. Student don't have any previous knowledge about the course content."
     
-    if add_tasks:
-        import requests
+    if add_previous_tasks:
         task_data = requests.get(f"http://localhost:8000/api/topics/19").json()
         questions = [task["question"] for task in task_data.get("tasks", [])]
+        texts = [task["text"] for task in task_data.get("tasks", [])]
         starting_text += f'''
             We already have the following tasks for this lesson:
-        {questions}
+            {questions}
+            {texts}
         '''
-    
-    starting_text += f'''
-        Create tasks for the student that help them train their understanding of the topic, following this specific structure:
-    '''
     
     if add_quizzes:
         starting_text += "**Understanding Check:** Begin with multiple-choice question to assess students' understanding of the lesson content."
     
-    structure_description = '''
-        **Create Coding Exercises:**
-            a) **Simple Coding Tasks:** Students write simple code using the new concepts.
-            b) **Debugging Tasks:** Students fix bugs in provided code snippets.
-            c) **Complex Coding Tasks:** Students implement complex tasks using the learned concepts.
+    structure_description = f'''
+        **Instructions:**
+        - Create the coding tasks for the topic {current_topic.title}.
+        - The first task has to check the common understanding of the topic. Students write simple code using the new concepts.
+        - Then add a debugging tasks to train student's problem-solving skills, accuracy and attention to detail.
+        - Add a set of coding tasks that progress in complexity.
+        - And the last complex coding task has to challenge students and test their ability to apply the new concepts.
+
+        **Task Structure:**
+        - Ensure tasks are directly aligned with the topic’s content and learning objectives.
+        - Tasks should match the students’ skill level, progressing from simple to complex.
+        - Integrate real-world Digital Humanities examples, such as text analysis, historical datasets, or cultural artifact processing, where appropriate.
+        - Scaffold the tasks, providing more guidance initially, and reducing it as tasks increase in complexity to encourage independent thinking.
+        - Provide clear evaluation criteria for each task, explaining what a correct answer should include.
+        - Keep all tasks concise, focused, and engaging.
     '''
 
-    suggested_material = [
-        "Harry Potter",
-        "classical italian literature",
-        "Jane Austen",
-        "tv series",
-        "Game of Thrones",
-        "Lord of the Rings",
-        "Star Wars",
-        "The Simpsons",
-        "video games",
-    ]
-    # choose a random material
-    import random
-    material = random.choice(suggested_material)
-
-    starting_text += f'''
-        **Suggested Material:** Use the {material} material to create tasks that are engaging and relevant to the students.  
-    '''
-
+    if material:
+        starting_text += f'''
+            **Suggested Material:** Use the {material} material to create tasks that are engaging and relevant to the students.  
+        '''
 
     # Modify system prompt to include previous concepts
     system_prompt = f'''
         {starting_text}
         {structure_description}      
-        **Instructions:**
-        - Create the tasks for the topic {current_topic.title}.
-        - Create tasks for the topic {current_topic.title}.
-        - Ensure tasks are directly aligned with the topic’s content and learning objectives.
-        - Tasks should match the students’ skill level, progressing from simple to complex.
-        - Use engaging, original coding tasks tailored to Digital Humanities students.
-        - Integrate real-world Digital Humanities examples, such as text analysis, historical datasets, or cultural artifact processing, where appropriate.
-        - Incorporate knowledge from previous topics, promoting the integration of concepts.
-        - Scaffold the tasks, providing more guidance initially, and reducing it as tasks increase in complexity to encourage independent thinking.
-        - Provide clear evaluation criteria for each task, explaining what a correct answer should include.
-        - Keep all tasks concise, focused, and engaging.
     '''
     
     # User prompt remains the same
@@ -252,7 +244,7 @@ def generate_tasks(
             {"role": "user", "content": user_prompt},
         ],
         temperature=0.7,
-        response_format=TaskGroup
+        response_format=TaskGroup,
     )
     tasks = completion.choices[0].message.parsed
 
@@ -263,6 +255,8 @@ def generate_tasks(
 
     with open(f"data/tasks/topic_{topic_id}_tasks.json", "w") as file:
         json.dump(list_items, file, indent=4)
+    
+    #requests.get(f"http://localhost:8000/lessons/{current_lesson.id}/rebuild-task-links")
 
     return list_items
 

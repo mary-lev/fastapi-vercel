@@ -101,3 +101,34 @@ def login_user(data: LoginUser):
         "internal_user_id": user.internal_user_id,
         "status": user.status.value,
         }}
+
+class UpdateUserRequest(BaseModel):
+    username: str = Field(..., min_length=3, max_length=30)
+    currentPwd: str = Field(..., min_length=6)
+    newPwd: str = Field(None, min_length=6)
+
+@router.post("/users/update")
+def update_user(data: UpdateUserRequest):
+    db = SessionLocal()
+    # Find the user by the current username
+    user = db.query(User).filter(User.username == data.username).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Verify the current password
+    if not bcrypt.verify(data.currentPwd, user.hashed_sub):
+        raise HTTPException(status_code=401, detail="Current password is incorrect")
+
+    # Update the username
+    user.username = data.username
+
+    # Update the password if a new one is provided
+    if data.newPwd:
+        user.hashed_sub = bcrypt.hash(data.newPwd)
+
+    # Commit changes to the database
+    db.commit()
+    db.refresh(user)
+
+    return {"message": "User information updated successfully", "username": user.username}
