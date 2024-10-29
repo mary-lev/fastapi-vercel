@@ -45,7 +45,7 @@ def get_topic_data(topic_id: int):
         topic_data = {
             "title": topic.title,
             "concepts": topic.concepts,
-            "tasks": [{"question": task.data.get("question"), "options": task.data.get("options")} for task in tasks]
+            "tasks": [{"text": task.data.get("text"), "options": task.data.get("options"), "type": task.type} for task in tasks]
         }
 
         return topic_data

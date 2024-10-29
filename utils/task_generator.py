@@ -12,6 +12,8 @@ from db import SessionLocal
 from models import Lesson, Topic
 from models import TrueFalseQuiz, MultipleSelectQuiz, CodeTask, SingleQuestionTask
 from models import Task as TaskReady
+from routes.topics import get_topic_data
+from routes.lesson import rebuild_task_links
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -31,10 +33,11 @@ class Task(BaseModel):
     type: TaskType
     name: str
     question: str = Field(description="Question for the student to answer. No code here")
-    answer_choices: Optional[List[str]] = None
-    correct_answers: Optional[List[str]] = Field(None, description="The ordered numbers of correct answers to the question.")
+    # answer_choices: Optional[List[str]] = None
+    # correct_answers: Optional[List[str]] = Field(None, description="The ordered numbers of correct answers to the question.")
     code: Optional[str] = Field(None, description="Code snipper provided to a students that they are supposed to fix or continue.")
-    points: int = Field(description="Points to acquire for the task solution")
+    points: int = Field(description="Points to acquire for the task solution, ranging from 5 to 15 depending on the task complexity."
+    )
 
 class TaskGroup(BaseModel):
     tasks: List[Task]
@@ -151,24 +154,33 @@ def generate_tasks(
     current_topic = db.query(Topic).filter(Topic.id == topic_id).first()
     current_lesson = db.query(Lesson).filter(Lesson.id == current_topic.lesson_id).first()
 
-    # Fetch all previous lessons in the course
+    # Fetch all previous lessons in the course (including the current lesson)
     previous_lessons = db.query(Lesson).filter(
         Lesson.course_id == current_lesson.course_id,
-        Lesson.lesson_order < current_lesson.lesson_order  # Lessons before the current one
+        Lesson.lesson_order < current_lesson.lesson_order  # Lessons before or same as current one
     ).order_by(Lesson.lesson_order).all()
 
-    # Collect concepts from previous lessons and topics
     previous_concepts = []
     for lesson in previous_lessons:
-        # Fetch the concepts from the topics within each lesson
-        lesson_topics = db.query(Topic).filter(Topic.lesson_id == lesson.id).all()
+        lesson_topics = db.query(Topic).filter(Topic.lesson_id == lesson.id).order_by(Topic.topic_order).all()
         for topic in lesson_topics:
             if topic.concepts:
                 previous_concepts.append(topic.concepts)
 
+    # Add the earliest topics of the current lesson (up to the current topic's order)
+    earliest_topics = db.query(Topic).filter(
+        Topic.lesson_id == current_lesson.id,
+        Topic.topic_order <= current_topic.topic_order  # Only topics up to the current one
+    ).order_by(Topic.topic_order).all()
+
+    for topic in earliest_topics:
+        if topic.concepts and topic not in previous_concepts:
+            previous_concepts.append(topic.concepts)
+
     # Combine all collected concepts from previous lessons and topics
     previous_concepts_text = " ".join(previous_concepts)
     text_about_previous_concepts = f"Students have already learned the following concepts from previous lessons: {previous_concepts_text}"
+    print(text_about_previous_concepts)
 
     # Read the content of the current topic
     try:
@@ -189,12 +201,12 @@ def generate_tasks(
         starting_text += "This is the first lesson in the course. Student don't have any previous knowledge about the course content."
     
     if add_previous_tasks:
-        task_data = requests.get(f"http://localhost:8000/api/topics/19").json()
-        questions = [task["question"] for task in task_data.get("tasks", [])]
-        texts = [task["text"] for task in task_data.get("tasks", [])]
+        print("Adding previous tasks")
+        task_data = get_topic_data(topic_id)
+        #questions = [task["question"] for task in task_data.get("tasks", [])]
+        texts = [task["text"] for task in task_data.get("tasks", []) if task.get("type") == "code_task"]
         starting_text += f'''
             We already have the following tasks for this lesson:
-            {questions}
             {texts}
         '''
     
@@ -228,6 +240,7 @@ def generate_tasks(
         {starting_text}
         {structure_description}      
     '''
+    print(system_prompt)
     
     # User prompt remains the same
     user_prompt = f'''
@@ -236,16 +249,20 @@ def generate_tasks(
         Tasks have to include the main concepts of the topic: {current_topic.concepts}.
         The students had to read this textbook chapter: {topic_content}.
     '''
-    
-    completion = client.beta.chat.completions.parse(
-        model="gpt-4o-2024-08-06",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-        temperature=0.7,
-        response_format=TaskGroup,
-    )
+    try:
+        completion = client.beta.chat.completions.parse(
+            model="gpt-4o-2024-08-06",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=0.7,
+            response_format=TaskGroup,
+        )
+    except Exception as e:
+        print(e)
+        return []
+
     tasks = completion.choices[0].message.parsed
 
     list_items = []
@@ -256,7 +273,7 @@ def generate_tasks(
     with open(f"data/tasks/topic_{topic_id}_tasks.json", "w") as file:
         json.dump(list_items, file, indent=4)
     
-    #requests.get(f"http://localhost:8000/lessons/{current_lesson.id}/rebuild-task-links")
+    rebuild_task_links(current_lesson.id)
 
     return list_items
 

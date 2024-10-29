@@ -39,6 +39,7 @@ def provide_code_feedback(
         3. Check if the code solves the given task correctly and efficiently.
         4. Look for any potential improvements or best practices that could be applied.
         After your analysis, provide feedback to the student that will help him or her to improve their coding skills. 
+        Avoid giving the direct solution but guide the student in the right direction.
         Remember to be constructive and supportive in your feedback, focusing on helping the student.
         '''
     user_prompt = f'''
