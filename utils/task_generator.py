@@ -244,8 +244,8 @@ def generate_tasks(
     
     # User prompt remains the same
     user_prompt = f'''
-        Generate the {num_tasks} tasks for this part of the lesson following the instructions above.
-        Be aware to include only the concepts mentioned in the topic content.
+        Generate {num_tasks} tasks for this part of the lesson following the instructions above.
+        Be aware that the task solution need only the concepts mentioned in the topic content.
         Tasks have to include the main concepts of the topic: {current_topic.concepts}.
         The students had to read this textbook chapter: {topic_content}.
     '''

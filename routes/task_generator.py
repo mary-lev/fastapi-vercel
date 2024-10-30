@@ -10,23 +10,22 @@ from utils.task_generator import generate_tasks
 
 router = APIRouter()
 
+class GenerateTasksRequest(BaseModel):
+    topic_id: int
+    num_tasks: int
+    material: str
+    add_quizzes: bool
+    add_previous_tasks: bool
+
 @router.post("/generate_new_tasks")
-async def generate_new_tasks(
-    topic_id: int, 
-    num_tasks: int, 
-    material: str = "Harry Potter",
-    add_quizzes: bool = False,
-    add_previous_tasks: bool = True,
-):
-    # db: Session = SessionLocal()
-    try:
-        # Generate new tasks
+async def generate_new_tasks(request: GenerateTasksRequest):
+    try:       
         tasks = generate_tasks(
-            topic_id, 
-            num_tasks,
-            add_quizzes,
-            add_previous_tasks,
-            material
+            topic_id=request.topic_id, 
+            num_tasks=request.num_tasks,
+            add_quizzes=request.add_quizzes,
+            add_previous_tasks=request.add_previous_tasks,
+            material=request.material,
             )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
