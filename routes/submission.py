@@ -40,8 +40,9 @@ async def submit_code(request: Request):
     try:
         code_submission = await request.json()
         code = code_submission.get("code")
-        task_id = code_submission.get("lessonItem").get("id")
+        task_id = code_submission.get("taskId")
         internal_user_id = code_submission.get("userId")
+        print(code_submission)
 
         # Validate input
         if not code or not task_id or not internal_user_id:
@@ -49,6 +50,7 @@ async def submit_code(request: Request):
 
         # Fetch user and task info
         user = db.query(User).filter(User.internal_user_id == internal_user_id).first()
+        print(user)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
@@ -58,6 +60,7 @@ async def submit_code(request: Request):
         
         # Run the code
         result = run_code(code)
+        print("Result:", result)
         is_successful = result.get("success", False)
 
         # Record task attempt

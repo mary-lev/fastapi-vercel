@@ -1,17 +1,14 @@
 import os
 import json
-import requests
 from enum import Enum
-from typing import List, Optional, Union, Literal
+from typing import List, Optional
 from pydantic import BaseModel, Field
-from pydantic.class_validators import root_validator
 from openai import OpenAI
 
 from db import SessionLocal
 
 from models import Lesson, Topic
 from models import TrueFalseQuiz, MultipleSelectQuiz, CodeTask, SingleQuestionTask
-from models import Task as TaskReady
 from routes.topics import get_topic_data
 from routes.lesson import rebuild_task_links
 

@@ -155,19 +155,19 @@ def rebuild_task_links(lesson_id: int):
 
 
 @router.get("/api/lessons/{lesson_id}/full_data")
-def get_full_lesson_data(lesson_id: int, internal_user_id: str):
+def get_full_lesson_data(lesson_id: int):
     db: Session = SessionLocal()
     try:
         # Get lesson and user by ID
         lesson = db.query(Lesson).filter(Lesson.id == lesson_id).first()
-        user = db.query(User).filter(User.internal_user_id == internal_user_id).first()
+        # user = db.query(User).filter(User.internal_user_id == internal_user_id).first()
         if not lesson:
             raise HTTPException(status_code=404, detail="Lesson not found")
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+        # if not user:
+        #     raise HTTPException(status_code=404, detail="User not found")
 
         # Determine if the user is a student and only fetch active tasks if so
-        is_student = user.status == "STUDENT"
+        # is_student = user.status == "STUDENT"
 
         # Get all topics and summaries for the lesson
         topics = list(db.query(Topic).filter(Topic.lesson_id == lesson_id).order_by(Topic.topic_order).all())
@@ -180,15 +180,15 @@ def get_full_lesson_data(lesson_id: int, internal_user_id: str):
 
         # Get tasks, filtering active tasks only for students
         task_query = db.query(Task).filter(Task.topic_id.in_([topic.id for topic in topics]))
-        if is_student:
-            task_query = task_query.filter(Task.is_active == True)
+        # if is_student:
+        #     task_query = task_query.filter(Task.is_active == True)
 
         tasks = list(task_query.order_by(Task.topic_id, Task.order).all())
 
         # Fetch user's solved task IDs
-        solved_task_ids = {
-            solution.task_id for solution in db.query(TaskSolution).filter(TaskSolution.user_id == user.id).all()
-        }
+        # solved_task_ids = {
+        #     solution.task_id for solution in db.query(TaskSolution).filter(TaskSolution.user_id == user.id).all()
+        # }
 
         # Build JSON-serializable lesson data
         lesson_data = {
@@ -222,7 +222,7 @@ def get_full_lesson_data(lesson_id: int, internal_user_id: str):
                     "data": task.data,
                     "points": task.points,
                     "is_active": task.is_active,  # Pass is_active status
-                    "is_solved": task.id in solved_task_ids,  # Mark as solved if in user's solved tasks
+                    # "is_solved": task.id in solved_task_ids,  # Mark as solved if in user's solved tasks
                     "task_link": task.task_link,
                     "prevUrl": None,  # Initialize with None, will update later
                     "nextUrl": None

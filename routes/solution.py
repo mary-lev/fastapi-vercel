@@ -188,3 +188,26 @@ def get_course_task_overview(course_id: int):
 
     finally:
         db.close()
+
+
+@router.get("/api/getUserSolutions/{internal_user_id}")
+def get_user_solutions(internal_user_id: str):
+    db: Session = SessionLocal()
+    try:
+        # Fetch the user by internal_user_id
+        user = db.query(User).filter(User.internal_user_id == internal_user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        user_solutions = (
+            db.query(TaskSolution).filter(TaskSolution.user_id == user.id).all()
+        )
+
+        return user_solutions
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+    finally:
+        db.close()
