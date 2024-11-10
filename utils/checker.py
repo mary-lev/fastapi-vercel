@@ -82,25 +82,23 @@ def run_code(code, token: str = "test"):
         temp_file.write(code)
 
     try:
-        # Running the Python script with a limited timeout
-        logger.info(f"Python: {sys.executable}")
         result = subprocess.run(
             [sys.executable, file_path],
             capture_output=True,
             text=True,
-            timeout=5,  # Limit execution time
+            timeout=5,
             check=True,
-            env={"PYTHONHASHSEED": "0"},  # Set environment for deterministic execution
+            env={
+                "PYTHONHASHSEED": "0",
+                "PYTHONPATH": str(Path(__file__).resolve().parent / "dependencies"),  # Include dependencies
+            },
         )
-        logger.info(f"Result: {result.stdout}")
+        logger.info(f"Result: {result}")
 
-        # Clean up the temporary file after execution
         os.remove(file_path)
-        print(result.stdout)
-
         return {
-            "success": True,
-            "output": result.stdout,
+            "success": result.returncode == 0,
+            "output": result.stdout if result.returncode == 0 else result.stderr,
         }
 
     except subprocess.TimeoutExpired:
@@ -122,3 +120,4 @@ def run_code(code, token: str = "test"):
             "success": False,
             "output": f"Error: {e}",
         }
+
