@@ -5,6 +5,15 @@ import secrets
 from pathlib import Path
 import ast
 import sys
+import logging
+
+log_level = 'INFO'
+logger = logging.getLogger()
+logger.setLevel(log_level)
+
+console_handler = logging.StreamHandler()
+console_handler.setLevel(log_level)
+logger.addHandler(console_handler)
 
 # Whitelist of allowed modules
 ALLOWED_MODULES = ["anytree"]
@@ -74,6 +83,7 @@ def run_code(code, token: str = "test"):
 
     try:
         # Running the Python script with a limited timeout
+        logger.info(f"Python: {sys.executable}")
         result = subprocess.run(
             [sys.executable, file_path],
             capture_output=True,
@@ -82,6 +92,7 @@ def run_code(code, token: str = "test"):
             check=True,
             env={"PYTHONHASHSEED": "0"},  # Set environment for deterministic execution
         )
+        logger.info(f"Result: {result.stdout}")
 
         # Clean up the temporary file after execution
         os.remove(file_path)
