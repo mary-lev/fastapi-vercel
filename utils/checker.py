@@ -16,7 +16,7 @@ console_handler.setLevel(log_level)
 logger.addHandler(console_handler)
 
 # Whitelist of allowed modules
-ALLOWED_MODULES = ["anytree"]
+ALLOWED_MODULES = ["anytree", "math", "random", "datetime"]
 
 # List of dangerous functions
 DANGEROUS_FUNCTIONS = ["eval", "exec", "compile", "open", "input"]
@@ -74,7 +74,7 @@ def run_code(code, token: str = "test"):
     if errors:
         return {
             "success": False,
-            "output": f"Code cannot be executed due to: {errors[0]}",
+            "output": f"{errors[0]}",
         }
 
     # Write sanitized code to a temporary file

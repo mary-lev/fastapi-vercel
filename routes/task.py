@@ -196,6 +196,7 @@ def delete_task(task_id: int):
         return {"message": "Task deleted permanently"}
 
     except Exception as e:
+        print(e)
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 

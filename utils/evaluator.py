@@ -83,7 +83,7 @@ def provide_text_feedback(
     user_prompt = f'''
         Here is the task description: {task}.
         The student's answer is: {answer}
-        Generate the feedback. Be polite and laconic.
+        Give feedback. Be polite and brief.
         '''
 
     completion = client.beta.chat.completions.parse(

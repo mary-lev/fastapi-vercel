@@ -175,6 +175,7 @@ def get_full_lesson_data(lesson_id: int):
             db.query(Summary)
             .join(Topic, Summary.topic_id == Topic.id)
             .filter(Topic.lesson_id == lesson_id)
+            .order_by(Topic.topic_order)
             .all()
         )
 

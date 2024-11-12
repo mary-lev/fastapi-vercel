@@ -123,19 +123,11 @@ def get_course_data(course_id: int):
               "desc": "Associate Professor / Department of Classical Philology and Italian Studies",
               "social": [
                 {
-                  "link": "https://www.facebook.com",
-                  "icon": "facebook"
-                },
-                {
-                  "link": "https://www.twitter.com",
+                  "link": "https://x.com/essepuntato",
                   "icon": "twitter"
                 },
                 {
-                  "link": "https://www.instagram.com",
-                  "icon": "instagram"
-                },
-                {
-                  "link": "https://www.linkdin.com",
+                  "link": "https://www.linkedin.com/in/essepuntato/",
                   "icon": "linkedin"
                 }
               ]
