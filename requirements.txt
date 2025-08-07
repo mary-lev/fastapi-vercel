@@ -1,6 +1,6 @@
 fastapi==0.115.0
 uvicorn[standard]==0.30.6
-openai==1.50.2
+openai==1.99.2
 psycopg2-binary==2.9.10
 pydantic==2.9.2
 pydantic-settings==2.6.0
