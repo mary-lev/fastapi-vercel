@@ -1,17 +1,20 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from models import Lesson, Topic, Task, Summary, TaskSolution, User, UserStatus
 from schemas import SummarySchema  # Pydantic schema
-from db import SessionLocal
+from db import get_db
+from utils.logging_config import logger
 
 router = APIRouter()
+
 
 @router.get("/api/lessons/{lesson_id}")
 def get_lesson_data(
     lesson_id: int,
     user_id: str = Query(..., alias="user_id"),  # Define user_id as a required query param
+    db: Session = Depends(get_db),
 ):
-    db: Session = SessionLocal()
     try:
         # Get lesson by ID
         lesson = db.query(Lesson).filter(Lesson.id == lesson_id).first()
@@ -19,20 +22,10 @@ def get_lesson_data(
             raise HTTPException(status_code=404, detail="Lesson not found")
 
         # Fetch topics and sort by topic order
-        topics = (
-            db.query(Topic)
-            .filter(Topic.lesson_id == lesson_id)
-            .order_by(Topic.topic_order)
-            .all()
-        )
+        topics = db.query(Topic).filter(Topic.lesson_id == lesson_id).order_by(Topic.topic_order).all()
 
         # Fetch tasks and sort by task order
-        tasks = (
-            db.query(Task)
-            .filter(Task.topic_id.in_([topic.id for topic in topics]))
-            .order_by(Task.order)
-            .all()
-        )
+        tasks = db.query(Task).filter(Task.topic_id.in_([topic.id for topic in topics])).order_by(Task.order).all()
 
         # Get user by internal_user_id
         user = db.query(User).filter(User.internal_user_id == user_id).first()
@@ -40,7 +33,9 @@ def get_lesson_data(
             raise HTTPException(status_code=404, detail="User not found")
 
         # Fetch user's solved tasks
-        solved_task_ids = {solution.task_id for solution in db.query(TaskSolution).filter(TaskSolution.user_id == user.id).all()}
+        solved_task_ids = {
+            solution.task_id for solution in db.query(TaskSolution).filter(TaskSolution.user_id == user.id).all()
+        }
 
         # Determine if user is a student
         is_student = user.status == UserStatus.STUDENT
@@ -98,17 +93,16 @@ def get_lesson_data(
 
         return lesson_data
 
+    except HTTPException:
+        # Re-raise HTTPExceptions (like 404 User not found) without modification
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-    finally:
-        db.close()
-
+        logger.error(f"Error in get_lesson_data: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve lesson data")
 
 
 @router.get("/api/lessons/{lesson_id}/summaries", response_model=dict)
-def get_summaries(lesson_id: int):
-    db: Session = SessionLocal()
+def get_summaries(lesson_id: int, db: Session = Depends(get_db)):
     summaries = (
         db.query(Summary)
         .join(Topic, Summary.topic_id == Topic.id)
@@ -119,17 +113,14 @@ def get_summaries(lesson_id: int):
 
     # Convert SQLAlchemy models to Pydantic models, including topic title
     summaries_data = [
-        SummarySchema(
-            **summary.__dict__,
-            topic_title=summary.topic.title  # Add the topic title from the relationship
-        )
+        SummarySchema(**summary.__dict__, topic_title=summary.topic.title)  # Add the topic title from the relationship
         for summary in summaries
     ]
     return {"summaries": summaries_data}
 
+
 @router.put("/lessons/{lesson_id}/rebuild-task-links", response_model=dict)
-def rebuild_task_links(lesson_id: int):
-    db: Session = SessionLocal()
+def rebuild_task_links(lesson_id: int, db: Session = Depends(get_db)):
     # Fetch lesson with all topics and tasks
     lesson = db.query(Lesson).filter(Lesson.id == lesson_id).first()
 
@@ -153,10 +144,8 @@ def rebuild_task_links(lesson_id: int):
     return {"status": "Task links and order successfully rebuilt"}
 
 
-
 @router.get("/api/lessons/{lesson_id}/full_data")
-def get_full_lesson_data(lesson_id: int):
-    db: Session = SessionLocal()
+def get_full_lesson_data(lesson_id: int, db: Session = Depends(get_db)):
     try:
         # Get lesson and user by ID
         lesson = db.query(Lesson).filter(Lesson.id == lesson_id).first()
@@ -193,18 +182,14 @@ def get_full_lesson_data(lesson_id: int):
 
         # Build JSON-serializable lesson data
         lesson_data = {
-            "lesson": {
-                "id": lesson.id,
-                "title": lesson.title,
-                "topics": []
-            },
+            "lesson": {"id": lesson.id, "title": lesson.title, "topics": []},
             "summaries": [
                 {
                     "id": summary.id,
                     "title": summary.lesson_name,
                     "data": summary.data,
                     "topic_id": summary.topic_id,
-                    "topic_title": db.query(Topic.title).filter(Topic.id == summary.topic_id).scalar() 
+                    "topic_title": db.query(Topic.title).filter(Topic.id == summary.topic_id).scalar(),
                 }
                 for summary in summaries
             ],
@@ -226,9 +211,10 @@ def get_full_lesson_data(lesson_id: int):
                     # "is_solved": task.id in solved_task_ids,  # Mark as solved if in user's solved tasks
                     "task_link": task.task_link,
                     "prevUrl": None,  # Initialize with None, will update later
-                    "nextUrl": None
+                    "nextUrl": None,
                 }
-                for task in tasks if task.topic_id == topic.id
+                for task in tasks
+                if task.topic_id == topic.id
             ]
             all_tasks.extend(topic_tasks)
 
@@ -258,8 +244,9 @@ def get_full_lesson_data(lesson_id: int):
 
         return lesson_data
 
+    except HTTPException:
+        # Re-raise HTTPExceptions without modification
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-    finally:
-        db.close()
+        logger.error(f"Error in get_full_lesson_data: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve full lesson data")

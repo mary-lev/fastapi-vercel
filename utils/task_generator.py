@@ -5,7 +5,7 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 from openai import OpenAI
 
-from db import SessionLocal
+from db import SessionLocal  # Keep for backwards compatibility in utility files
 
 from models import Lesson, Topic
 from models import TrueFalseQuiz, MultipleSelectQuiz, CodeTask, SingleQuestionTask
@@ -13,6 +13,7 @@ from routes.topics import get_topic_data
 from routes.lesson import rebuild_task_links
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -26,15 +27,20 @@ class TaskType(str, Enum):
     code = "code"
     single_question = "single_question"
 
+
 class Task(BaseModel):
     type: TaskType
     name: str
     question: str = Field(description="Question for the student to answer. No code here")
     # answer_choices: Optional[List[str]] = None
     # correct_answers: Optional[List[str]] = Field(None, description="The ordered numbers of correct answers to the question.")
-    code: Optional[str] = Field(None, description="Code snipper provided to a students that they are supposed to fix or continue.")
-    points: int = Field(description="Points to acquire for the task solution, ranging from 5 to 15 depending on the task complexity."
+    code: Optional[str] = Field(
+        None, description="Code snipper provided to a students that they are supposed to fix or continue."
     )
+    points: int = Field(
+        description="Points to acquire for the task solution, ranging from 5 to 15 depending on the task complexity."
+    )
+
 
 class TaskGroup(BaseModel):
     tasks: List[Task]
@@ -45,7 +51,7 @@ type_mapping = {
     "multiple_choice": "MultipleSelectQuiz",
     # "true_false": "TrueFalse",
     "code": "Code",
-    "single_question": "SingleQuestion"
+    "single_question": "SingleQuestion",
 }
 
 
@@ -58,8 +64,13 @@ task_model_mapping = {
     "SingleQuestion": SingleQuestionTask,
 }
 
-def process_task(task, index, topic_id):
-    db = SessionLocal()
+
+def process_task(task, index, topic_id, db=None):
+    if db is None:
+        db = SessionLocal()
+        should_close = True
+    else:
+        should_close = False
     processed_task = {}
     task_type = task.type.value  # Get the string value of the TaskType enum
     lesson_type = type_mapping.get(task_type, "UnknownType")
@@ -81,10 +92,7 @@ def process_task(task, index, topic_id):
         # Map answer choices to options with ids
         options = []
         for i, choice in enumerate(answer_choices):
-            options.append({
-                "id": str(i+1),
-                "name": choice
-            })
+            options.append({"id": str(i + 1), "name": choice})
         data["options"] = options
         data["correctAnswers"] = task.correct_answers
 
@@ -98,7 +106,7 @@ def process_task(task, index, topic_id):
     else:
         # Handle unknown types
         data["question"] = task.question
-    
+
     processed_task["points"] = task.points
     processed_task["topic_id"] = topic_id
     processed_task["data"] = data
@@ -108,7 +116,7 @@ def process_task(task, index, topic_id):
 
     # Insert into the database
     task_model_class = task_model_mapping.get(lesson_type, Task)
-    
+
     new_task = task_model_class(
         task_name=processed_task["lessonName"],
         task_link=str(index + 1),  # Use the index as the task link
@@ -116,27 +124,31 @@ def process_task(task, index, topic_id):
         order=index + 1,  # Ensure the tasks are ordered
         topic_id=topic_id,
         data=processed_task["data"],
-        is_active=False  # Ensure is_active is set to False
+        is_active=False,  # Ensure is_active is set to False
     )
-    
+
     # Add the task to the session and commit
     db.add(new_task)
     db.commit()
+
+    if should_close:
+        db.close()
 
     return processed_task
 
 
 suggested_material = [
-        "Harry Potter",
-        "classical italian literature",
-        "Jane Austen",
-        "tv series",
-        "Game of Thrones",
-        "Lord of the Rings",
-        "Star Wars",
-        "The Simpsons",
-        "video games",
-    ]
+    "Harry Potter",
+    "classical italian literature",
+    "Jane Austen",
+    "tv series",
+    "Game of Thrones",
+    "Lord of the Rings",
+    "Star Wars",
+    "The Simpsons",
+    "video games",
+]
+
 
 def generate_tasks(
     topic_id: int = 11,
@@ -144,18 +156,28 @@ def generate_tasks(
     add_quizzes: bool = False,
     add_previous_tasks: bool = True,
     material: str = "Harry Potter",
+    db=None,
 ):
-    db = SessionLocal()
+    if db is None:
+        db = SessionLocal()
+        should_close = True
+    else:
+        should_close = False
 
     # Fetch the current topic
     current_topic = db.query(Topic).filter(Topic.id == topic_id).first()
     current_lesson = db.query(Lesson).filter(Lesson.id == current_topic.lesson_id).first()
 
     # Fetch all previous lessons in the course (including the current lesson)
-    previous_lessons = db.query(Lesson).filter(
-        Lesson.course_id == current_lesson.course_id,
-        Lesson.lesson_order < current_lesson.lesson_order  # Lessons before or same as current one
-    ).order_by(Lesson.lesson_order).all()
+    previous_lessons = (
+        db.query(Lesson)
+        .filter(
+            Lesson.course_id == current_lesson.course_id,
+            Lesson.lesson_order < current_lesson.lesson_order,  # Lessons before or same as current one
+        )
+        .order_by(Lesson.lesson_order)
+        .all()
+    )
 
     previous_concepts = []
     for lesson in previous_lessons:
@@ -165,10 +187,15 @@ def generate_tasks(
                 previous_concepts.append(topic.concepts)
 
     # Add the earliest topics of the current lesson (up to the current topic's order)
-    earliest_topics = db.query(Topic).filter(
-        Topic.lesson_id == current_lesson.id,
-        Topic.topic_order <= current_topic.topic_order  # Only topics up to the current one
-    ).order_by(Topic.topic_order).all()
+    earliest_topics = (
+        db.query(Topic)
+        .filter(
+            Topic.lesson_id == current_lesson.id,
+            Topic.topic_order <= current_topic.topic_order,  # Only topics up to the current one
+        )
+        .order_by(Topic.topic_order)
+        .all()
+    )
 
     for topic in earliest_topics:
         if topic.concepts and topic not in previous_concepts:
@@ -176,7 +203,9 @@ def generate_tasks(
 
     # Combine all collected concepts from previous lessons and topics
     previous_concepts_text = " ".join(previous_concepts)
-    text_about_previous_concepts = f"Students have already learned the following concepts from previous lessons: {previous_concepts_text}"
+    text_about_previous_concepts = (
+        f"Students have already learned the following concepts from previous lessons: {previous_concepts_text}"
+    )
     print(text_about_previous_concepts)
 
     # Read the content of the current topic
@@ -187,30 +216,30 @@ def generate_tasks(
         with open(f"data/lectures/{current_lesson.id}.txt", "r") as f:
             topic_content = f.read()
 
-    starting_text = f'''
+    starting_text = f"""
         We are creating the set of tasks for the graduate students in the Digital Humanities program learning their first Python course.
         Create tasks for the student that help them train their understanding of the topic, following this specific structure:
-    '''
+    """
 
     if previous_concepts:
         starting_text += text_about_previous_concepts
     else:
         starting_text += "This is the first lesson in the course. Student don't have any previous knowledge about the course content."
-    
+
     if add_previous_tasks:
         print("Adding previous tasks")
         task_data = get_topic_data(topic_id)
-        #questions = [task["question"] for task in task_data.get("tasks", [])]
+        # questions = [task["question"] for task in task_data.get("tasks", [])]
         texts = [task["text"] for task in task_data.get("tasks", []) if task.get("type") == "code_task"]
-        starting_text += f'''
+        starting_text += f"""
             We already have the following tasks for this lesson:
             {texts}
-        '''
-    
+        """
+
     if add_quizzes:
         starting_text += "**Understanding Check:** Begin with multiple-choice question to assess students' understanding of the lesson content."
-    
-    structure_description = f'''
+
+    structure_description = f"""
         **Instructions:**
         - Create the coding tasks for the topic {current_topic.title}.
         - The first task has to check the common understanding of the topic. Students write simple code using the new concepts.
@@ -225,27 +254,27 @@ def generate_tasks(
         - Scaffold the tasks, providing more guidance initially, and reducing it as tasks increase in complexity to encourage independent thinking.
         - Provide clear evaluation criteria for each task, explaining what a correct answer should include.
         - Keep all tasks concise, focused, and engaging.
-    '''
+    """
 
     if material:
-        starting_text += f'''
+        starting_text += f"""
             **Suggested Material:** Use the {material} material to create tasks that are engaging and relevant to the students.  
-        '''
+        """
 
     # Modify system prompt to include previous concepts
-    system_prompt = f'''
+    system_prompt = f"""
         {starting_text}
         {structure_description}      
-    '''
+    """
     print(system_prompt)
-    
+
     # User prompt remains the same
-    user_prompt = f'''
+    user_prompt = f"""
         Generate {num_tasks} tasks for this part of the lesson following the instructions above.
         Be aware that the task solution need only the concepts mentioned in the topic content.
         Tasks have to include the main concepts of the topic: {current_topic.concepts}.
         The students had to read this textbook chapter: {topic_content}.
-    '''
+    """
     try:
         completion = client.beta.chat.completions.parse(
             model="gpt-4o-2024-08-06",
@@ -264,14 +293,18 @@ def generate_tasks(
 
     list_items = []
     for index, task in enumerate(tasks.tasks):
-        processed_task = process_task(task, index, current_topic.id)
+        processed_task = process_task(task, index, current_topic.id, db)
         list_items.append(processed_task)
 
     with open(f"data/tasks/topic_{topic_id}_tasks.json", "w") as file:
         json.dump(list_items, file, indent=4)
-    
+
     rebuild_task_links(current_lesson.id)
 
+    if should_close:
+        db.close()
+
     return list_items
+
 
 # generate_tasks(19, 5)

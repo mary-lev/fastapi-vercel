@@ -9,7 +9,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from openai import OpenAI
 
-from db import SessionLocal
+from db import SessionLocal  # Keep for backwards compatibility in utility files
 
 from models import Lesson, Topic
 from models import TrueFalseQuiz, MultipleSelectQuiz, CodeTask, SingleQuestionTask, Tag
@@ -17,6 +17,7 @@ from models import Task as TaskReady
 
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -30,14 +31,20 @@ class TaskType(str, Enum):
     # code = "code"
     single_question = "single_question"
 
+
 class Task(BaseModel):
     type: TaskType
     name: str
     question: str = Field(description="Question for the student to answer. No code here")
     answer_choices: Optional[List[str]] = None
-    correct_answers: Optional[List[str]] = Field(None, description="The ordered numbers of correct answers to the question.")
-    code: Optional[str] = Field(None, description="Code snipper provided to a students that they are supposed to fix or continue.")
+    correct_answers: Optional[List[str]] = Field(
+        None, description="The ordered numbers of correct answers to the question."
+    )
+    code: Optional[str] = Field(
+        None, description="Code snipper provided to a students that they are supposed to fix or continue."
+    )
     points: int = Field(description="Points to acquire for the task solution")
+
 
 class TaskGroup(BaseModel):
     tasks: List[Task]
@@ -48,7 +55,7 @@ type_mapping = {
     "multiple_choice": "MultipleSelectQuiz",
     # "true_false": "TrueFalse",
     "code": "Code",
-    "single_question": "SingleQuestion"
+    "single_question": "SingleQuestion",
 }
 
 
@@ -61,8 +68,13 @@ task_model_mapping = {
     "SingleQuestion": SingleQuestionTask,
 }
 
-def process_task(task, index, topic_id):
-    db = SessionLocal()
+
+def process_task(task, index, topic_id, db=None):
+    if db is None:
+        db = SessionLocal()
+        should_close = True
+    else:
+        should_close = False
     processed_task = {}
     task_type = task.type.value  # Get the string value of the TaskType enum
     lesson_type = type_mapping.get(task_type, "UnknownType")
@@ -84,10 +96,7 @@ def process_task(task, index, topic_id):
         # Map answer choices to options with ids
         options = []
         for i, choice in enumerate(answer_choices):
-            options.append({
-                "id": str(i+1),
-                "name": choice
-            })
+            options.append({"id": str(i + 1), "name": choice})
         data["options"] = options
         data["correctAnswers"] = task.correct_answers
 
@@ -101,7 +110,7 @@ def process_task(task, index, topic_id):
     else:
         # Handle unknown types
         data["question"] = task.question
-    
+
     processed_task["points"] = task.points
     processed_task["topic_id"] = topic_id
     processed_task["data"] = data
@@ -111,7 +120,7 @@ def process_task(task, index, topic_id):
 
     # Insert into the database
     task_model_class = task_model_mapping.get(lesson_type, Task)
-    
+
     new_task = task_model_class(
         task_name=processed_task["lessonName"],
         task_link=str(index + 1),  # Use the index as the task link
@@ -119,21 +128,30 @@ def process_task(task, index, topic_id):
         order=index + 1,  # Ensure the tasks are ordered
         topic_id=topic_id,
         data=processed_task["data"],
-        is_active=False  # Ensure is_active is set to False
+        is_active=False,  # Ensure is_active is set to False
     )
-    
+
     # Add the task to the session and commit
     db.add(new_task)
     db.commit()
 
+    if should_close:
+        db.close()
+
     return processed_task
 
-def extract_exercise_number(filename):
-    match = re.search(r'exercise-(\d+)', filename)
-    return int(match.group(1)) if match else float('inf')
 
-def import_tasks(current_topic: int):
-    db = SessionLocal()
+def extract_exercise_number(filename):
+    match = re.search(r"exercise-(\d+)", filename)
+    return int(match.group(1)) if match else float("inf")
+
+
+def import_tasks(current_topic: int, db=None):
+    if db is None:
+        db = SessionLocal()
+        should_close = True
+    else:
+        should_close = False
 
     # Fetch the current topic
     current_topic = db.query(Topic).filter(Topic.id == current_topic).first()
@@ -147,21 +165,19 @@ def import_tasks(current_topic: int):
 
     # Sort filenames by numeric part
     filenames = sorted(
-        [filename for filename in os.listdir(folder) if filename.endswith(".md")],
-        key=extract_exercise_number
+        [filename for filename in os.listdir(folder) if filename.endswith(".md")], key=extract_exercise_number
     )
     print(filenames)
 
-        # Ensure tags 'peroni' and 'beginner' exist in the database
+    # Ensure tags 'peroni' and 'beginner' exist in the database
     tags = {}
-    for tag_name in ['peroni', 'advanced']:
+    for tag_name in ["peroni", "advanced"]:
         tag = db.query(Tag).filter_by(name=tag_name).first()
         if not tag:
             tag = Tag(name=tag_name)
             db.add(tag)
             db.commit()
         tags[tag_name] = tag
-
 
     for task_order, filename in enumerate(filenames, start=1):
         # Read the content of each markdown file
@@ -171,10 +187,10 @@ def import_tasks(current_topic: int):
         except Exception as e:
             print(f"Error reading content from {filename}: {str(e)}")
             continue
-        
+
         # Parse the task name
         task_name = filename.replace(".md", "")
-        
+
         # Extract the task text section
         task_text_match = re.search(r"### Text\n(.*?)(?=\n### Solution|\Z)", task_content, re.DOTALL)
         task_text = task_text_match.group(1).strip() if task_text_match else "No task text found"
@@ -182,11 +198,10 @@ def import_tasks(current_topic: int):
         # Extract the solution
         solution_match = re.search(r"### Solution\n`(.*?)`", task_content)
         correct_answer = solution_match.group(1).strip() if solution_match else None
-        
-        
+
         # Define the task link and order (based on filename or other criteria)
         task_link = filename.replace(".md", "")
-        
+
         # Create a new SingleQuestionTask
         new_task = CodeTask(
             task_name=task_name.capitalize(),
@@ -196,11 +211,11 @@ def import_tasks(current_topic: int):
             order=task_order,
             data={"text": task_text, "correct_answer": correct_answer},
             topic_id=current_topic.id,
-            is_active=True
+            is_active=True,
         )
-        new_task.tags.extend([tags['peroni'], tags['advanced']])
+        new_task.tags.extend([tags["peroni"], tags["advanced"]])
         print(new_task.task_name)
-        
+
         try:
             db.add(new_task)
             db.commit()
@@ -208,9 +223,9 @@ def import_tasks(current_topic: int):
         except SQLAlchemyError as e:
             db.rollback()
             print(f"Error saving task '{task_name}': {str(e)}")
-    
-    db.close()
 
+    if should_close:
+        db.close()
 
     # # Modify system prompt to include previous concepts
     # system_prompt = f'''
@@ -220,7 +235,7 @@ def import_tasks(current_topic: int):
     #     Include the code provided in the task content in the question field.
     #     For the task title  use the {filename.replace(".md", "")}.
     # '''
-    
+
     # # User prompt remains the same
     # user_prompt = f'''
     #     The task content is {task_content}.
@@ -248,6 +263,7 @@ def import_tasks(current_topic: int):
     #     json.dump(list_items, file, indent=4)
 
     # return list_items
+
 
 current_topic = 31
 import_tasks(current_topic)

@@ -1,13 +1,15 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from models import Lesson, Topic, Task, Summary, TaskSolution, User
-from db import SessionLocal
+from db import get_db
+from utils.logging_config import logger
 
 router = APIRouter()
 
+
 @router.get("/api/topics")
-def get_topics_data():
-    db: Session = SessionLocal()
+def get_topics_data(db: Session = Depends(get_db)):
     try:
         # Fetch all lessons and their topics
         lessons = db.query(Lesson).all()
@@ -18,10 +20,12 @@ def get_topics_data():
             # Fetch related topics for the lesson
             topics = db.query(Topic).filter(Topic.lesson_id == lesson.id).order_by(Topic.topic_order).all()
 
-            lesson_data.append({
-                "lesson": f"{lesson.id}. {lesson.title}",
-                "topics": [{"title": topic.title, "concepts": topic.concepts} for topic in topics]
-            })
+            lesson_data.append(
+                {
+                    "lesson": f"{lesson.id}. {lesson.title}",
+                    "topics": [{"title": topic.title, "concepts": topic.concepts} for topic in topics],
+                }
+            )
 
         return lesson_data
 
@@ -30,8 +34,7 @@ def get_topics_data():
 
 
 @router.get("/api/topics/{topic_id}")
-def get_topic_data(topic_id: int):
-    db: Session = SessionLocal()
+def get_topic_data(topic_id: int, db: Session = Depends(get_db)):
     try:
         # Fetch the topic by ID
         topic = db.query(Topic).filter(Topic.id == topic_id).first()
@@ -45,7 +48,10 @@ def get_topic_data(topic_id: int):
         topic_data = {
             "title": topic.title,
             "concepts": topic.concepts,
-            "tasks": [{"text": task.data.get("text"), "options": task.data.get("options"), "type": task.type} for task in tasks]
+            "tasks": [
+                {"text": task.data.get("text"), "options": task.data.get("options"), "type": task.type}
+                for task in tasks
+            ],
         }
 
         return topic_data
@@ -55,15 +61,14 @@ def get_topic_data(topic_id: int):
 
 
 @router.post("/api/topics/generate_new_tasks")
-def generate_new_tasks(topic_id: int, num_tasks: int):
+def generate_new_tasks(topic_id: int, num_tasks: int, db: Session = Depends(get_db)):
     from utils.task_generator import generate_tasks
-    db: Session = SessionLocal()
+
     try:
         # Generate new tasks for the specified topic
         tasks = generate_tasks(topic_id, num_tasks)
         return {"tasks": tasks}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        db.close()
+        logger.error(f"Error generating tasks: {e}")
+        raise HTTPException(status_code=500, detail="Task generation failed")

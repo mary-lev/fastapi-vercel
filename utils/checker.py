@@ -7,7 +7,7 @@ import ast
 import sys
 import logging
 
-log_level = 'INFO'
+log_level = "INFO"
 logger = logging.getLogger()
 logger.setLevel(log_level)
 
@@ -20,6 +20,7 @@ ALLOWED_MODULES = ["anytree", "math", "random", "datetime"]
 
 # List of dangerous functions
 DANGEROUS_FUNCTIONS = ["eval", "exec", "compile", "open", "input"]
+
 
 class CodeSanitizer(ast.NodeVisitor):
     def __init__(self):
@@ -54,6 +55,7 @@ class CodeSanitizer(ast.NodeVisitor):
             self.errors.append("Too many or potentially infinite loops detected.")
         self.generic_visit(node)
 
+
 def sanitize_code(code):
     try:
         tree = ast.parse(code)
@@ -62,6 +64,7 @@ def sanitize_code(code):
     sanitizer = CodeSanitizer()
     sanitizer.visit(tree)
     return sanitizer.errors
+
 
 def run_code(code, token: str = "test"):
     random_hex = secrets.token_hex(4)
@@ -120,4 +123,3 @@ def run_code(code, token: str = "test"):
             "success": False,
             "output": f"Error: {e}",
         }
-

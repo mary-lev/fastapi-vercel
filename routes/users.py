@@ -2,16 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from models import User, UserStatus  # Assuming you have a User model defined
-from db import get_db, SessionLocal
+from db import get_db
 from passlib.hash import bcrypt
+from utils.logging_config import logger
+from schemas.validation import UserRegistrationSchema
 
 router = APIRouter()
-
-
-class RegisterUser(BaseModel):
-    username: str = Field(..., min_length=3, max_length=30)
-    password: str = Field(..., min_length=6)
 
 
 # @router.get("/users/")
@@ -23,7 +21,7 @@ class RegisterUser(BaseModel):
 # ):
 #     if not (hashed_sub or internal_user_id):
 #         raise HTTPException(status_code=400, detail="Must provide 'hashed_sub' or 'internal_user_id'")
-    
+
 #     if hashed_sub:
 #         user = db.query(User).filter(User.hashed_sub == hashed_sub).first()
 #     elif internal_user_id:
@@ -46,8 +44,8 @@ class RegisterUser(BaseModel):
 # ):
 #     try:
 #         new_user = User(
-#             internal_user_id=internal_user_id, 
-#             hashed_sub=hashed_sub, 
+#             internal_user_id=internal_user_id,
+#             hashed_sub=hashed_sub,
 #             username=username,
 #             status=UserStatus.STUDENT
 #         )
@@ -61,7 +59,7 @@ class RegisterUser(BaseModel):
 
 
 @router.post("/users/register")
-def register_user(data: RegisterUser, db: Session = Depends(get_db)):
+def register_user(data: UserRegistrationSchema, db: Session = Depends(get_db)):
     existing_user = db.query(User).filter(User.username == data.username).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Username already exists")
@@ -78,9 +76,18 @@ def register_user(data: RegisterUser, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(new_user)
         return {"message": "User registered successfully", "user": new_user}
+    except IntegrityError as e:
+        db.rollback()
+        logger.error(f"Database integrity error in register_user: {e}")
+        raise HTTPException(status_code=409, detail="Username already exists")
+    except SQLAlchemyError as e:
+        db.rollback()
+        logger.error(f"Database error in register_user: {e}")
+        raise HTTPException(status_code=500, detail="Database operation failed")
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Unexpected error in register_user: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 class LoginUser(BaseModel):
@@ -89,46 +96,80 @@ class LoginUser(BaseModel):
 
 
 @router.post("/users/login")
-def login_user(data: LoginUser):
-    db = SessionLocal()
-    user = db.query(User).filter(User.username == data.username).first()
+def login_user(data: LoginUser, db: Session = Depends(get_db)):
+    try:
+        user = db.query(User).filter(User.username == data.username).first()
 
-    if not user or not bcrypt.verify(data.password, user.hashed_sub):
-        raise HTTPException(status_code=401, detail="Invalid username or password")
+        if not user or not bcrypt.verify(data.password, user.hashed_sub):
+            logger.warning(f"Failed login attempt for username: {data.username}")
+            raise HTTPException(status_code=401, detail="Invalid username or password")
 
-    return {"message": "Login successful", "user": {
-        "username": user.username,
-        "internal_user_id": user.internal_user_id,
-        "status": user.status.value,
-        }}
+        logger.info(f"Successful login for user: {user.username}")
+        return {
+            "message": "Login successful",
+            "user": {
+                "username": user.username,
+                "internal_user_id": user.internal_user_id,
+                "status": user.status.value,
+            },
+        }
+    except HTTPException:
+        raise  # Re-raise HTTPException as-is
+    except SQLAlchemyError as e:
+        logger.error(f"Database error in login_user: {e}")
+        raise HTTPException(status_code=500, detail="Database operation failed")
+    except Exception as e:
+        logger.error(f"Unexpected error in login_user: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
 
 class UpdateUserRequest(BaseModel):
     username: str = Field(..., min_length=3, max_length=30)
     currentPwd: str = Field(..., min_length=6)
     newPwd: str = Field(None, min_length=6)
 
+
 @router.post("/users/update")
-def update_user(data: UpdateUserRequest):
-    db = SessionLocal()
-    # Find the user by the current username
-    user = db.query(User).filter(User.username == data.username).first()
+def update_user(data: UpdateUserRequest, db: Session = Depends(get_db)):
+    try:
+        # Find the user by the current username
+        user = db.query(User).filter(User.username == data.username).first()
 
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        if not user:
+            logger.warning(f"Update attempt for non-existent user: {data.username}")
+            raise HTTPException(status_code=404, detail="User not found")
 
-    # Verify the current password
-    if not bcrypt.verify(data.currentPwd, user.hashed_sub):
-        raise HTTPException(status_code=401, detail="Current password is incorrect")
+        # Verify the current password
+        if not bcrypt.verify(data.currentPwd, user.hashed_sub):
+            logger.warning(f"Invalid password attempt for user update: {user.username}")
+            raise HTTPException(status_code=401, detail="Current password is incorrect")
 
-    # Update the username
-    user.username = data.username
+        # Update the username
+        user.username = data.username
 
-    # Update the password if a new one is provided
-    if data.newPwd:
-        user.hashed_sub = bcrypt.hash(data.newPwd)
+        # Update the password if a new one is provided
+        if data.newPwd:
+            user.hashed_sub = bcrypt.hash(data.newPwd)
+            logger.info(f"Password updated for user: {user.username}")
 
-    # Commit changes to the database
-    db.commit()
-    db.refresh(user)
+        # Commit changes to the database
+        db.commit()
+        db.refresh(user)
 
-    return {"message": "User information updated successfully", "username": user.username}
+        logger.info(f"User information updated successfully: {user.username}")
+        return {"message": "User information updated successfully", "username": user.username}
+
+    except HTTPException:
+        raise  # Re-raise HTTPException as-is
+    except IntegrityError as e:
+        db.rollback()
+        logger.error(f"Database integrity error in update_user: {e}")
+        raise HTTPException(status_code=409, detail="Username already exists")
+    except SQLAlchemyError as e:
+        db.rollback()
+        logger.error(f"Database error in update_user: {e}")
+        raise HTTPException(status_code=500, detail="Database operation failed")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Unexpected error in update_user: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")

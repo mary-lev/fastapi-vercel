@@ -1,4 +1,3 @@
-
 import os
 import json
 import random
@@ -10,6 +9,7 @@ from pydantic.class_validators import root_validator
 from openai import OpenAI
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -17,18 +17,19 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
+
 class SubmissionGrader(BaseModel):
     feedback: str
     is_solved: bool
 
 
 def provide_code_feedback(
-        answer: str,
-        output: str,
-        task: dict,
-    ):
+    answer: str,
+    output: str,
+    task: dict,
+):
 
-    system_prompt = f'''
+    system_prompt = f"""
         You are an AI assistant tasked with evaluating a student's Python code submission. 
         You will be provided with the task description and the student's answer. 
         Your job is to analyze the code, check for errors, and provide feedback.
@@ -41,13 +42,13 @@ def provide_code_feedback(
         After your analysis, provide feedback to the student that will help him or her to improve their coding skills. 
         Avoid giving the direct solution but guide the student in the right direction.
         Remember to be constructive and supportive in your feedback, focusing on helping the student.
-        '''
-    user_prompt = f'''
+        """
+    user_prompt = f"""
         Here is the task description: {task}.
         The student's answer is: {answer}
         The output of the code is: {output}
         Generate the feedback. Be polite and laconic.
-        '''
+        """
 
     completion = client.beta.chat.completions.parse(
         model="gpt-4o-2024-08-06",
@@ -59,15 +60,16 @@ def provide_code_feedback(
         max_tokens=300,
     )
     result = completion.choices[0].message.parsed
-    
+
     return result
 
-def provide_text_feedback(
-        answer: str,
-        task: dict,
-    ):
 
-    system_prompt = f'''
+def provide_text_feedback(
+    answer: str,
+    task: dict,
+):
+
+    system_prompt = f"""
         You are an AI assistant tasked with evaluating a student's submission. 
         You will be provided with the task description and the student's answer. 
         Your job is to analyze the text and provide feedback based on the task requirements. 
@@ -78,13 +80,13 @@ def provide_text_feedback(
         3. Evaluate the text for clarity, coherence, and relevance to the task.
         4. Provide constructive feedback that will help the student improve their writing skills.
         Remember to be supportive and encouraging in your feedback, focusing on helping the student.
-        '''
+        """
 
-    user_prompt = f'''
+    user_prompt = f"""
         Here is the task description: {task}.
         The student's answer is: {answer}
         Give feedback. Be polite and brief.
-        '''
+        """
 
     completion = client.beta.chat.completions.parse(
         model="gpt-4o-2024-08-06",
@@ -96,7 +98,7 @@ def provide_text_feedback(
         max_tokens=300,
     )
     result = completion.choices[0].message.parsed
-    
+
     return result
 
 
@@ -107,7 +109,7 @@ def evaluate_code_submission(submission, output, task):
     :param task: a task
     :return: a dictionary with the evaluation results
     """
-    answer = submission['code']
+    answer = submission["code"]
     feedback = provide_code_feedback(answer, output, task)
 
     return feedback
