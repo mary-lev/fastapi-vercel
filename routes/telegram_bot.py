@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from typing import Optional, Dict, List
 from datetime import datetime, timedelta
 import random
+import os
 
 router = APIRouter()
 
@@ -16,8 +17,10 @@ mock_stats = {
     "total_homeworks": 8
 }
 
-# API Key for authentication
-API_KEY = "your-api-key"
+# API Key for authentication from environment
+API_KEY = os.getenv("TELEGRAM_BOT_API_KEY")
+if not API_KEY:
+    raise ValueError("TELEGRAM_BOT_API_KEY environment variable is required")
 
 # Pydantic models for request/response
 class UserModel(BaseModel):
