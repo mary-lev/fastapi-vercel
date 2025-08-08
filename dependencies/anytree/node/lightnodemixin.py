@@ -7,7 +7,6 @@ from .exceptions import LoopError, TreeError
 
 
 class LightNodeMixin:
-
     """
     The :any:`LightNodeMixin` behaves identical to :any:`NodeMixin`, but uses `__slots__`.
 

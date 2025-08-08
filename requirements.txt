@@ -8,3 +8,5 @@ sqlalchemy==2.0.36
 passlib==1.7.4
 requests==2.32.3
 anytree==2.12.1
+PyJWT==2.8.0
+python-multipart>=0.0.9

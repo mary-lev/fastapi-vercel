@@ -27,6 +27,14 @@ dev = [
     "black",
     "ruff"
 ]
+test = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-xdist>=3.0.0", 
+    "httpx>=0.24.0",
+    "coverage>=7.0.0",
+    "factory-boy>=3.2.0"
+]
 
 [project.urls]
 Source = "https://github.com/marcorichetta/fastapi-vercel"

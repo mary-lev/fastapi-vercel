@@ -4,13 +4,13 @@ from alembic import context
 
 # Import your FastAPI settings and models
 from config import settings  # Adjust to your config file's location
-from models import Base, User, TaskSolution      # Adjust to your models' location
+from models import Base, User, TaskSolution  # Adjust to your models' location
 
 # Get the Alembic configuration
 config = context.config
 
 # Set the SQLAlchemy URL from your settings
-config.set_main_option('sqlalchemy.url', settings.POSTGRES_URL)
+config.set_main_option("sqlalchemy.url", settings.POSTGRES_URL)
 
 # Set up logging configuration
 if config.config_file_name is not None:
@@ -18,6 +18,7 @@ if config.config_file_name is not None:
 
 # Set the target metadata for Alembic
 target_metadata = Base.metadata
+
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode."""
@@ -42,9 +43,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

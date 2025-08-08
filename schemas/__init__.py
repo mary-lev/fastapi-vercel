@@ -1,4 +1,7 @@
-# schemas.py
+# Schemas package for FastAPI validation
+from .validation import *
+
+# Import existing schemas for backward compatibility
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional, Dict

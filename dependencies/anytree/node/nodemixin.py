@@ -10,7 +10,6 @@ from .lightnodemixin import LightNodeMixin
 
 
 class NodeMixin:
-
     """
     The :any:`NodeMixin` class extends any Python class to a tree node.
 

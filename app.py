@@ -10,6 +10,7 @@ from routes import task
 from routes import course
 from routes import session
 from routes import telegram_bot
+from routes import telegram_auth
 
 
 ### Create FastAPI instance with custom docs and OpenAPI URL
@@ -43,3 +44,4 @@ app.include_router(task.router, tags=["Tasks"])
 app.include_router(course.router, tags=["Courses"])
 app.include_router(session.router, tags=["Sessions"])
 app.include_router(telegram_bot.router, tags=["Telegram Bot"])
+app.include_router(telegram_auth.router, tags=["Telegram Auth"])
