@@ -1,6 +1,6 @@
 """Student form submission endpoints"""
 
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, status, Request
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from pydantic import BaseModel, Field, validator
@@ -16,7 +16,7 @@ router = APIRouter()
 
 # Pydantic models for request/response validation
 class StudentFormRequest(BaseModel):
-    user_id: int = Field(..., description="Internal user ID")
+    user_id: str = Field(..., description="Internal user ID (UUID string)")
     
     # Question 1: Programming experience
     programming_experience: str = Field(..., min_length=1, max_length=200)
@@ -60,9 +60,23 @@ class StudentFormRequest(BaseModel):
 
     @validator('problem_solving_approach', 'learning_preferences', 'preferred_study_times')
     def validate_non_empty_strings(cls, v):
-        if not all(isinstance(item, str) and item.strip() for item in v):
-            raise ValueError('All items must be non-empty strings')
-        return v
+        if not v:  # Allow empty arrays for now to debug
+            raise ValueError('At least one item is required')
+        # Filter out empty strings and validate remaining items
+        filtered = [item for item in v if isinstance(item, str) and item.strip()]
+        if not filtered:
+            raise ValueError('At least one non-empty item is required')
+        return filtered
+
+    @validator('other_language', pre=True)
+    def validate_other_language(cls, v):
+        # Convert empty string to None for optional field
+        return None if v == "" else v
+
+    @validator('additional_comments', pre=True) 
+    def validate_additional_comments(cls, v):
+        # Convert empty string to None for optional field
+        return None if v == "" else v
 
 
 class StudentFormResponse(BaseModel):
@@ -95,20 +109,21 @@ async def submit_student_form(
     Each user can only have one submission (updates existing if resubmitted).
     """
     try:
-        logger.info(f"Processing student form submission for user_id: {form_data.user_id}")
+        logger.info(f"Processing student form submission for internal_user_id: {form_data.user_id}")
+        logger.info(f"Form data received: {form_data.dict()}")
         
-        # Verify that the user exists
-        user = db.query(User).filter(User.id == form_data.user_id).first()
+        # Find user by internal_user_id (UUID string)
+        user = db.query(User).filter(User.internal_user_id == form_data.user_id).first()
         if not user:
-            logger.warning(f"User not found for user_id: {form_data.user_id}")
+            logger.warning(f"User not found for internal_user_id: {form_data.user_id}")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found"
             )
         
-        # Check if user already has a submission
+        # Check if user already has a submission (use the actual integer user ID)
         existing_submission = db.query(StudentFormSubmission).filter(
-            StudentFormSubmission.user_id == form_data.user_id
+            StudentFormSubmission.user_id == user.id
         ).first()
         
         if existing_submission:
@@ -134,7 +149,7 @@ async def submit_student_form(
             logger.info(f"Creating new form submission for user {form_data.user_id}")
             
             submission = StudentFormSubmission(
-                user_id=form_data.user_id,
+                user_id=user.id,  # Use the integer primary key
                 programming_experience=form_data.programming_experience,
                 other_language=form_data.other_language,
                 operating_system=form_data.operating_system,
@@ -190,19 +205,27 @@ async def submit_student_form(
         )
 
 
-@router.get("/api/student-form/{user_id}", response_model=Dict[str, Any])
+@router.get("/api/student-form/{internal_user_id}", response_model=Dict[str, Any])
 async def get_student_form(
-    user_id: int,
+    internal_user_id: str,
     db: Session = Depends(get_db)
 ):
     """
-    Retrieve student form submission by user ID
+    Retrieve student form submission by internal user ID
     
     Returns the complete form submission data for a specific user.
     """
     try:
+        # Find user by internal_user_id first
+        user = db.query(User).filter(User.internal_user_id == internal_user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+            
         submission = db.query(StudentFormSubmission).filter(
-            StudentFormSubmission.user_id == user_id
+            StudentFormSubmission.user_id == user.id
         ).first()
         
         if not submission:
@@ -233,7 +256,7 @@ async def get_student_form(
             "updated_at": submission.updated_at
         }
         
-        logger.info(f"Retrieved student form submission for user {user_id}")
+        logger.info(f"Retrieved student form submission for user {internal_user_id}")
         return submission_data
         
     except HTTPException:
@@ -299,19 +322,27 @@ async def get_all_student_forms(
         )
 
 
-@router.delete("/api/student-form/{user_id}")
+@router.delete("/api/student-form/{internal_user_id}")
 async def delete_student_form(
-    user_id: int,
+    internal_user_id: str,
     db: Session = Depends(get_db)
 ):
     """
-    Delete student form submission by user ID
+    Delete student form submission by internal user ID
     
     Allows removal of a student's form submission data.
     """
     try:
+        # Find user by internal_user_id first
+        user = db.query(User).filter(User.internal_user_id == internal_user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+            
         submission = db.query(StudentFormSubmission).filter(
-            StudentFormSubmission.user_id == user_id
+            StudentFormSubmission.user_id == user.id
         ).first()
         
         if not submission:
@@ -323,9 +354,9 @@ async def delete_student_form(
         db.delete(submission)
         db.commit()
         
-        logger.info(f"Deleted student form submission for user {user_id}")
+        logger.info(f"Deleted student form submission for user {internal_user_id}")
         
-        return {"message": f"Student form submission deleted for user {user_id}"}
+        return {"message": f"Student form submission deleted for user {internal_user_id}"}
         
     except HTTPException:
         raise
@@ -336,3 +367,50 @@ async def delete_student_form(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete student form"
         )
+
+
+@router.post("/api/student-form/debug")
+async def debug_student_form(request: Request):
+    """
+    Debug endpoint to see exactly what data is being sent
+    """
+    try:
+        body = await request.body()
+        logger.info(f"Raw request body: {body}")
+        
+        import json
+        json_data = json.loads(body)
+        logger.info(f"Parsed JSON data: {json_data}")
+        
+        # Check each required field
+        required_fields = [
+            'user_id', 'programming_experience', 'operating_system', 
+            'software_installation', 'python_confidence', 'problem_solving_approach',
+            'learning_preferences', 'new_device_approach', 'study_time_commitment',
+            'homework_schedule', 'preferred_study_times', 'study_organization',
+            'help_seeking_preference'
+        ]
+        
+        missing_fields = []
+        field_types = {}
+        
+        for field in required_fields:
+            if field not in json_data:
+                missing_fields.append(field)
+            else:
+                field_types[field] = {
+                    'value': json_data[field],
+                    'type': type(json_data[field]).__name__
+                }
+        
+        return {
+            "status": "debug_success",
+            "received_fields": list(json_data.keys()),
+            "missing_required_fields": missing_fields,
+            "field_details": field_types,
+            "raw_body_length": len(body)
+        }
+        
+    except Exception as e:
+        logger.error(f"Debug endpoint error: {e}")
+        return {"error": str(e), "raw_body": str(body)}

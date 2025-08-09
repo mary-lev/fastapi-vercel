@@ -213,7 +213,7 @@ async def complete_telegram_link(
                 telegram_user_id=telegram_user_id,
                 username=f"telegram_user_{telegram_user_id}",
                 hashed_sub=f"telegram:{telegram_user_id}",  # Unique identifier
-                status=None  # Will be set based on business logic
+                status="STUDENT"  # Will be set based on business logic
             )
             
             db.add(user)
