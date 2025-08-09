@@ -303,30 +303,28 @@ async def get_platform_statistics(_: bool = Depends(verify_api_key)):
 # Endpoint 6: Create Contact Message
 @router.post("/api/contact-message", response_model=ContactMessageResponse)
 async def create_contact_message(
-    message_request: ContactMessageRequest,
-    db: Session = Depends(get_db),
-    _: bool = Depends(verify_api_key)
+    message_request: ContactMessageRequest, db: Session = Depends(get_db), _: bool = Depends(verify_api_key)
 ):
     """
     Create a new contact message from Telegram bot
-    
+
     This endpoint receives contact messages from the Telegram bot and stores them
     in the database. It handles both anonymous and identified messages.
     """
     try:
-        logger.info(f"Received contact message - Anonymous: {message_request.anonymous}, "
-                   f"Telegram ID: {message_request.telegram_user_id}")
-        
+        logger.info(
+            f"Received contact message - Anonymous: {message_request.anonymous}, "
+            f"Telegram ID: {message_request.telegram_user_id}"
+        )
+
         # Try to find existing user if telegram_user_id is provided
         linked_user = None
         if message_request.telegram_user_id and not message_request.anonymous:
-            linked_user = db.query(User).filter(
-                User.telegram_user_id == message_request.telegram_user_id
-            ).first()
-            
+            linked_user = db.query(User).filter(User.telegram_user_id == message_request.telegram_user_id).first()
+
             if linked_user:
                 logger.info(f"Found linked user: {linked_user.id} for Telegram ID: {message_request.telegram_user_id}")
-        
+
         # Create contact message record
         contact_message = ContactMessage(
             text=message_request.text,
@@ -337,29 +335,29 @@ async def create_contact_message(
             page_url=message_request.page_url,
             attachments=message_request.attachments,
             user_id=linked_user.id if linked_user else None,
-            status="received"
+            status="received",
         )
-        
+
         db.add(contact_message)
         db.commit()
         db.refresh(contact_message)
-        
+
         logger.info(f"Contact message created successfully with ID: {contact_message.id}")
-        
+
         return ContactMessageResponse(
             id=contact_message.id,
             status="success",
             message="Contact message received and stored successfully",
-            created_at=contact_message.created_at
+            created_at=contact_message.created_at,
         )
-        
+
     except Exception as e:
         db.rollback()
         logger.error(f"Error creating contact message: {str(e)}")
         raise HTTPException(
-            status_code=500, 
+            status_code=500,
             detail="Failed to store contact message",
-            headers={"X-Error-Code": "CONTACT_MESSAGE_FAILED"}
+            headers={"X-Error-Code": "CONTACT_MESSAGE_FAILED"},
         )
 
 
@@ -371,33 +369,33 @@ async def get_contact_messages(
     status: Optional[str] = Query(None, description="Filter by status"),
     anonymous_only: Optional[bool] = Query(None, description="Filter anonymous messages only"),
     db: Session = Depends(get_db),
-    _: bool = Depends(verify_api_key)
+    _: bool = Depends(verify_api_key),
 ):
     """
     Retrieve contact messages (Admin endpoint)
-    
+
     This endpoint allows admins to retrieve and manage contact messages
     received from the Telegram bot.
     """
     try:
         query = db.query(ContactMessage)
-        
+
         # Apply filters
         if status:
             query = query.filter(ContactMessage.status == status)
-        
+
         if anonymous_only is not None:
             query = query.filter(ContactMessage.anonymous == anonymous_only)
-        
+
         # Order by most recent first
         query = query.order_by(ContactMessage.created_at.desc())
-        
+
         # Apply pagination
         total_count = query.count()
         messages = query.offset(offset).limit(limit).all()
-        
+
         logger.info(f"Retrieved {len(messages)} contact messages (total: {total_count})")
-        
+
         # Convert to dict format for response
         messages_data = []
         for msg in messages:
@@ -413,26 +411,26 @@ async def get_contact_messages(
                 "created_at": msg.created_at,
                 "processed_at": msg.processed_at,
                 "status": msg.status,
-                "user_id": msg.user_id
+                "user_id": msg.user_id,
             }
             messages_data.append(message_dict)
-        
+
         return {
             "messages": messages_data,
             "pagination": {
                 "total": total_count,
                 "limit": limit,
                 "offset": offset,
-                "has_more": (offset + len(messages)) < total_count
-            }
+                "has_more": (offset + len(messages)) < total_count,
+            },
         }
-        
+
     except Exception as e:
         logger.error(f"Error retrieving contact messages: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail="Failed to retrieve contact messages",
-            headers={"X-Error-Code": "CONTACT_MESSAGES_FETCH_FAILED"}
+            headers={"X-Error-Code": "CONTACT_MESSAGES_FETCH_FAILED"},
         )
 
 
@@ -442,43 +440,38 @@ async def update_contact_message_status(
     message_id: int,
     status: str = Query(..., description="New status for the message"),
     db: Session = Depends(get_db),
-    _: bool = Depends(verify_api_key)
+    _: bool = Depends(verify_api_key),
 ):
     """
     Update the status of a contact message
-    
+
     Allows admins to update the processing status of contact messages
     (e.g., 'received' -> 'processing' -> 'handled' -> 'closed')
     """
     try:
-        contact_message = db.query(ContactMessage).filter(
-            ContactMessage.id == message_id
-        ).first()
-        
+        contact_message = db.query(ContactMessage).filter(ContactMessage.id == message_id).first()
+
         if not contact_message:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Contact message with ID {message_id} not found"
-            )
-        
+            raise HTTPException(status_code=404, detail=f"Contact message with ID {message_id} not found")
+
         # Update status and processed_at timestamp if marking as processed
         old_status = contact_message.status
         contact_message.status = status
-        
-        if status in ['processing', 'handled', 'closed'] and not contact_message.processed_at:
+
+        if status in ["processing", "handled", "closed"] and not contact_message.processed_at:
             contact_message.processed_at = datetime.utcnow()
-        
+
         db.commit()
-        
+
         logger.info(f"Contact message {message_id} status updated from '{old_status}' to '{status}'")
-        
+
         return {
             "message": f"Status updated successfully from '{old_status}' to '{status}'",
             "message_id": message_id,
             "status": status,
-            "processed_at": contact_message.processed_at
+            "processed_at": contact_message.processed_at,
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -487,7 +480,7 @@ async def update_contact_message_status(
         raise HTTPException(
             status_code=500,
             detail="Failed to update contact message status",
-            headers={"X-Error-Code": "STATUS_UPDATE_FAILED"}
+            headers={"X-Error-Code": "STATUS_UPDATE_FAILED"},
         )
 
 

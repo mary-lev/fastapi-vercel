@@ -2,11 +2,23 @@ from datetime import datetime
 from fastapi import APIRouter, HTTPException, Query, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from models import Lesson, Topic, Task, Summary, TaskSolution, User, Course
+from models import Lesson, Topic, Task, Summary, TaskSolution, User, Course, CourseEnrollment
 from db import get_db
 from utils.logging_config import logger
+from pydantic import BaseModel
 
 router = APIRouter()
+
+
+class EnrollmentRequest(BaseModel):
+    course_id: int
+    user_id: int
+
+
+class EnrollmentResponse(BaseModel):
+    status: str
+    message: str
+    enrollment_id: int = None
 
 
 @router.get("/api/courses/{course_id}")
@@ -124,3 +136,79 @@ def get_course_data(course_id: int, db: Session = Depends(get_db)):
             }
         ],
     }
+
+
+@router.post("/api/course/enroll", response_model=EnrollmentResponse)
+async def enroll_user_in_course(enrollment_request: EnrollmentRequest, db: Session = Depends(get_db)):
+    """
+    Enroll a user in a course
+
+    This endpoint handles course enrollment for users,
+    typically called after successful Telegram authentication.
+    """
+    try:
+        course_id = enrollment_request.course_id
+        user_id = enrollment_request.user_id
+
+        logger.info(f"Processing enrollment: user {user_id} -> course {course_id}")
+
+        # Verify user exists
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            logger.warning(f"User not found: {user_id}")
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Verify course exists
+        course = db.query(Course).filter(Course.id == course_id).first()
+        if not course:
+            logger.warning(f"Course not found: {course_id}")
+            raise HTTPException(status_code=404, detail="Course not found")
+
+        # Check if already enrolled
+        existing_enrollment = (
+            db.query(CourseEnrollment)
+            .filter(CourseEnrollment.user_id == user_id, CourseEnrollment.course_id == course_id)
+            .first()
+        )
+
+        if existing_enrollment:
+            logger.info(f"User {user_id} already enrolled in course {course_id}")
+            return EnrollmentResponse(
+                status="already_enrolled",
+                message="User is already enrolled in this course",
+                enrollment_id=existing_enrollment.id,
+            )
+
+        # Create new enrollment
+        enrollment = CourseEnrollment(user_id=user_id, course_id=course_id)
+
+        db.add(enrollment)
+        db.commit()
+        db.refresh(enrollment)
+
+        logger.info(f"Successfully enrolled user {user_id} in course {course_id}")
+
+        return EnrollmentResponse(
+            status="success", message="Successfully enrolled in course", enrollment_id=enrollment.id
+        )
+
+    except HTTPException:
+        # Re-raise HTTPExceptions without modification
+        raise
+    except IntegrityError as e:
+        db.rollback()
+        logger.error(f"Database integrity error in enroll_user_in_course: {e}")
+
+        # Check if this is a unique constraint violation
+        if "course_enrollments" in str(e) and "user_id" in str(e):
+            raise HTTPException(status_code=409, detail="User is already enrolled in this course")
+
+        raise HTTPException(status_code=409, detail="Enrollment conflict occurred")
+    except SQLAlchemyError as e:
+        db.rollback()
+        logger.error(f"Database error in enroll_user_in_course: {e}")
+        raise HTTPException(status_code=500, detail="Database operation failed")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Unexpected error in enroll_user_in_course: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")

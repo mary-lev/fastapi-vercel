@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, func, Enum, Boolean, JSON, BigInteger
-from sqlalchemy import Table
+from sqlalchemy import Table, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 import enum
@@ -28,13 +28,29 @@ class User(Base):
 
 class TelegramLinkToken(Base):
     __tablename__ = "telegram_link_tokens"
-    
+
     jti = Column(String, primary_key=True)  # JWT ID for single-use tracking
     telegram_user_id = Column(BigInteger, nullable=False, index=True)
     issued_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     expires_at = Column(DateTime, nullable=False)
     used_at = Column(DateTime, nullable=True)
     is_used = Column(Boolean, default=False, nullable=False)
+
+
+class CourseEnrollment(Base):
+    __tablename__ = "course_enrollments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    course_id = Column(Integer, ForeignKey("courses.id"), nullable=False)
+    enrolled_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    # Relationships
+    user = relationship("User", backref="enrollments")
+    course = relationship("Course", backref="enrollments")
+
+    # Ensure unique enrollment per user-course pair
+    __table_args__ = (UniqueConstraint("user_id", "course_id", name="unique_user_course_enrollment"),)
 
 
 class Tag(Base):
@@ -234,7 +250,7 @@ class ContactMessage(Base):
     created_at = Column(DateTime, default=func.now(), nullable=False)
     processed_at = Column(DateTime, nullable=True)  # When message was processed/handled
     status = Column(String, default="received", nullable=False)  # received, processing, handled, etc.
-    
+
     # Optional: link to user if they have an account
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     user = relationship("User", backref="contact_messages")
@@ -245,50 +261,50 @@ class StudentFormSubmission(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    
+
     # Question 1: Programming experience
     programming_experience = Column(String, nullable=False)
     other_language = Column(String, nullable=True)  # When "other" is selected
-    
+
     # Question 2: Operating system
     operating_system = Column(String, nullable=False)
-    
+
     # Question 3: Software installation
     software_installation = Column(String, nullable=False)
-    
+
     # Question 4: Python confidence (1-5 scale)
     python_confidence = Column(Integer, nullable=False)
-    
+
     # Question 5: Problem solving approach (multiple choice - stored as JSON array)
     problem_solving_approach = Column(JSON, nullable=False)
-    
+
     # Question 6: Learning preferences (multiple choice - stored as JSON array)
     learning_preferences = Column(JSON, nullable=False)
-    
+
     # Question 7: New device approach
     new_device_approach = Column(String, nullable=False)
-    
+
     # Question 8: Study time commitment
     study_time_commitment = Column(String, nullable=False)
-    
+
     # Question 9: Homework schedule
     homework_schedule = Column(String, nullable=False)
-    
+
     # Question 10: Preferred study times (multiple choice - stored as JSON array)
     preferred_study_times = Column(JSON, nullable=False)
-    
+
     # Question 11: Study organization
     study_organization = Column(String, nullable=False)
-    
+
     # Question 12: Help seeking preference
     help_seeking_preference = Column(String, nullable=False)
-    
+
     # Question 13: Additional comments (optional)
     additional_comments = Column(String, nullable=True)
-    
+
     # Metadata
     submitted_at = Column(DateTime, default=func.now(), nullable=False)
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
-    
+
     # Relationship to User
     user = relationship("User", backref="student_form_submissions")

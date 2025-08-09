@@ -9,10 +9,12 @@ def setup_logging(log_level: str = "INFO") -> logging.Logger:
     Set up application logging configuration
     """
     # Check if running in a serverless environment (like Vercel)
-    is_serverless = os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME") or os.getenv("FUNCTIONS_WORKER_RUNTIME")
-    
+    is_serverless = (
+        os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME") or os.getenv("FUNCTIONS_WORKER_RUNTIME")
+    )
+
     handlers = [logging.StreamHandler(sys.stdout)]
-    
+
     # Only add file handler in non-serverless environments
     if not is_serverless:
         try:
