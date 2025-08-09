@@ -104,17 +104,15 @@ async def get_user_profile(
 # Course enrollment and progress
 @router.get("/{user_id}/courses", summary="Get user's enrolled courses")
 async def get_user_courses(
-    user_id: int = Path(..., description="User ID"),
+    user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"),
     db: Session = Depends(get_db)
 ):
-    """Get all courses the user is enrolled in"""
+    """Get all courses the user is enrolled in - supports both integer and string user IDs"""
     try:
-        user = db.query(User).filter(User.id == user_id).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+        user = resolve_user(user_id, db)
         
         enrollments = db.query(CourseEnrollment).filter(
-            CourseEnrollment.user_id == user_id
+            CourseEnrollment.user_id == user.id
         ).all()
         
         courses = []
@@ -139,15 +137,17 @@ async def get_user_courses(
 
 @router.get("/{user_id}/courses/{course_id}/progress", summary="Get user's course progress")
 async def get_user_course_progress(
-    user_id: int = Path(..., description="User ID"),
+    user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"),
     course_id: int = Path(..., description="Course ID"),
     db: Session = Depends(get_db)
 ):
-    """Get detailed progress for a specific course"""
+    """Get detailed progress for a specific course - supports both integer and string user IDs"""
     try:
+        user = resolve_user(user_id, db)
+        
         # Verify user is enrolled in the course
         enrollment = db.query(CourseEnrollment).filter(
-            CourseEnrollment.user_id == user_id,
+            CourseEnrollment.user_id == user.id,
             CourseEnrollment.course_id == course_id
         ).first()
         
@@ -165,19 +165,19 @@ async def get_user_course_progress(
         
         # Get completed tasks (tasks with solutions)
         completed_tasks = db.query(TaskSolution).join(Task).join(Topic).join(Lesson).filter(
-            TaskSolution.user_id == user_id,
+            TaskSolution.user_id == user.id,
             Lesson.course_id == course_id
         ).count()
         
         # Get points earned
         points_earned = db.query(func.sum(Task.points)).join(TaskSolution).join(Topic).join(Lesson).filter(
-            TaskSolution.user_id == user_id,
+            TaskSolution.user_id == user.id,
             Lesson.course_id == course_id
         ).scalar() or 0
         
         # Get last activity
         last_activity = db.query(func.max(TaskAttempt.submitted_at)).join(Task).join(Topic).join(Lesson).filter(
-            TaskAttempt.user_id == user_id,
+            TaskAttempt.user_id == user.id,
             Lesson.course_id == course_id
         ).scalar()
         
@@ -246,9 +246,9 @@ async def get_user_lesson_progress(
             func.max(TaskAttempt.submitted_at).label('last_attempt'),
             TaskSolution.id.label('solution_id')
         ).join(Topic).outerjoin(TaskAttempt, 
-            (TaskAttempt.task_id == Task.id) & (TaskAttempt.user_id == user_id)
+            (TaskAttempt.task_id == Task.id) & (TaskAttempt.user_id == user.id)
         ).outerjoin(TaskSolution, 
-            (TaskSolution.task_id == Task.id) & (TaskSolution.user_id == user_id)
+            (TaskSolution.task_id == Task.id) & (TaskSolution.user_id == user.id)
         ).filter(
             Topic.lesson_id == lesson_id
         ).group_by(Task.id, Task.task_name, Task.points, TaskSolution.id).all()
@@ -286,16 +286,14 @@ async def get_user_lesson_progress(
 # Task submissions
 @router.post("/{user_id}/submissions", summary="Submit task attempt")
 async def submit_task_attempt(
-    user_id: int = Path(..., description="User ID"),
+    user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"),
     submission: SubmissionRequest = ...,
     db: Session = Depends(get_db)
 ):
-    """Submit a task attempt"""
+    """Submit a task attempt - supports both integer and string user IDs"""
     try:
-        # Verify user exists
-        user = db.query(User).filter(User.id == user_id).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+        # Resolve user (supports both integer and string formats)
+        user = resolve_user(user_id, db)
         
         # Verify task exists
         task = db.query(Task).filter(Task.id == submission.task_id).first()
@@ -304,7 +302,7 @@ async def submit_task_attempt(
         
         # Get current attempt number
         current_attempts = db.query(TaskAttempt).filter(
-            TaskAttempt.user_id == user_id,
+            TaskAttempt.user_id == user.id,
             TaskAttempt.task_id == submission.task_id
         ).count()
         
@@ -312,7 +310,7 @@ async def submit_task_attempt(
         
         # Create task attempt
         task_attempt = TaskAttempt(
-            user_id=user_id,
+            user_id=user.id,
             task_id=submission.task_id,
             attempt_number=attempt_number,
             submitted_data=submission.submission_data,
@@ -348,18 +346,16 @@ async def submit_task_attempt(
 
 @router.get("/{user_id}/submissions", summary="Get user's submissions")
 async def get_user_submissions(
-    user_id: int = Path(..., description="User ID"),
+    user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"),
     task_id: Optional[int] = Query(None, description="Filter by task ID"),
     limit: int = Query(50, description="Maximum number of submissions to return"),
     db: Session = Depends(get_db)
 ):
-    """Get user's task submissions"""
+    """Get user's task submissions - supports both integer and string user IDs"""
     try:
-        user = db.query(User).filter(User.id == user_id).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+        user = resolve_user(user_id, db)
         
-        query = db.query(TaskAttempt).filter(TaskAttempt.user_id == user_id)
+        query = db.query(TaskAttempt).filter(TaskAttempt.user_id == user.id)
         
         if task_id:
             query = query.filter(TaskAttempt.task_id == task_id)
@@ -412,9 +408,8 @@ async def submit_task_solution(
         task_solution = TaskSolution(
             user_id=user.id,
             task_id=solution.task_id,
-            solution_data=solution.solution_data,
-            completed_at=datetime.utcnow(),
-            is_correct=solution.is_correct
+            solution_content=solution.solution_data,
+            completed_at=datetime.utcnow()
         )
         
         db.add(task_solution)
@@ -455,18 +450,16 @@ async def submit_task_solution(
 
 @router.get("/{user_id}/solutions", summary="Get user's solutions")
 async def get_user_solutions(
-    user_id: int = Path(..., description="User ID"),
+    user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"),
     task_id: Optional[int] = Query(None, description="Filter by task ID"),
     limit: int = Query(50, description="Maximum number of solutions to return"),
     db: Session = Depends(get_db)
 ):
-    """Get user's task solutions"""
+    """Get user's task solutions - supports both integer and string user IDs"""
     try:
-        user = db.query(User).filter(User.id == user_id).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+        user = resolve_user(user_id, db)
         
-        query = db.query(TaskSolution).filter(TaskSolution.user_id == user_id)
+        query = db.query(TaskSolution).filter(TaskSolution.user_id == user.id)
         
         if task_id:
             query = query.filter(TaskSolution.task_id == task_id)
@@ -480,10 +473,10 @@ async def get_user_solutions(
                 "solution_id": solution.id,
                 "task_id": solution.task_id,
                 "task_name": task.task_name if task else None,
-                "solution_data": solution.solution_data,
+                "solution_data": solution.solution_content,
                 "completed_at": solution.completed_at,
-                "is_correct": solution.is_correct,
-                "points_earned": task.points if task and solution.is_correct else 0
+                "is_correct": getattr(solution, 'is_correct', True),
+                "points_earned": task.points if task and getattr(solution, 'is_correct', True) else 0
             })
         
         return result
@@ -497,15 +490,17 @@ async def get_user_solutions(
 
 @router.get("/{user_id}/solutions/{solution_id}", summary="Get specific solution")
 async def get_user_solution(
-    user_id: int = Path(..., description="User ID"),
+    user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"),
     solution_id: int = Path(..., description="Solution ID"),
     db: Session = Depends(get_db)
 ):
-    """Get a specific task solution"""
+    """Get a specific task solution - supports both integer and string user IDs"""
     try:
+        user = resolve_user(user_id, db)
+        
         solution = db.query(TaskSolution).filter(
             TaskSolution.id == solution_id,
-            TaskSolution.user_id == user_id
+            TaskSolution.user_id == user.id
         ).first()
         
         if not solution:
@@ -517,10 +512,10 @@ async def get_user_solution(
             "solution_id": solution.id,
             "task_id": solution.task_id,
             "task_name": task.task_name if task else None,
-            "solution_data": solution.solution_data,
+            "solution_data": solution.solution_content,
             "completed_at": solution.completed_at,
-            "is_correct": solution.is_correct,
-            "points_earned": task.points if task and solution.is_correct else 0
+            "is_correct": getattr(solution, 'is_correct', True),
+            "points_earned": task.points if task and getattr(solution, 'is_correct', True) else 0
         }
         
     except HTTPException:
@@ -533,18 +528,16 @@ async def get_user_solution(
 # Session recordings
 @router.get("/{user_id}/sessions", summary="Get user's sessions")
 async def get_user_sessions(
-    user_id: int = Path(..., description="User ID"),
+    user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"),
     limit: int = Query(20, description="Maximum number of sessions to return"),
     db: Session = Depends(get_db)
 ):
-    """Get user's session recordings"""
+    """Get user's session recordings - supports both integer and string user IDs"""
     try:
-        user = db.query(User).filter(User.id == user_id).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+        user = resolve_user(user_id, db)
         
         sessions = db.query(SessionRecording).filter(
-            SessionRecording.user_id == user_id
+            SessionRecording.user_id == user.id
         ).order_by(SessionRecording.session_start.desc()).limit(limit).all()
         
         return [{
@@ -569,21 +562,18 @@ async def get_user_sessions(
 # Course enrollment (moved from course.py)
 @router.post("/{user_id}/enroll", summary="Enroll user in course")
 async def enroll_user_in_course(
-    user_id: int = Path(..., description="User ID"),
+    user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"),
     course_id: int = ...,
     db: Session = Depends(get_db)
 ):
     """
-    Enroll a user in a course
+    Enroll a user in a course - supports both integer and string user IDs
     """
     try:
         logger.info(f"Processing enrollment: user {user_id} -> course {course_id}")
         
-        # Verify user exists
-        user = db.query(User).filter(User.id == user_id).first()
-        if not user:
-            logger.warning(f"User not found: {user_id}")
-            raise HTTPException(status_code=404, detail="User not found")
+        # Resolve user (supports both integer and string formats)
+        user = resolve_user(user_id, db)
         
         # Verify course exists
         course = db.query(Course).filter(Course.id == course_id).first()
@@ -593,7 +583,7 @@ async def enroll_user_in_course(
         
         # Check if already enrolled
         existing_enrollment = db.query(CourseEnrollment).filter(
-            CourseEnrollment.user_id == user_id,
+            CourseEnrollment.user_id == user.id,
             CourseEnrollment.course_id == course_id
         ).first()
         
@@ -607,7 +597,7 @@ async def enroll_user_in_course(
         
         # Create new enrollment
         enrollment = CourseEnrollment(
-            user_id=user_id,
+            user_id=user.id,
             course_id=course_id
         )
         
