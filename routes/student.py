@@ -1,0 +1,639 @@
+"""
+Student Progress Service Router
+Handles user-centric operations: progress tracking, submissions, solutions
+"""
+
+from datetime import datetime
+from fastapi import APIRouter, HTTPException, Depends, Path, Query
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.sql import func
+from typing import List, Optional, Dict, Any, Union
+from pydantic import BaseModel, Field
+
+from models import (
+    User, Task, TaskAttempt, TaskSolution, Course, Lesson, Topic,
+    SessionRecording, AIFeedback, CourseEnrollment
+)
+from db import get_db
+from utils.logging_config import logger
+
+router = APIRouter()
+
+
+# Helper function to resolve user ID (supports both integer and string/UUID formats)
+def resolve_user(user_id: Union[int, str], db: Session) -> User:
+    """
+    Resolve user_id to actual User object. Supports both:
+    - Integer user ID (direct database ID)
+    - String user ID (internal_user_id UUID or username)
+    """
+    if isinstance(user_id, int):
+        # Integer ID - use direct database lookup
+        user = db.query(User).filter(User.id == user_id).first()
+    else:
+        # String ID - try internal_user_id first, then username
+        user = db.query(User).filter(User.internal_user_id == user_id).first()
+        if not user:
+            user = db.query(User).filter(User.username == user_id).first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail=f"User not found: {user_id}")
+    
+    return user
+
+
+# Pydantic models
+class SubmissionRequest(BaseModel):
+    task_id: int
+    submission_data: Dict[str, Any]
+    attempt_number: Optional[int] = 1
+
+
+class SolutionRequest(BaseModel):
+    task_id: int
+    solution_data: Dict[str, Any]
+    is_correct: bool = True
+
+
+class ProgressResponse(BaseModel):
+    course_id: int
+    total_tasks: int
+    completed_tasks: int
+    completion_percentage: float
+    points_earned: int
+    total_points: int
+    last_activity: Optional[datetime] = None
+
+
+class TaskProgressResponse(BaseModel):
+    task_id: int
+    task_name: str
+    attempts: int
+    completed: bool
+    solution_id: Optional[int] = None
+    points_earned: int
+    last_attempt: Optional[datetime] = None
+
+
+# User profile and basic info
+@router.get("/{user_id}/profile", summary="Get user profile")
+async def get_user_profile(
+    user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"),
+    db: Session = Depends(get_db)
+):
+    """Get user profile information - supports both integer and string user IDs"""
+    try:
+        user = resolve_user(user_id, db)
+        
+        return {
+            "id": user.id,
+            "username": user.username,
+            "internal_user_id": user.internal_user_id,
+            "status": user.status.value if user.status else None,
+            "telegram_user_id": user.telegram_user_id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving user profile {user_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+# Course enrollment and progress
+@router.get("/{user_id}/courses", summary="Get user's enrolled courses")
+async def get_user_courses(
+    user_id: int = Path(..., description="User ID"),
+    db: Session = Depends(get_db)
+):
+    """Get all courses the user is enrolled in"""
+    try:
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        enrollments = db.query(CourseEnrollment).filter(
+            CourseEnrollment.user_id == user_id
+        ).all()
+        
+        courses = []
+        for enrollment in enrollments:
+            course = enrollment.course
+            courses.append({
+                "id": course.id,
+                "title": course.title,
+                "description": course.description,
+                "enrolled_at": enrollment.enrolled_at,
+                "professor_id": course.professor_id
+            })
+        
+        return courses
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving courses for user {user_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/{user_id}/courses/{course_id}/progress", summary="Get user's course progress")
+async def get_user_course_progress(
+    user_id: int = Path(..., description="User ID"),
+    course_id: int = Path(..., description="Course ID"),
+    db: Session = Depends(get_db)
+):
+    """Get detailed progress for a specific course"""
+    try:
+        # Verify user is enrolled in the course
+        enrollment = db.query(CourseEnrollment).filter(
+            CourseEnrollment.user_id == user_id,
+            CourseEnrollment.course_id == course_id
+        ).first()
+        
+        if not enrollment:
+            raise HTTPException(status_code=404, detail="User not enrolled in this course")
+        
+        # Get all tasks in the course
+        total_tasks_query = db.query(Task).join(Topic).join(Lesson).filter(
+            Lesson.course_id == course_id
+        )
+        total_tasks = total_tasks_query.count()
+        total_points = db.query(func.sum(Task.points)).filter(
+            Task.id.in_(total_tasks_query.with_entities(Task.id))
+        ).scalar() or 0
+        
+        # Get completed tasks (tasks with solutions)
+        completed_tasks = db.query(TaskSolution).join(Task).join(Topic).join(Lesson).filter(
+            TaskSolution.user_id == user_id,
+            Lesson.course_id == course_id
+        ).count()
+        
+        # Get points earned
+        points_earned = db.query(func.sum(Task.points)).join(TaskSolution).join(Topic).join(Lesson).filter(
+            TaskSolution.user_id == user_id,
+            Lesson.course_id == course_id
+        ).scalar() or 0
+        
+        # Get last activity
+        last_activity = db.query(func.max(TaskAttempt.submitted_at)).join(Task).join(Topic).join(Lesson).filter(
+            TaskAttempt.user_id == user_id,
+            Lesson.course_id == course_id
+        ).scalar()
+        
+        completion_percentage = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
+        
+        return {
+            "course_id": course_id,
+            "total_tasks": total_tasks,
+            "completed_tasks": completed_tasks,
+            "completion_percentage": round(completion_percentage, 2),
+            "points_earned": points_earned,
+            "total_points": total_points,
+            "last_activity": last_activity
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving course progress for user {user_id}, course {course_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/{user_id}/courses/{course_id}/lessons/{lesson_id}/progress", summary="Get user's lesson progress")
+async def get_user_lesson_progress(
+    user_id: int = Path(..., description="User ID"),
+    course_id: int = Path(..., description="Course ID"),
+    lesson_id: int = Path(..., description="Lesson ID"),
+    db: Session = Depends(get_db)
+):
+    """Get detailed progress for a specific lesson"""
+    try:
+        # Verify lesson belongs to course and user is enrolled
+        lesson = db.query(Lesson).filter(
+            Lesson.id == lesson_id,
+            Lesson.course_id == course_id
+        ).first()
+        
+        if not lesson:
+            raise HTTPException(status_code=404, detail="Lesson not found")
+        
+        enrollment = db.query(CourseEnrollment).filter(
+            CourseEnrollment.user_id == user_id,
+            CourseEnrollment.course_id == course_id
+        ).first()
+        
+        if not enrollment:
+            raise HTTPException(status_code=404, detail="User not enrolled in this course")
+        
+        # Get all tasks in the lesson
+        total_tasks = db.query(Task).join(Topic).filter(
+            Topic.lesson_id == lesson_id
+        ).count()
+        
+        # Get completed tasks
+        completed_tasks = db.query(TaskSolution).join(Task).join(Topic).filter(
+            TaskSolution.user_id == user_id,
+            Topic.lesson_id == lesson_id
+        ).count()
+        
+        # Get task-level progress
+        task_progress = db.query(
+            Task.id,
+            Task.task_name,
+            Task.points,
+            func.count(TaskAttempt.id).label('attempts'),
+            func.max(TaskAttempt.submitted_at).label('last_attempt'),
+            TaskSolution.id.label('solution_id')
+        ).join(Topic).outerjoin(TaskAttempt, 
+            (TaskAttempt.task_id == Task.id) & (TaskAttempt.user_id == user_id)
+        ).outerjoin(TaskSolution, 
+            (TaskSolution.task_id == Task.id) & (TaskSolution.user_id == user_id)
+        ).filter(
+            Topic.lesson_id == lesson_id
+        ).group_by(Task.id, Task.task_name, Task.points, TaskSolution.id).all()
+        
+        tasks = []
+        for task_info in task_progress:
+            tasks.append({
+                "task_id": task_info.id,
+                "task_name": task_info.task_name,
+                "attempts": task_info.attempts or 0,
+                "completed": task_info.solution_id is not None,
+                "solution_id": task_info.solution_id,
+                "points_earned": task_info.points if task_info.solution_id else 0,
+                "last_attempt": task_info.last_attempt
+            })
+        
+        completion_percentage = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
+        
+        return {
+            "lesson_id": lesson_id,
+            "lesson_title": lesson.title,
+            "total_tasks": total_tasks,
+            "completed_tasks": completed_tasks,
+            "completion_percentage": round(completion_percentage, 2),
+            "tasks": tasks
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving lesson progress: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+# Task submissions
+@router.post("/{user_id}/submissions", summary="Submit task attempt")
+async def submit_task_attempt(
+    user_id: int = Path(..., description="User ID"),
+    submission: SubmissionRequest = ...,
+    db: Session = Depends(get_db)
+):
+    """Submit a task attempt"""
+    try:
+        # Verify user exists
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Verify task exists
+        task = db.query(Task).filter(Task.id == submission.task_id).first()
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+        
+        # Get current attempt number
+        current_attempts = db.query(TaskAttempt).filter(
+            TaskAttempt.user_id == user_id,
+            TaskAttempt.task_id == submission.task_id
+        ).count()
+        
+        attempt_number = current_attempts + 1
+        
+        # Create task attempt
+        task_attempt = TaskAttempt(
+            user_id=user_id,
+            task_id=submission.task_id,
+            attempt_number=attempt_number,
+            submitted_data=submission.submission_data,
+            submitted_at=datetime.utcnow(),
+            is_successful=False  # Will be updated when solution is created
+        )
+        
+        db.add(task_attempt)
+        db.commit()
+        db.refresh(task_attempt)
+        
+        logger.info(f"Task attempt submitted: user {user_id}, task {submission.task_id}, attempt {attempt_number}")
+        
+        return {
+            "attempt_id": task_attempt.id,
+            "attempt_number": attempt_number,
+            "task_id": submission.task_id,
+            "submitted_at": task_attempt.submitted_at,
+            "message": "Task attempt submitted successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except IntegrityError as e:
+        db.rollback()
+        logger.error(f"Database integrity error in submit_task_attempt: {e}")
+        raise HTTPException(status_code=409, detail="Submission conflict")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error submitting task attempt: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/{user_id}/submissions", summary="Get user's submissions")
+async def get_user_submissions(
+    user_id: int = Path(..., description="User ID"),
+    task_id: Optional[int] = Query(None, description="Filter by task ID"),
+    limit: int = Query(50, description="Maximum number of submissions to return"),
+    db: Session = Depends(get_db)
+):
+    """Get user's task submissions"""
+    try:
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        query = db.query(TaskAttempt).filter(TaskAttempt.user_id == user_id)
+        
+        if task_id:
+            query = query.filter(TaskAttempt.task_id == task_id)
+        
+        submissions = query.order_by(TaskAttempt.submitted_at.desc()).limit(limit).all()
+        
+        return [{
+            "attempt_id": attempt.id,
+            "task_id": attempt.task_id,
+            "attempt_number": attempt.attempt_number,
+            "submitted_data": attempt.submitted_data,
+            "submitted_at": attempt.submitted_at,
+            "is_successful": attempt.is_successful
+        } for attempt in submissions]
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving submissions for user {user_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+# Task solutions
+@router.post("/{user_id}/solutions", summary="Submit task solution")
+async def submit_task_solution(
+    user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"),
+    solution: SolutionRequest = ...,
+    db: Session = Depends(get_db)
+):
+    """Submit a task solution (when task is completed correctly) - supports flexible user ID formats"""
+    try:
+        # Resolve user (supports both integer and string formats)
+        user = resolve_user(user_id, db)
+        
+        # Verify task exists
+        task = db.query(Task).filter(Task.id == solution.task_id).first()
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+        
+        # Check if solution already exists
+        existing_solution = db.query(TaskSolution).filter(
+            TaskSolution.user_id == user.id,
+            TaskSolution.task_id == solution.task_id
+        ).first()
+        
+        if existing_solution:
+            raise HTTPException(status_code=409, detail="Solution already exists for this task")
+        
+        # Create task solution
+        task_solution = TaskSolution(
+            user_id=user.id,
+            task_id=solution.task_id,
+            solution_data=solution.solution_data,
+            completed_at=datetime.utcnow(),
+            is_correct=solution.is_correct
+        )
+        
+        db.add(task_solution)
+        
+        # Update the latest attempt to mark it as successful
+        latest_attempt = db.query(TaskAttempt).filter(
+            TaskAttempt.user_id == user.id,
+            TaskAttempt.task_id == solution.task_id
+        ).order_by(TaskAttempt.submitted_at.desc()).first()
+        
+        if latest_attempt:
+            latest_attempt.is_successful = True
+        
+        db.commit()
+        db.refresh(task_solution)
+        
+        logger.info(f"Task solution submitted: user {user_id}, task {solution.task_id}")
+        
+        return {
+            "solution_id": task_solution.id,
+            "task_id": solution.task_id,
+            "completed_at": task_solution.completed_at,
+            "points_earned": task.points if solution.is_correct else 0,
+            "message": "Task solution submitted successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except IntegrityError as e:
+        db.rollback()
+        logger.error(f"Database integrity error in submit_task_solution: {e}")
+        raise HTTPException(status_code=409, detail="Solution submission conflict")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error submitting task solution: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/{user_id}/solutions", summary="Get user's solutions")
+async def get_user_solutions(
+    user_id: int = Path(..., description="User ID"),
+    task_id: Optional[int] = Query(None, description="Filter by task ID"),
+    limit: int = Query(50, description="Maximum number of solutions to return"),
+    db: Session = Depends(get_db)
+):
+    """Get user's task solutions"""
+    try:
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        query = db.query(TaskSolution).filter(TaskSolution.user_id == user_id)
+        
+        if task_id:
+            query = query.filter(TaskSolution.task_id == task_id)
+        
+        solutions = query.order_by(TaskSolution.completed_at.desc()).limit(limit).all()
+        
+        result = []
+        for solution in solutions:
+            task = db.query(Task).filter(Task.id == solution.task_id).first()
+            result.append({
+                "solution_id": solution.id,
+                "task_id": solution.task_id,
+                "task_name": task.task_name if task else None,
+                "solution_data": solution.solution_data,
+                "completed_at": solution.completed_at,
+                "is_correct": solution.is_correct,
+                "points_earned": task.points if task and solution.is_correct else 0
+            })
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving solutions for user {user_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/{user_id}/solutions/{solution_id}", summary="Get specific solution")
+async def get_user_solution(
+    user_id: int = Path(..., description="User ID"),
+    solution_id: int = Path(..., description="Solution ID"),
+    db: Session = Depends(get_db)
+):
+    """Get a specific task solution"""
+    try:
+        solution = db.query(TaskSolution).filter(
+            TaskSolution.id == solution_id,
+            TaskSolution.user_id == user_id
+        ).first()
+        
+        if not solution:
+            raise HTTPException(status_code=404, detail="Solution not found")
+        
+        task = db.query(Task).filter(Task.id == solution.task_id).first()
+        
+        return {
+            "solution_id": solution.id,
+            "task_id": solution.task_id,
+            "task_name": task.task_name if task else None,
+            "solution_data": solution.solution_data,
+            "completed_at": solution.completed_at,
+            "is_correct": solution.is_correct,
+            "points_earned": task.points if task and solution.is_correct else 0
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving solution {solution_id} for user {user_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+# Session recordings
+@router.get("/{user_id}/sessions", summary="Get user's sessions")
+async def get_user_sessions(
+    user_id: int = Path(..., description="User ID"),
+    limit: int = Query(20, description="Maximum number of sessions to return"),
+    db: Session = Depends(get_db)
+):
+    """Get user's session recordings"""
+    try:
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        sessions = db.query(SessionRecording).filter(
+            SessionRecording.user_id == user_id
+        ).order_by(SessionRecording.session_start.desc()).limit(limit).all()
+        
+        return [{
+            "session_id": session.id,
+            "session_start": session.session_start,
+            "session_end": session.session_end,
+            "duration_minutes": (
+                (session.session_end - session.session_start).total_seconds() / 60
+                if session.session_end else None
+            ),
+            "events_count": session.events_count,
+            "page_url": session.page_url
+        } for session in sessions]
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving sessions for user {user_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+# Course enrollment (moved from course.py)
+@router.post("/{user_id}/enroll", summary="Enroll user in course")
+async def enroll_user_in_course(
+    user_id: int = Path(..., description="User ID"),
+    course_id: int = ...,
+    db: Session = Depends(get_db)
+):
+    """
+    Enroll a user in a course
+    """
+    try:
+        logger.info(f"Processing enrollment: user {user_id} -> course {course_id}")
+        
+        # Verify user exists
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            logger.warning(f"User not found: {user_id}")
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Verify course exists
+        course = db.query(Course).filter(Course.id == course_id).first()
+        if not course:
+            logger.warning(f"Course not found: {course_id}")
+            raise HTTPException(status_code=404, detail="Course not found")
+        
+        # Check if already enrolled
+        existing_enrollment = db.query(CourseEnrollment).filter(
+            CourseEnrollment.user_id == user_id,
+            CourseEnrollment.course_id == course_id
+        ).first()
+        
+        if existing_enrollment:
+            logger.info(f"User {user_id} already enrolled in course {course_id}")
+            return {
+                "status": "already_enrolled",
+                "message": "User is already enrolled in this course",
+                "enrollment_id": existing_enrollment.id
+            }
+        
+        # Create new enrollment
+        enrollment = CourseEnrollment(
+            user_id=user_id,
+            course_id=course_id
+        )
+        
+        db.add(enrollment)
+        db.commit()
+        db.refresh(enrollment)
+        
+        logger.info(f"Successfully enrolled user {user_id} in course {course_id}")
+        
+        return {
+            "status": "success",
+            "message": "Successfully enrolled in course",
+            "enrollment_id": enrollment.id
+        }
+        
+    except HTTPException:
+        raise
+    except IntegrityError as e:
+        db.rollback()
+        logger.error(f"Database integrity error in enroll_user_in_course: {e}")
+        
+        if "course_enrollments" in str(e) and "user_id" in str(e):
+            raise HTTPException(status_code=409, detail="User is already enrolled in this course")
+        
+        raise HTTPException(status_code=409, detail="Enrollment conflict occurred")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Unexpected error in enroll_user_in_course: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")

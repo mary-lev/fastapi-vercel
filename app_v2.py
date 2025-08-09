@@ -9,14 +9,11 @@ This version consolidates the flat router structure into logical service boundar
 - Authentication Service (/api/v1/auth)
 """
 
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Import new consolidated routers
 from routes import learning, student, professor, auth
-
-# Import original routers for backward compatibility
-from routes import submission, users, solution, lesson, task_generator, topics, task, course, session, telegram_bot, telegram_auth, student_form
 
 # Create FastAPI instance with custom docs and OpenAPI URL
 app = FastAPI(
@@ -70,20 +67,13 @@ app.include_router(
     tags=["🔐 Authentication"]
 )
 
-# Legacy support - include ALL original routers for backward compatibility
-app.include_router(submission.router, tags=["🔧 Legacy - Submissions"], include_in_schema=False)
-app.include_router(users.router, tags=["🔧 Legacy - Users"], include_in_schema=False)
-app.include_router(solution.router, tags=["🔧 Legacy - Solutions"], include_in_schema=False)
-app.include_router(lesson.router, tags=["🔧 Legacy - Lessons"], include_in_schema=False)
-app.include_router(task_generator.router, tags=["🔧 Legacy - Task Generator"], include_in_schema=False)
-app.include_router(topics.router, tags=["🔧 Legacy - Topics"], include_in_schema=False)
-app.include_router(task.router, tags=["🔧 Legacy - Tasks"], include_in_schema=False)
-# course.router has /api/course/enroll which we need
-app.include_router(course.router, tags=["🔧 Legacy - Courses"], include_in_schema=False)
-app.include_router(session.router, tags=["🔧 Legacy - Sessions"], include_in_schema=False)
-app.include_router(telegram_bot.router, tags=["🔧 Legacy - Telegram Bot"], include_in_schema=False)
-# telegram_auth.router conflicts with new auth.router - skip it since we enhanced it
-app.include_router(student_form.router, tags=["🔧 Legacy - Student Forms"], include_in_schema=False)
+# Legacy support router (for backward compatibility)
+app.include_router(
+    learning.router, 
+    prefix="/api/courses",
+    tags=["📚 Legacy - Learning Content"],
+    include_in_schema=False  # Hide from docs
+)
 
 # Root endpoint
 @app.get("/")

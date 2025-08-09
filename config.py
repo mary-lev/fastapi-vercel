@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     POSTGRES_HOST: str
     POSTGRES_DATABASE: str
     POSTGRES_PORT: str = "5432"  # Default port for PostgreSQL
-    
+
     # Telegram linking configuration
     BACKEND_API_KEY: str = "your-secure-api-key-here"
     BACKEND_JWT_SECRET: str = "your-jwt-secret-here"
