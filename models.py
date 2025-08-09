@@ -218,3 +218,23 @@ class AIFeedback(Base):
 
     user = relationship("User", backref="ai_feedbacks")
     related_task = relationship("Task", back_populates="ai_feedbacks")
+
+
+class ContactMessage(Base):
+    __tablename__ = "contact_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    text = Column(String, nullable=False)
+    anonymous = Column(Boolean, default=False, nullable=False)
+    telegram_user_id = Column(BigInteger, nullable=True, index=True)
+    telegram_username = Column(String, nullable=True)
+    first_name = Column(String, nullable=True)
+    page_url = Column(String, nullable=True)
+    attachments = Column(JSON, nullable=True)  # Store attachment data as JSON
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    processed_at = Column(DateTime, nullable=True)  # When message was processed/handled
+    status = Column(String, default="received", nullable=False)  # received, processing, handled, etc.
+    
+    # Optional: link to user if they have an account
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    user = relationship("User", backref="contact_messages")
