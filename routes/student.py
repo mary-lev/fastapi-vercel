@@ -17,6 +17,8 @@ from models import (
 )
 from db import get_db
 from utils.logging_config import logger
+from utils.checker import run_code
+from utils.evaluator import evaluate_code_submission, evaluate_text_submission
 
 router = APIRouter()
 
@@ -405,10 +407,15 @@ async def submit_task_solution(
             raise HTTPException(status_code=409, detail="Solution already exists for this task")
         
         # Create task solution
+        import json
+        
+        # Convert solution_data dict to JSON string for database storage
+        solution_content_str = json.dumps(solution.solution_data) if isinstance(solution.solution_data, dict) else str(solution.solution_data)
+        
         task_solution = TaskSolution(
             user_id=user.id,
             task_id=solution.task_id,
-            solution_content=solution.solution_data,
+            solution_content=solution_content_str,
             completed_at=datetime.utcnow()
         )
         
@@ -469,11 +476,20 @@ async def get_user_solutions(
         result = []
         for solution in solutions:
             task = db.query(Task).filter(Task.id == solution.task_id).first()
+            
+            # Parse solution_content back to dict if it's JSON string
+            import json
+            try:
+                solution_data = json.loads(solution.solution_content) if solution.solution_content else {}
+            except (json.JSONDecodeError, TypeError):
+                # Fallback for non-JSON content
+                solution_data = solution.solution_content
+            
             result.append({
                 "solution_id": solution.id,
                 "task_id": solution.task_id,
                 "task_name": task.task_name if task else None,
-                "solution_data": solution.solution_content,
+                "solution_data": solution_data,
                 "completed_at": solution.completed_at,
                 "is_correct": getattr(solution, 'is_correct', True),
                 "points_earned": task.points if task and getattr(solution, 'is_correct', True) else 0
@@ -508,11 +524,19 @@ async def get_user_solution(
         
         task = db.query(Task).filter(Task.id == solution.task_id).first()
         
+        # Parse solution_content back to dict if it's JSON string
+        import json
+        try:
+            solution_data = json.loads(solution.solution_content) if solution.solution_content else {}
+        except (json.JSONDecodeError, TypeError):
+            # Fallback for non-JSON content
+            solution_data = solution.solution_content
+        
         return {
             "solution_id": solution.id,
             "task_id": solution.task_id,
             "task_name": task.task_name if task else None,
-            "solution_data": solution.solution_content,
+            "solution_data": solution_data,
             "completed_at": solution.completed_at,
             "is_correct": getattr(solution, 'is_correct', True),
             "points_earned": task.points if task and getattr(solution, 'is_correct', True) else 0
@@ -626,4 +650,248 @@ async def enroll_user_in_course(
     except Exception as e:
         db.rollback()
         logger.error(f"Unexpected error in enroll_user_in_course: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+# Code execution endpoints
+class CompileRequest(BaseModel):
+    code: str = Field(..., description="Code to compile/run")
+    language: str = Field(default="python", description="Programming language")
+
+
+class CodeSubmitRequest(BaseModel):
+    code: str = Field(..., description="Code to submit")
+    task_id: int = Field(..., description="Task ID")
+    language: str = Field(default="python", description="Programming language")
+
+
+class TextSubmitRequest(BaseModel):
+    user_answer: str = Field(..., description="Text answer to submit")
+    task_id: int = Field(..., description="Task ID")
+
+
+@router.post("/{user_id}/compile", summary="Compile and run code")
+async def compile_code(
+    request: CompileRequest,
+    user_id: Union[int, str] = Path(..., description="User ID (for auth/tracking)"),
+    db: Session = Depends(get_db)
+):
+    """
+    Compile and run code, returning the output.
+    This endpoint is for testing code without submitting it as a solution.
+    """
+    try:
+        logger.info(f"Compile request received for user {user_id}")
+        
+        # Verify user exists (for auth/tracking purposes)
+        user = resolve_user(user_id, db)
+        logger.info(f"User resolved: {user.id}")
+        
+        if not request.code:
+            raise HTTPException(status_code=400, detail="No code provided")
+        
+        logger.info(f"About to run code: {request.code[:50]}...")
+        # Run the code and return the output
+        result = run_code(request.code)
+        logger.info(f"Code execution completed: {result}")
+        
+        # Map the result to the expected format - always show output for user visibility
+        error_message = result.get("output", "") if not result.get("success") else ""
+        output_message = result.get("output", "")
+        
+        return {
+            "status": "success" if result.get("success") else "error",
+            "output": output_message,  # Always include output (error messages or results)
+            "error": error_message,    # Also include in error field for compatibility
+            "execution_time": 0
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error compiling code: {e}")
+        return {
+            "status": "error",
+            "output": "",
+            "error": str(e),
+            "execution_time": 0
+        }
+
+
+@router.post("/{user_id}/submit-code", summary="Submit code solution for a task")
+async def submit_code_solution(
+    request: CodeSubmitRequest,
+    user_id: Union[int, str] = Path(..., description="User ID"),
+    db: Session = Depends(get_db)
+):
+    """
+    Submit code as a solution for a specific task.
+    This will evaluate the code against test cases and record the solution.
+    """
+    try:
+        # Resolve user
+        user = resolve_user(user_id, db)
+        
+        # Verify task exists
+        task = db.query(Task).filter(Task.id == request.task_id).first()
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+        
+        logger.info(f"Code submission received for user {user_id}, task {request.task_id}")
+        
+        # Run the code first to check for syntax errors
+        result = run_code(request.code)
+        
+        if not result.get("success"):
+            # Code has errors, still record the attempt but mark as failed
+            is_successful = False
+            feedback = f"Code execution error: {result.get('output', 'Execution failed')}"
+        else:
+            # Evaluate the code against test cases
+            output = result.get("output", "")
+            # Pass submission as a dict with 'code' key as expected by evaluate_code_submission
+            submission_dict = {"code": request.code}
+            evaluation = evaluate_code_submission(submission_dict, output, task)
+            # evaluation is a SubmissionGrader object with is_solved and feedback attributes
+            is_successful = evaluation.is_solved if hasattr(evaluation, 'is_solved') else False
+            feedback = evaluation.feedback if hasattr(evaluation, 'feedback') else "Evaluation completed"
+        
+        # Get current attempt number
+        current_attempts = db.query(TaskAttempt).filter(
+            TaskAttempt.user_id == user.id,
+            TaskAttempt.task_id == request.task_id
+        ).count()
+        
+        attempt_number = current_attempts + 1
+        
+        # Create task attempt
+        task_attempt = TaskAttempt(
+            user_id=user.id,
+            task_id=request.task_id,
+            attempt_number=attempt_number,
+            attempt_content=request.code,
+            submitted_at=datetime.utcnow(),
+            is_successful=is_successful
+        )
+        
+        db.add(task_attempt)
+        
+        # If successful, create or update solution
+        if is_successful:
+            existing_solution = db.query(TaskSolution).filter(
+                TaskSolution.user_id == user.id,
+                TaskSolution.task_id == request.task_id
+            ).first()
+            
+            if existing_solution:
+                existing_solution.solution_content = request.code
+                existing_solution.completed_at = datetime.utcnow()
+            else:
+                task_solution = TaskSolution(
+                    user_id=user.id,
+                    task_id=request.task_id,
+                    solution_content=request.code,
+                    completed_at=datetime.utcnow()
+                )
+                db.add(task_solution)
+        
+        db.commit()
+        
+        return {
+            "status": "success" if is_successful else "failed",
+            "is_correct": is_successful,
+            "attempt_number": attempt_number,
+            "feedback": feedback,
+            "output": result.get("output", ""),
+            "task_id": request.task_id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error submitting code solution: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post("/{user_id}/submit-text", summary="Submit text answer for a task")
+async def submit_text_answer(
+    request: TextSubmitRequest,
+    user_id: Union[int, str] = Path(..., description="User ID"),
+    db: Session = Depends(get_db)
+):
+    """
+    Submit a text answer for quiz-type tasks.
+    This will evaluate the answer and record the solution.
+    """
+    try:
+        # Resolve user
+        user = resolve_user(user_id, db)
+        
+        # Verify task exists
+        task = db.query(Task).filter(Task.id == request.task_id).first()
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+        
+        logger.info(f"Text submission received for user {user_id}, task {request.task_id}")
+        
+        # Evaluate the text answer
+        evaluation = evaluate_text_submission(request.user_answer, task)
+        # evaluation is a SubmissionGrader object with is_solved and feedback attributes
+        is_successful = evaluation.is_solved if hasattr(evaluation, 'is_solved') else False
+        feedback = evaluation.feedback if hasattr(evaluation, 'feedback') else "Evaluation completed"
+        
+        # Get current attempt number
+        current_attempts = db.query(TaskAttempt).filter(
+            TaskAttempt.user_id == user.id,
+            TaskAttempt.task_id == request.task_id
+        ).count()
+        
+        attempt_number = current_attempts + 1
+        
+        # Create task attempt
+        task_attempt = TaskAttempt(
+            user_id=user.id,
+            task_id=request.task_id,
+            attempt_number=attempt_number,
+            attempt_content=request.user_answer,
+            submitted_at=datetime.utcnow(),
+            is_successful=is_successful
+        )
+        
+        db.add(task_attempt)
+        
+        # If successful, create or update solution
+        if is_successful:
+            existing_solution = db.query(TaskSolution).filter(
+                TaskSolution.user_id == user.id,
+                TaskSolution.task_id == request.task_id
+            ).first()
+            
+            if existing_solution:
+                existing_solution.solution_content = request.user_answer
+                existing_solution.completed_at = datetime.utcnow()
+            else:
+                task_solution = TaskSolution(
+                    user_id=user.id,
+                    task_id=request.task_id,
+                    solution_content=request.user_answer,
+                    completed_at=datetime.utcnow()
+                )
+                db.add(task_solution)
+        
+        db.commit()
+        
+        return {
+            "is_correct": is_successful,
+            "attempt_number": attempt_number,
+            "feedback": feedback,
+            "task_id": request.task_id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error submitting text answer: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")

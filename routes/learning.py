@@ -26,10 +26,10 @@ router = APIRouter()
 class TaskResponse(BaseModel):
     id: int
     task_name: str
-    task_type: str
-    points: int
+    type: str  # Field name matches database column
+    points: Optional[int] = None
     order: int
-    data: dict = None
+    data: Optional[dict] = None
     
     class Config:
         from_attributes = True
@@ -38,10 +38,10 @@ class TaskResponse(BaseModel):
 class TopicResponse(BaseModel):
     id: int
     title: str
-    background: str = None
-    objectives: str = None
-    content_file_md: str = None
-    concepts: str = None
+    background: Optional[str] = None
+    objectives: Optional[str] = None
+    content_file_md: Optional[str] = None
+    concepts: Optional[str] = None
     topic_order: int
     tasks: List[TaskResponse] = []
     
@@ -52,10 +52,10 @@ class TopicResponse(BaseModel):
 class LessonResponse(BaseModel):
     id: int
     title: str
-    description: str = None
+    description: Optional[str] = None
     lesson_order: int
-    textbook: str = None
-    start_date: datetime = None
+    textbook: Optional[str] = None
+    start_date: Optional[datetime] = None
     topics: List[TopicResponse] = []
     
     class Config:
@@ -65,7 +65,7 @@ class LessonResponse(BaseModel):
 class CourseResponse(BaseModel):
     id: int
     title: str
-    description: str = None
+    description: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     professor_id: int
@@ -143,7 +143,7 @@ async def get_course(
                     task_data = {
                         "id": task.id,
                         "task_name": task.task_name,
-                        "task_type": task.task_type,
+                        "type": task.type,
                         "points": task.points,
                         "order": task.order,
                         "data": task.data
@@ -347,7 +347,7 @@ async def get_lesson(
                 task_data = {
                     "id": task.id,
                     "task_name": task.task_name,
-                    "task_type": task.task_type,
+                    "type": task.type,
                     "points": task.points,
                     "order": task.order,
                     "data": task.data
@@ -436,7 +436,7 @@ async def get_topic(
             task_data = {
                 "id": task.id,
                 "task_name": task.task_name,
-                "task_type": task.task_type,
+                "type": task.type,
                 "points": task.points,
                 "order": task.order,
                 "data": task.data
@@ -477,7 +477,7 @@ async def get_topic_tasks(
         return [{
             "id": task.id,
             "task_name": task.task_name,
-            "task_type": task.task_type,
+            "type": task.type,
             "points": task.points,
             "order": task.order,
             "data": task.data
@@ -514,7 +514,7 @@ async def get_task(
         return {
             "id": task.id,
             "task_name": task.task_name,
-            "task_type": task.task_type,
+            "type": task.type,
             "points": task.points,
             "order": task.order,
             "data": task.data,
@@ -527,6 +527,54 @@ async def get_task(
     except Exception as e:
         logger.error(f"Error retrieving task {task_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+# Get summaries for a lesson
+@router.get("/{course_id}/lessons/{lesson_id}/summaries", summary="Get lesson summaries")
+async def get_lesson_summaries(
+    course_id: int = Path(..., description="Course ID"),
+    lesson_id: int = Path(..., description="Lesson ID"),
+    db: Session = Depends(get_db)
+):
+    """
+    Get summaries for all topics in a lesson
+    """
+    from sqlalchemy.orm import joinedload
+    
+    # Verify course and lesson exist
+    lesson = db.query(Lesson).filter(
+        Lesson.id == lesson_id,
+        Lesson.course_id == course_id
+    ).first()
+    
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Lesson not found")
+    
+    # Get summaries for the lesson
+    summaries = (
+        db.query(Summary)
+        .join(Topic, Summary.topic_id == Topic.id)
+        .filter(Topic.lesson_id == lesson_id)
+        .options(joinedload(Summary.topic))
+        .all()
+    )
+    
+    # Format response
+    summaries_data = []
+    for summary in summaries:
+        summaries_data.append({
+            "id": summary.id,
+            "lesson_name": summary.lesson_name,
+            "lesson_link": summary.lesson_link,
+            "lesson_type": summary.lesson_type,
+            "icon_file": summary.icon_file,
+            "data": summary.data,
+            "topic_id": summary.topic_id,
+            "topic_title": summary.topic.title,
+            "created_at": summary.created_at
+        })
+    
+    return {"summaries": summaries_data}
 
 
 # Task management endpoints (for professors)
@@ -557,7 +605,7 @@ async def update_task(
         # Update the JSON field based on task type
         task_json = task.data.copy() if task.data else {}
         
-        if task.task_type == "MultipleSelectQuiz":
+        if task.type == "MultipleSelectQuiz":
             task_json["question"] = task_data.newQuestion
             task_json["options"] = [{"id": str(i + 1), "name": option["name"]} for i, option in enumerate(task_data.newOptions)]
             task_json["correctAnswers"] = task_data.newCorrectAnswers

@@ -1,5 +1,5 @@
 """
-Educational Platform API v1.0 - Clean Architecture
+FastAPI Application v2.0 - Clean Architecture
 Single API version with proper schemas and OpenAPI generation
 """
 
@@ -14,6 +14,9 @@ import uuid
 
 # Import consolidated v1 routers ONLY
 from routes import learning, student, professor, auth
+
+# Import schemas for error handling
+from schemas.api_models import ErrorResponse, ErrorDetail
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -49,23 +52,27 @@ app = FastAPI(
     ],
 )
 
-# CORS configuration
+# CORS configuration - Configure based on your deployment
 origins = [
-    "http://localhost:3000",  # Next.js frontend on port 3000
-    "http://localhost:3001",  # If your frontend runs on port 3001
-    "http://localhost:3002",  # If your frontend runs on port 3002
-    "http://localhost:8000",  # FastAPI backend on port 8000
-    "https://frontend-template-lilac.vercel.app",  # Vercel frontend address
-    "https://dhdk.vercel.app",  # Vercel frontend address
+    "http://localhost:3000",  # Next.js frontend development
+    "http://localhost:3001",  # Alternative frontend port
+    "http://localhost:3002",  # Alternative frontend port
+    "http://localhost:8000",  # API documentation
+    "https://frontend-template-lilac.vercel.app",  # Production frontend
+    "https://dhdk.vercel.app",  # Production frontend alternate
+    # Add your Telegram Web App origin if needed
+    "https://web.telegram.org",
 ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["X-Request-ID", "X-Process-Time"],
 )
+
 
 # Middleware for request tracking
 @app.middleware("http")
@@ -95,38 +102,36 @@ async def add_request_id(request: Request, call_next):
 # Global exception handlers
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    """Handle validation errors with proper structure"""
+    """Handle validation errors with proper schema"""
     errors = []
     for error in exc.errors():
-        errors.append({
-            "field": ".".join(str(loc) for loc in error["loc"]),
-            "message": error["msg"],
-            "code": error["type"]
-        })
+        errors.append(ErrorDetail(
+            field=".".join(str(loc) for loc in error["loc"]),
+            message=error["msg"],
+            code=error["type"]
+        ))
     
     return JSONResponse(
         status_code=422,
-        content={
-            "success": False,
-            "error": "Validation Error",
-            "detail": errors,
-            "status_code": 422,
-            "request_id": getattr(request.state, "request_id", None)
-        }
+        content=ErrorResponse(
+            error="Validation Error",
+            detail=errors,
+            status_code=422,
+            request_id=getattr(request.state, "request_id", None)
+        ).model_dump()
     )
 
 
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
-    """Handle HTTP exceptions with proper structure"""
+    """Handle HTTP exceptions with proper schema"""
     return JSONResponse(
         status_code=exc.status_code,
-        content={
-            "success": False,
-            "error": exc.detail,
-            "status_code": exc.status_code,
-            "request_id": getattr(request.state, "request_id", None)
-        }
+        content=ErrorResponse(
+            error=exc.detail,
+            status_code=exc.status_code,
+            request_id=getattr(request.state, "request_id", None)
+        ).model_dump()
     )
 
 
@@ -136,17 +141,16 @@ async def general_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unexpected error: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,
-        content={
-            "success": False,
-            "error": "Internal Server Error",
-            "detail": "An unexpected error occurred. Please try again later.",
-            "status_code": 500,
-            "request_id": getattr(request.state, "request_id", None)
-        }
+        content=ErrorResponse(
+            error="Internal Server Error",
+            detail="An unexpected error occurred. Please try again later.",
+            status_code=500,
+            request_id=getattr(request.state, "request_id", None)
+        ).model_dump()
     )
 
 
-# Include v1 routers ONLY - NO LEGACY ROUTES
+# Include v1 routers with proper prefixes and tags
 app.include_router(
     learning.router,
     prefix="/api/v1/courses",
@@ -171,6 +175,7 @@ app.include_router(
     tags=["🔐 Authentication"],
 )
 
+
 # Root endpoint
 @app.get("/", tags=["System"])
 async def root():
@@ -184,12 +189,6 @@ async def root():
         "documentation": "/docs",
         "openapi_spec": "/openapi.json",
         "timestamp": datetime.utcnow().isoformat(),
-        "services": {
-            "courses": "/api/v1/courses",
-            "students": "/api/v1/students",
-            "professor": "/api/v1/professor",
-            "auth": "/api/v1/auth",
-        }
     }
 
 
@@ -223,3 +222,8 @@ async def api_v1_info():
         "documentation": "/docs",
         "openapi": "/openapi.json",
     }
+
+
+# NO LEGACY ROUTES - CLEAN ARCHITECTURE
+# All endpoints use v1 API with proper schemas
+# Frontend and bot must use /api/v1/* endpoints
