@@ -11,9 +11,11 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 import logging
 from datetime import datetime
 import uuid
+import json
 
 # Import consolidated v1 routers ONLY
 from routes import learning, student, professor, auth, users
+from config import settings
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -43,21 +45,11 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
-    servers=[
-        {"url": "http://localhost:8000", "description": "Development server"},
-        {"url": "https://your-api.vercel.app", "description": "Production server"},
-    ],
+    servers=json.loads(settings.API_SERVER_URLS),
 )
 
-# CORS configuration
-origins = [
-    "http://localhost:3000",  # Next.js frontend on port 3000
-    "http://localhost:3001",  # If your frontend runs on port 3001
-    "http://localhost:3002",  # If your frontend runs on port 3002
-    "http://localhost:8000",  # FastAPI backend on port 8000
-    "https://frontend-template-lilac.vercel.app",  # Vercel frontend address
-    "https://dhdk.vercel.app",  # Vercel frontend address
-]
+# CORS configuration - Load from environment
+origins = [origin.strip() for origin in settings.CORS_ORIGINS.split(",") if origin.strip()]
 
 app.add_middleware(
     CORSMiddleware,

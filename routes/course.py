@@ -6,6 +6,8 @@ from models import Lesson, Topic, Task, Summary, TaskSolution, User, Course, Cou
 from db import get_db
 from utils.logging_config import logger
 from pydantic import BaseModel
+from config import settings
+import json
 
 router = APIRouter()
 
@@ -121,17 +123,8 @@ def get_course_data(course_id: int, db: Session = Depends(get_db)):
             {
                 "title": "Professor",
                 "body": [
-                    {
-                        "id": 1,
-                        "img": "/images/client/avatar-02.png",
-                        "name": "Silvio Peroni",
-                        "type": "Director of Second Cycle Degree in Digital Humanities and Digital Knowledge",
-                        "desc": "Associate Professor / Department of Classical Philology and Italian Studies",
-                        "social": [
-                            {"link": "https://x.com/essepuntato", "icon": "twitter"},
-                            {"link": "https://www.linkedin.com/in/essepuntato/", "icon": "linkedin"},
-                        ],
-                    }
+                    # TODO: Replace with database query for professor information
+                    json.loads(settings.PROFESSOR_INFO)
                 ],
             }
         ],

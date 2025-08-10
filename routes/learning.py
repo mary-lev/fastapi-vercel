@@ -18,6 +18,8 @@ from models import (
 from db import get_db
 from utils.logging_config import logger
 from schemas.validation import TaskUpdateSchema
+from config import settings
+import json
 
 router = APIRouter()
 
@@ -249,17 +251,8 @@ async def get_course_legacy_format(course_id: int, db: Session = Depends(get_db)
                 {
                     "title": "Professor",
                     "body": [
-                        {
-                            "id": 1,
-                            "img": "/images/client/avatar-02.png",
-                            "name": "Silvio Peroni",
-                            "type": "Director of Second Cycle Degree in Digital Humanities and Digital Knowledge",
-                            "desc": "Associate Professor / Department of Classical Philology and Italian Studies",
-                            "social": [
-                                {"link": "https://x.com/essepuntato", "icon": "twitter"},
-                                {"link": "https://www.linkedin.com/in/essepuntato/", "icon": "linkedin"},
-                            ],
-                        }
+                        # TODO: Replace with database query for professor information
+                        json.loads(settings.PROFESSOR_INFO)
                     ],
                 }
             ],

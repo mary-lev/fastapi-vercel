@@ -14,7 +14,8 @@ from datetime import datetime
 
 
 # Configuration
-API_BASE_URL = "http://localhost:8000"
+from config import settings
+API_BASE_URL = settings.TEST_API_BASE_URL
 TEST_USER_ID = "student1"  # Use a user that exists
 TEST_TIMEOUT = 10
 
