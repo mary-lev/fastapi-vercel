@@ -13,7 +13,7 @@ from datetime import datetime
 import uuid
 
 # Import consolidated v1 routers ONLY
-from routes import learning, student, professor, auth
+from routes import learning, student, professor, auth, users
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -169,6 +169,11 @@ app.include_router(
     auth.router,
     prefix="/api/v1/auth",
     tags=["🔐 Authentication"],
+)
+
+app.include_router(
+    users.router,
+    tags=["👥 Users"],
 )
 
 # Root endpoint
