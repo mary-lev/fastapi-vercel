@@ -12,8 +12,16 @@ from typing import List, Optional, Dict, Any, Union
 from pydantic import BaseModel, Field
 
 from models import (
-    User, Task, TaskAttempt, TaskSolution, Course, Lesson, Topic,
-    SessionRecording, AIFeedback, CourseEnrollment
+    User,
+    Task,
+    TaskAttempt,
+    TaskSolution,
+    Course,
+    Lesson,
+    Topic,
+    SessionRecording,
+    AIFeedback,
+    CourseEnrollment,
 )
 from db import get_db
 from utils.logging_config import logger
@@ -38,10 +46,10 @@ def resolve_user(user_id: Union[int, str], db: Session) -> User:
         user = db.query(User).filter(User.internal_user_id == user_id).first()
         if not user:
             user = db.query(User).filter(User.username == user_id).first()
-    
+
     if not user:
         raise HTTPException(status_code=404, detail=f"User not found: {user_id}")
-    
+
     return user
 
 
@@ -81,21 +89,20 @@ class TaskProgressResponse(BaseModel):
 # User profile and basic info
 @router.get("/{user_id}/profile", summary="Get user profile")
 async def get_user_profile(
-    user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"),
-    db: Session = Depends(get_db)
+    user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"), db: Session = Depends(get_db)
 ):
     """Get user profile information - supports both integer and string user IDs"""
     try:
         user = resolve_user(user_id, db)
-        
+
         return {
             "id": user.id,
             "username": user.username,
             "internal_user_id": user.internal_user_id,
             "status": user.status.value if user.status else None,
-            "telegram_user_id": user.telegram_user_id
+            "telegram_user_id": user.telegram_user_id,
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -106,30 +113,29 @@ async def get_user_profile(
 # Course enrollment and progress
 @router.get("/{user_id}/courses", summary="Get user's enrolled courses")
 async def get_user_courses(
-    user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"),
-    db: Session = Depends(get_db)
+    user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"), db: Session = Depends(get_db)
 ):
     """Get all courses the user is enrolled in - supports both integer and string user IDs"""
     try:
         user = resolve_user(user_id, db)
-        
-        enrollments = db.query(CourseEnrollment).filter(
-            CourseEnrollment.user_id == user.id
-        ).all()
-        
+
+        enrollments = db.query(CourseEnrollment).filter(CourseEnrollment.user_id == user.id).all()
+
         courses = []
         for enrollment in enrollments:
             course = enrollment.course
-            courses.append({
-                "id": course.id,
-                "title": course.title,
-                "description": course.description,
-                "enrolled_at": enrollment.enrolled_at,
-                "professor_id": course.professor_id
-            })
-        
+            courses.append(
+                {
+                    "id": course.id,
+                    "title": course.title,
+                    "description": course.description,
+                    "enrolled_at": enrollment.enrolled_at,
+                    "professor_id": course.professor_id,
+                }
+            )
+
         return courses
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -141,50 +147,62 @@ async def get_user_courses(
 async def get_user_course_progress(
     user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"),
     course_id: int = Path(..., description="Course ID"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Get detailed progress for a specific course - supports both integer and string user IDs"""
     try:
         user = resolve_user(user_id, db)
-        
+
         # Verify user is enrolled in the course
-        enrollment = db.query(CourseEnrollment).filter(
-            CourseEnrollment.user_id == user.id,
-            CourseEnrollment.course_id == course_id
-        ).first()
-        
+        enrollment = (
+            db.query(CourseEnrollment)
+            .filter(CourseEnrollment.user_id == user.id, CourseEnrollment.course_id == course_id)
+            .first()
+        )
+
         if not enrollment:
             raise HTTPException(status_code=404, detail="User not enrolled in this course")
-        
+
         # Get all tasks in the course
-        total_tasks_query = db.query(Task).join(Topic).join(Lesson).filter(
-            Lesson.course_id == course_id
-        )
+        total_tasks_query = db.query(Task).join(Topic).join(Lesson).filter(Lesson.course_id == course_id)
         total_tasks = total_tasks_query.count()
-        total_points = db.query(func.sum(Task.points)).filter(
-            Task.id.in_(total_tasks_query.with_entities(Task.id))
-        ).scalar() or 0
-        
+        total_points = (
+            db.query(func.sum(Task.points)).filter(Task.id.in_(total_tasks_query.with_entities(Task.id))).scalar() or 0
+        )
+
         # Get completed tasks (tasks with solutions)
-        completed_tasks = db.query(TaskSolution).join(Task).join(Topic).join(Lesson).filter(
-            TaskSolution.user_id == user.id,
-            Lesson.course_id == course_id
-        ).count()
-        
+        completed_tasks = (
+            db.query(TaskSolution)
+            .join(Task)
+            .join(Topic)
+            .join(Lesson)
+            .filter(TaskSolution.user_id == user.id, Lesson.course_id == course_id)
+            .count()
+        )
+
         # Get points earned
-        points_earned = db.query(func.sum(Task.points)).join(TaskSolution).join(Topic).join(Lesson).filter(
-            TaskSolution.user_id == user.id,
-            Lesson.course_id == course_id
-        ).scalar() or 0
-        
+        points_earned = (
+            db.query(func.sum(Task.points))
+            .join(TaskSolution)
+            .join(Topic)
+            .join(Lesson)
+            .filter(TaskSolution.user_id == user.id, Lesson.course_id == course_id)
+            .scalar()
+            or 0
+        )
+
         # Get last activity
-        last_activity = db.query(func.max(TaskAttempt.submitted_at)).join(Task).join(Topic).join(Lesson).filter(
-            TaskAttempt.user_id == user.id,
-            Lesson.course_id == course_id
-        ).scalar()
-        
+        last_activity = (
+            db.query(func.max(TaskAttempt.submitted_at))
+            .join(Task)
+            .join(Topic)
+            .join(Lesson)
+            .filter(TaskAttempt.user_id == user.id, Lesson.course_id == course_id)
+            .scalar()
+        )
+
         completion_percentage = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
-        
+
         return {
             "course_id": course_id,
             "total_tasks": total_tasks,
@@ -192,9 +210,9 @@ async def get_user_course_progress(
             "completion_percentage": round(completion_percentage, 2),
             "points_earned": points_earned,
             "total_points": total_points,
-            "last_activity": last_activity
+            "last_activity": last_activity,
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -207,77 +225,80 @@ async def get_user_lesson_progress(
     user_id: int = Path(..., description="User ID"),
     course_id: int = Path(..., description="Course ID"),
     lesson_id: int = Path(..., description="Lesson ID"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Get detailed progress for a specific lesson"""
     try:
         # Verify lesson belongs to course and user is enrolled
-        lesson = db.query(Lesson).filter(
-            Lesson.id == lesson_id,
-            Lesson.course_id == course_id
-        ).first()
-        
+        lesson = db.query(Lesson).filter(Lesson.id == lesson_id, Lesson.course_id == course_id).first()
+
         if not lesson:
             raise HTTPException(status_code=404, detail="Lesson not found")
-        
-        enrollment = db.query(CourseEnrollment).filter(
-            CourseEnrollment.user_id == user_id,
-            CourseEnrollment.course_id == course_id
-        ).first()
-        
+
+        enrollment = (
+            db.query(CourseEnrollment)
+            .filter(CourseEnrollment.user_id == user_id, CourseEnrollment.course_id == course_id)
+            .first()
+        )
+
         if not enrollment:
             raise HTTPException(status_code=404, detail="User not enrolled in this course")
-        
+
         # Get all tasks in the lesson
-        total_tasks = db.query(Task).join(Topic).filter(
-            Topic.lesson_id == lesson_id
-        ).count()
-        
+        total_tasks = db.query(Task).join(Topic).filter(Topic.lesson_id == lesson_id).count()
+
         # Get completed tasks
-        completed_tasks = db.query(TaskSolution).join(Task).join(Topic).filter(
-            TaskSolution.user_id == user_id,
-            Topic.lesson_id == lesson_id
-        ).count()
-        
+        completed_tasks = (
+            db.query(TaskSolution)
+            .join(Task)
+            .join(Topic)
+            .filter(TaskSolution.user_id == user_id, Topic.lesson_id == lesson_id)
+            .count()
+        )
+
         # Get task-level progress
-        task_progress = db.query(
-            Task.id,
-            Task.task_name,
-            Task.points,
-            func.count(TaskAttempt.id).label('attempts'),
-            func.max(TaskAttempt.submitted_at).label('last_attempt'),
-            TaskSolution.id.label('solution_id')
-        ).join(Topic).outerjoin(TaskAttempt, 
-            (TaskAttempt.task_id == Task.id) & (TaskAttempt.user_id == user.id)
-        ).outerjoin(TaskSolution, 
-            (TaskSolution.task_id == Task.id) & (TaskSolution.user_id == user.id)
-        ).filter(
-            Topic.lesson_id == lesson_id
-        ).group_by(Task.id, Task.task_name, Task.points, TaskSolution.id).all()
-        
+        task_progress = (
+            db.query(
+                Task.id,
+                Task.task_name,
+                Task.points,
+                func.count(TaskAttempt.id).label("attempts"),
+                func.max(TaskAttempt.submitted_at).label("last_attempt"),
+                TaskSolution.id.label("solution_id"),
+            )
+            .join(Topic)
+            .outerjoin(TaskAttempt, (TaskAttempt.task_id == Task.id) & (TaskAttempt.user_id == user.id))
+            .outerjoin(TaskSolution, (TaskSolution.task_id == Task.id) & (TaskSolution.user_id == user.id))
+            .filter(Topic.lesson_id == lesson_id)
+            .group_by(Task.id, Task.task_name, Task.points, TaskSolution.id)
+            .all()
+        )
+
         tasks = []
         for task_info in task_progress:
-            tasks.append({
-                "task_id": task_info.id,
-                "task_name": task_info.task_name,
-                "attempts": task_info.attempts or 0,
-                "completed": task_info.solution_id is not None,
-                "solution_id": task_info.solution_id,
-                "points_earned": task_info.points if task_info.solution_id else 0,
-                "last_attempt": task_info.last_attempt
-            })
-        
+            tasks.append(
+                {
+                    "task_id": task_info.id,
+                    "task_name": task_info.task_name,
+                    "attempts": task_info.attempts or 0,
+                    "completed": task_info.solution_id is not None,
+                    "solution_id": task_info.solution_id,
+                    "points_earned": task_info.points if task_info.solution_id else 0,
+                    "last_attempt": task_info.last_attempt,
+                }
+            )
+
         completion_percentage = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
-        
+
         return {
             "lesson_id": lesson_id,
             "lesson_title": lesson.title,
             "total_tasks": total_tasks,
             "completed_tasks": completed_tasks,
             "completion_percentage": round(completion_percentage, 2),
-            "tasks": tasks
+            "tasks": tasks,
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -290,26 +311,27 @@ async def get_user_lesson_progress(
 async def submit_task_attempt(
     user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"),
     submission: SubmissionRequest = ...,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Submit a task attempt - supports both integer and string user IDs"""
     try:
         # Resolve user (supports both integer and string formats)
         user = resolve_user(user_id, db)
-        
+
         # Verify task exists
         task = db.query(Task).filter(Task.id == submission.task_id).first()
         if not task:
             raise HTTPException(status_code=404, detail="Task not found")
-        
+
         # Get current attempt number
-        current_attempts = db.query(TaskAttempt).filter(
-            TaskAttempt.user_id == user.id,
-            TaskAttempt.task_id == submission.task_id
-        ).count()
-        
+        current_attempts = (
+            db.query(TaskAttempt)
+            .filter(TaskAttempt.user_id == user.id, TaskAttempt.task_id == submission.task_id)
+            .count()
+        )
+
         attempt_number = current_attempts + 1
-        
+
         # Create task attempt
         task_attempt = TaskAttempt(
             user_id=user.id,
@@ -317,23 +339,23 @@ async def submit_task_attempt(
             attempt_number=attempt_number,
             submitted_data=submission.submission_data,
             submitted_at=datetime.utcnow(),
-            is_successful=False  # Will be updated when solution is created
+            is_successful=False,  # Will be updated when solution is created
         )
-        
+
         db.add(task_attempt)
         db.commit()
         db.refresh(task_attempt)
-        
+
         logger.info(f"Task attempt submitted: user {user_id}, task {submission.task_id}, attempt {attempt_number}")
-        
+
         return {
             "attempt_id": task_attempt.id,
             "attempt_number": attempt_number,
             "task_id": submission.task_id,
             "submitted_at": task_attempt.submitted_at,
-            "message": "Task attempt submitted successfully"
+            "message": "Task attempt submitted successfully",
         }
-        
+
     except HTTPException:
         raise
     except IntegrityError as e:
@@ -351,28 +373,31 @@ async def get_user_submissions(
     user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"),
     task_id: Optional[int] = Query(None, description="Filter by task ID"),
     limit: int = Query(50, description="Maximum number of submissions to return"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Get user's task submissions - supports both integer and string user IDs"""
     try:
         user = resolve_user(user_id, db)
-        
+
         query = db.query(TaskAttempt).filter(TaskAttempt.user_id == user.id)
-        
+
         if task_id:
             query = query.filter(TaskAttempt.task_id == task_id)
-        
+
         submissions = query.order_by(TaskAttempt.submitted_at.desc()).limit(limit).all()
-        
-        return [{
-            "attempt_id": attempt.id,
-            "task_id": attempt.task_id,
-            "attempt_number": attempt.attempt_number,
-            "submitted_data": attempt.submitted_data,
-            "submitted_at": attempt.submitted_at,
-            "is_successful": attempt.is_successful
-        } for attempt in submissions]
-        
+
+        return [
+            {
+                "attempt_id": attempt.id,
+                "task_id": attempt.task_id,
+                "attempt_number": attempt.attempt_number,
+                "submitted_data": attempt.submitted_data,
+                "submitted_at": attempt.submitted_at,
+                "is_successful": attempt.is_successful,
+            }
+            for attempt in submissions
+        ]
+
     except HTTPException:
         raise
     except Exception as e:
@@ -385,64 +410,71 @@ async def get_user_submissions(
 async def submit_task_solution(
     user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"),
     solution: SolutionRequest = ...,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Submit a task solution (when task is completed correctly) - supports flexible user ID formats"""
     try:
         # Resolve user (supports both integer and string formats)
         user = resolve_user(user_id, db)
-        
+
         # Verify task exists
         task = db.query(Task).filter(Task.id == solution.task_id).first()
         if not task:
             raise HTTPException(status_code=404, detail="Task not found")
-        
+
         # Check if solution already exists
-        existing_solution = db.query(TaskSolution).filter(
-            TaskSolution.user_id == user.id,
-            TaskSolution.task_id == solution.task_id
-        ).first()
-        
+        existing_solution = (
+            db.query(TaskSolution)
+            .filter(TaskSolution.user_id == user.id, TaskSolution.task_id == solution.task_id)
+            .first()
+        )
+
         if existing_solution:
             raise HTTPException(status_code=409, detail="Solution already exists for this task")
-        
+
         # Create task solution
         import json
-        
+
         # Convert solution_data dict to JSON string for database storage
-        solution_content_str = json.dumps(solution.solution_data) if isinstance(solution.solution_data, dict) else str(solution.solution_data)
-        
+        solution_content_str = (
+            json.dumps(solution.solution_data)
+            if isinstance(solution.solution_data, dict)
+            else str(solution.solution_data)
+        )
+
         task_solution = TaskSolution(
             user_id=user.id,
             task_id=solution.task_id,
             solution_content=solution_content_str,
-            completed_at=datetime.utcnow()
+            completed_at=datetime.utcnow(),
         )
-        
+
         db.add(task_solution)
-        
+
         # Update the latest attempt to mark it as successful
-        latest_attempt = db.query(TaskAttempt).filter(
-            TaskAttempt.user_id == user.id,
-            TaskAttempt.task_id == solution.task_id
-        ).order_by(TaskAttempt.submitted_at.desc()).first()
-        
+        latest_attempt = (
+            db.query(TaskAttempt)
+            .filter(TaskAttempt.user_id == user.id, TaskAttempt.task_id == solution.task_id)
+            .order_by(TaskAttempt.submitted_at.desc())
+            .first()
+        )
+
         if latest_attempt:
             latest_attempt.is_successful = True
-        
+
         db.commit()
         db.refresh(task_solution)
-        
+
         logger.info(f"Task solution submitted: user {user_id}, task {solution.task_id}")
-        
+
         return {
             "solution_id": task_solution.id,
             "task_id": solution.task_id,
             "completed_at": task_solution.completed_at,
             "points_earned": task.points if solution.is_correct else 0,
-            "message": "Task solution submitted successfully"
+            "message": "Task solution submitted successfully",
         }
-        
+
     except HTTPException:
         raise
     except IntegrityError as e:
@@ -460,43 +492,46 @@ async def get_user_solutions(
     user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"),
     task_id: Optional[int] = Query(None, description="Filter by task ID"),
     limit: int = Query(50, description="Maximum number of solutions to return"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Get user's task solutions - supports both integer and string user IDs"""
     try:
         user = resolve_user(user_id, db)
-        
+
         query = db.query(TaskSolution).filter(TaskSolution.user_id == user.id)
-        
+
         if task_id:
             query = query.filter(TaskSolution.task_id == task_id)
-        
+
         solutions = query.order_by(TaskSolution.completed_at.desc()).limit(limit).all()
-        
+
         result = []
         for solution in solutions:
             task = db.query(Task).filter(Task.id == solution.task_id).first()
-            
+
             # Parse solution_content back to dict if it's JSON string
             import json
+
             try:
                 solution_data = json.loads(solution.solution_content) if solution.solution_content else {}
             except (json.JSONDecodeError, TypeError):
                 # Fallback for non-JSON content
                 solution_data = solution.solution_content
-            
-            result.append({
-                "solution_id": solution.id,
-                "task_id": solution.task_id,
-                "task_name": task.task_name if task else None,
-                "solution_data": solution_data,
-                "completed_at": solution.completed_at,
-                "is_correct": getattr(solution, 'is_correct', True),
-                "points_earned": task.points if task and getattr(solution, 'is_correct', True) else 0
-            })
-        
+
+            result.append(
+                {
+                    "solution_id": solution.id,
+                    "task_id": solution.task_id,
+                    "task_name": task.task_name if task else None,
+                    "solution_data": solution_data,
+                    "completed_at": solution.completed_at,
+                    "is_correct": getattr(solution, "is_correct", True),
+                    "points_earned": task.points if task and getattr(solution, "is_correct", True) else 0,
+                }
+            )
+
         return result
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -508,40 +543,40 @@ async def get_user_solutions(
 async def get_user_solution(
     user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"),
     solution_id: int = Path(..., description="Solution ID"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Get a specific task solution - supports both integer and string user IDs"""
     try:
         user = resolve_user(user_id, db)
-        
-        solution = db.query(TaskSolution).filter(
-            TaskSolution.id == solution_id,
-            TaskSolution.user_id == user.id
-        ).first()
-        
+
+        solution = (
+            db.query(TaskSolution).filter(TaskSolution.id == solution_id, TaskSolution.user_id == user.id).first()
+        )
+
         if not solution:
             raise HTTPException(status_code=404, detail="Solution not found")
-        
+
         task = db.query(Task).filter(Task.id == solution.task_id).first()
-        
+
         # Parse solution_content back to dict if it's JSON string
         import json
+
         try:
             solution_data = json.loads(solution.solution_content) if solution.solution_content else {}
         except (json.JSONDecodeError, TypeError):
             # Fallback for non-JSON content
             solution_data = solution.solution_content
-        
+
         return {
             "solution_id": solution.id,
             "task_id": solution.task_id,
             "task_name": task.task_name if task else None,
             "solution_data": solution_data,
             "completed_at": solution.completed_at,
-            "is_correct": getattr(solution, 'is_correct', True),
-            "points_earned": task.points if task and getattr(solution, 'is_correct', True) else 0
+            "is_correct": getattr(solution, "is_correct", True),
+            "points_earned": task.points if task and getattr(solution, "is_correct", True) else 0,
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -554,28 +589,34 @@ async def get_user_solution(
 async def get_user_sessions(
     user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"),
     limit: int = Query(20, description="Maximum number of sessions to return"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Get user's session recordings - supports both integer and string user IDs"""
     try:
         user = resolve_user(user_id, db)
-        
-        sessions = db.query(SessionRecording).filter(
-            SessionRecording.user_id == user.id
-        ).order_by(SessionRecording.session_start.desc()).limit(limit).all()
-        
-        return [{
-            "session_id": session.id,
-            "session_start": session.session_start,
-            "session_end": session.session_end,
-            "duration_minutes": (
-                (session.session_end - session.session_start).total_seconds() / 60
-                if session.session_end else None
-            ),
-            "events_count": session.events_count,
-            "page_url": session.page_url
-        } for session in sessions]
-        
+
+        sessions = (
+            db.query(SessionRecording)
+            .filter(SessionRecording.user_id == user.id)
+            .order_by(SessionRecording.session_start.desc())
+            .limit(limit)
+            .all()
+        )
+
+        return [
+            {
+                "session_id": session.id,
+                "session_start": session.session_start,
+                "session_end": session.session_end,
+                "duration_minutes": (
+                    (session.session_end - session.session_start).total_seconds() / 60 if session.session_end else None
+                ),
+                "events_count": session.events_count,
+                "page_url": session.page_url,
+            }
+            for session in sessions
+        ]
+
     except HTTPException:
         raise
     except Exception as e:
@@ -588,64 +629,58 @@ async def get_user_sessions(
 async def enroll_user_in_course(
     user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"),
     course_id: int = ...,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Enroll a user in a course - supports both integer and string user IDs
     """
     try:
         logger.info(f"Processing enrollment: user {user_id} -> course {course_id}")
-        
+
         # Resolve user (supports both integer and string formats)
         user = resolve_user(user_id, db)
-        
+
         # Verify course exists
         course = db.query(Course).filter(Course.id == course_id).first()
         if not course:
             logger.warning(f"Course not found: {course_id}")
             raise HTTPException(status_code=404, detail="Course not found")
-        
+
         # Check if already enrolled
-        existing_enrollment = db.query(CourseEnrollment).filter(
-            CourseEnrollment.user_id == user.id,
-            CourseEnrollment.course_id == course_id
-        ).first()
-        
+        existing_enrollment = (
+            db.query(CourseEnrollment)
+            .filter(CourseEnrollment.user_id == user.id, CourseEnrollment.course_id == course_id)
+            .first()
+        )
+
         if existing_enrollment:
             logger.info(f"User {user_id} already enrolled in course {course_id}")
             return {
                 "status": "already_enrolled",
                 "message": "User is already enrolled in this course",
-                "enrollment_id": existing_enrollment.id
+                "enrollment_id": existing_enrollment.id,
             }
-        
+
         # Create new enrollment
-        enrollment = CourseEnrollment(
-            user_id=user.id,
-            course_id=course_id
-        )
-        
+        enrollment = CourseEnrollment(user_id=user.id, course_id=course_id)
+
         db.add(enrollment)
         db.commit()
         db.refresh(enrollment)
-        
+
         logger.info(f"Successfully enrolled user {user_id} in course {course_id}")
-        
-        return {
-            "status": "success",
-            "message": "Successfully enrolled in course",
-            "enrollment_id": enrollment.id
-        }
-        
+
+        return {"status": "success", "message": "Successfully enrolled in course", "enrollment_id": enrollment.id}
+
     except HTTPException:
         raise
     except IntegrityError as e:
         db.rollback()
         logger.error(f"Database integrity error in enroll_user_in_course: {e}")
-        
+
         if "course_enrollments" in str(e) and "user_id" in str(e):
             raise HTTPException(status_code=409, detail="User is already enrolled in this course")
-        
+
         raise HTTPException(status_code=409, detail="Enrollment conflict occurred")
     except Exception as e:
         db.rollback()
@@ -674,7 +709,7 @@ class TextSubmitRequest(BaseModel):
 async def compile_code(
     request: CompileRequest,
     user_id: Union[int, str] = Path(..., description="User ID (for auth/tracking)"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Compile and run code, returning the output.
@@ -682,47 +717,42 @@ async def compile_code(
     """
     try:
         logger.info(f"Compile request received for user {user_id}")
-        
+
         # Verify user exists (for auth/tracking purposes)
         user = resolve_user(user_id, db)
         logger.info(f"User resolved: {user.id}")
-        
+
         if not request.code:
             raise HTTPException(status_code=400, detail="No code provided")
-        
+
         logger.info(f"About to run code: {request.code[:50]}...")
         # Run the code and return the output
         result = run_code(request.code)
         logger.info(f"Code execution completed: {result}")
-        
+
         # Map the result to the expected format - always show output for user visibility
         error_message = result.get("output", "") if not result.get("success") else ""
         output_message = result.get("output", "")
-        
+
         return {
             "status": "success" if result.get("success") else "error",
             "output": output_message,  # Always include output (error messages or results)
-            "error": error_message,    # Also include in error field for compatibility
-            "execution_time": 0
+            "error": error_message,  # Also include in error field for compatibility
+            "execution_time": 0,
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error compiling code: {e}")
-        return {
-            "status": "error",
-            "output": "",
-            "error": str(e),
-            "execution_time": 0
-        }
+        return {"status": "error", "output": "", "error": str(e), "execution_time": 0}
 
 
 @router.post("/{user_id}/submit-code", summary="Submit code solution for a task")
 async def submit_code_solution(
     request: CodeSubmitRequest,
     user_id: Union[int, str] = Path(..., description="User ID"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Submit code as a solution for a specific task.
@@ -731,17 +761,17 @@ async def submit_code_solution(
     try:
         # Resolve user
         user = resolve_user(user_id, db)
-        
+
         # Verify task exists
         task = db.query(Task).filter(Task.id == request.task_id).first()
         if not task:
             raise HTTPException(status_code=404, detail="Task not found")
-        
+
         logger.info(f"Code submission received for user {user_id}, task {request.task_id}")
-        
+
         # Run the code first to check for syntax errors
         result = run_code(request.code)
-        
+
         if not result.get("success"):
             # Code has errors, still record the attempt but mark as failed
             is_successful = False
@@ -753,17 +783,16 @@ async def submit_code_solution(
             submission_dict = {"code": request.code}
             evaluation = evaluate_code_submission(submission_dict, output, task)
             # evaluation is a SubmissionGrader object with is_solved and feedback attributes
-            is_successful = evaluation.is_solved if hasattr(evaluation, 'is_solved') else False
-            feedback = evaluation.feedback if hasattr(evaluation, 'feedback') else "Evaluation completed"
-        
+            is_successful = evaluation.is_solved if hasattr(evaluation, "is_solved") else False
+            feedback = evaluation.feedback if hasattr(evaluation, "feedback") else "Evaluation completed"
+
         # Get current attempt number
-        current_attempts = db.query(TaskAttempt).filter(
-            TaskAttempt.user_id == user.id,
-            TaskAttempt.task_id == request.task_id
-        ).count()
-        
+        current_attempts = (
+            db.query(TaskAttempt).filter(TaskAttempt.user_id == user.id, TaskAttempt.task_id == request.task_id).count()
+        )
+
         attempt_number = current_attempts + 1
-        
+
         # Create task attempt
         task_attempt = TaskAttempt(
             user_id=user.id,
@@ -771,18 +800,19 @@ async def submit_code_solution(
             attempt_number=attempt_number,
             attempt_content=request.code,
             submitted_at=datetime.utcnow(),
-            is_successful=is_successful
+            is_successful=is_successful,
         )
-        
+
         db.add(task_attempt)
-        
+
         # If successful, create or update solution
         if is_successful:
-            existing_solution = db.query(TaskSolution).filter(
-                TaskSolution.user_id == user.id,
-                TaskSolution.task_id == request.task_id
-            ).first()
-            
+            existing_solution = (
+                db.query(TaskSolution)
+                .filter(TaskSolution.user_id == user.id, TaskSolution.task_id == request.task_id)
+                .first()
+            )
+
             if existing_solution:
                 existing_solution.solution_content = request.code
                 existing_solution.completed_at = datetime.utcnow()
@@ -791,21 +821,21 @@ async def submit_code_solution(
                     user_id=user.id,
                     task_id=request.task_id,
                     solution_content=request.code,
-                    completed_at=datetime.utcnow()
+                    completed_at=datetime.utcnow(),
                 )
                 db.add(task_solution)
-        
+
         db.commit()
-        
+
         return {
             "status": "success" if is_successful else "failed",
             "is_correct": is_successful,
             "attempt_number": attempt_number,
             "feedback": feedback,
             "output": result.get("output", ""),
-            "task_id": request.task_id
+            "task_id": request.task_id,
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -818,7 +848,7 @@ async def submit_code_solution(
 async def submit_text_answer(
     request: TextSubmitRequest,
     user_id: Union[int, str] = Path(..., description="User ID"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Submit a text answer for quiz-type tasks.
@@ -827,28 +857,27 @@ async def submit_text_answer(
     try:
         # Resolve user
         user = resolve_user(user_id, db)
-        
+
         # Verify task exists
         task = db.query(Task).filter(Task.id == request.task_id).first()
         if not task:
             raise HTTPException(status_code=404, detail="Task not found")
-        
+
         logger.info(f"Text submission received for user {user_id}, task {request.task_id}")
-        
+
         # Evaluate the text answer
         evaluation = evaluate_text_submission(request.user_answer, task)
         # evaluation is a SubmissionGrader object with is_solved and feedback attributes
-        is_successful = evaluation.is_solved if hasattr(evaluation, 'is_solved') else False
-        feedback = evaluation.feedback if hasattr(evaluation, 'feedback') else "Evaluation completed"
-        
+        is_successful = evaluation.is_solved if hasattr(evaluation, "is_solved") else False
+        feedback = evaluation.feedback if hasattr(evaluation, "feedback") else "Evaluation completed"
+
         # Get current attempt number
-        current_attempts = db.query(TaskAttempt).filter(
-            TaskAttempt.user_id == user.id,
-            TaskAttempt.task_id == request.task_id
-        ).count()
-        
+        current_attempts = (
+            db.query(TaskAttempt).filter(TaskAttempt.user_id == user.id, TaskAttempt.task_id == request.task_id).count()
+        )
+
         attempt_number = current_attempts + 1
-        
+
         # Create task attempt
         task_attempt = TaskAttempt(
             user_id=user.id,
@@ -856,18 +885,19 @@ async def submit_text_answer(
             attempt_number=attempt_number,
             attempt_content=request.user_answer,
             submitted_at=datetime.utcnow(),
-            is_successful=is_successful
+            is_successful=is_successful,
         )
-        
+
         db.add(task_attempt)
-        
+
         # If successful, create or update solution
         if is_successful:
-            existing_solution = db.query(TaskSolution).filter(
-                TaskSolution.user_id == user.id,
-                TaskSolution.task_id == request.task_id
-            ).first()
-            
+            existing_solution = (
+                db.query(TaskSolution)
+                .filter(TaskSolution.user_id == user.id, TaskSolution.task_id == request.task_id)
+                .first()
+            )
+
             if existing_solution:
                 existing_solution.solution_content = request.user_answer
                 existing_solution.completed_at = datetime.utcnow()
@@ -876,19 +906,19 @@ async def submit_text_answer(
                     user_id=user.id,
                     task_id=request.task_id,
                     solution_content=request.user_answer,
-                    completed_at=datetime.utcnow()
+                    completed_at=datetime.utcnow(),
                 )
                 db.add(task_solution)
-        
+
         db.commit()
-        
+
         return {
             "is_correct": is_successful,
             "attempt_number": attempt_number,
             "feedback": feedback,
-            "task_id": request.task_id
+            "task_id": request.task_id,
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:

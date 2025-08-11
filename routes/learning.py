@@ -12,8 +12,17 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 from models import (
-    Course, Lesson, Topic, Task, Summary, TaskSolution, User,
-    CodeTask, MultipleSelectQuiz, TrueFalseQuiz, SingleQuestionTask
+    Course,
+    Lesson,
+    Topic,
+    Task,
+    Summary,
+    TaskSolution,
+    User,
+    CodeTask,
+    MultipleSelectQuiz,
+    TrueFalseQuiz,
+    SingleQuestionTask,
 )
 from db import get_db
 from utils.logging_config import logger
@@ -32,7 +41,7 @@ class TaskResponse(BaseModel):
     points: Optional[int] = None
     order: int
     data: Optional[dict] = None
-    
+
     class Config:
         from_attributes = True
 
@@ -46,7 +55,7 @@ class TopicResponse(BaseModel):
     concepts: Optional[str] = None
     topic_order: int
     tasks: List[TaskResponse] = []
-    
+
     class Config:
         from_attributes = True
 
@@ -59,7 +68,7 @@ class LessonResponse(BaseModel):
     textbook: Optional[str] = None
     start_date: Optional[datetime] = None
     topics: List[TopicResponse] = []
-    
+
     class Config:
         from_attributes = True
 
@@ -72,7 +81,7 @@ class CourseResponse(BaseModel):
     updated_at: datetime
     professor_id: int
     lessons: List[LessonResponse] = []
-    
+
     class Config:
         from_attributes = True
 
@@ -83,23 +92,23 @@ async def get_courses(db: Session = Depends(get_db)):
     """Get all courses with basic information"""
     try:
         courses = db.query(Course).all()
-        return [{
-            "id": course.id,
-            "title": course.title,
-            "description": course.description,
-            "created_at": course.created_at,
-            "professor_id": course.professor_id
-        } for course in courses]
+        return [
+            {
+                "id": course.id,
+                "title": course.title,
+                "description": course.description,
+                "created_at": course.created_at,
+                "professor_id": course.professor_id,
+            }
+            for course in courses
+        ]
     except Exception as e:
         logger.error(f"Error retrieving courses: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/{course_id}", response_model=CourseResponse, summary="Get course details")
-async def get_course(
-    course_id: int = Path(..., description="Course ID"), 
-    db: Session = Depends(get_db)
-):
+async def get_course(course_id: int = Path(..., description="Course ID"), db: Session = Depends(get_db)):
     """Get course details with full lesson/topic/task hierarchy"""
     try:
         course = db.query(Course).filter(Course.id == course_id).first()
@@ -115,9 +124,9 @@ async def get_course(
             "created_at": course.created_at,
             "updated_at": course.updated_at,
             "professor_id": course.professor_id,
-            "lessons": []
+            "lessons": [],
         }
-        
+
         for lesson in course.lessons:
             lesson_data = {
                 "id": lesson.id,
@@ -126,9 +135,9 @@ async def get_course(
                 "lesson_order": lesson.lesson_order,
                 "textbook": lesson.textbook,
                 "start_date": lesson.start_date,
-                "topics": []
+                "topics": [],
             }
-            
+
             for topic in lesson.topics:
                 topic_data = {
                     "id": topic.id,
@@ -138,9 +147,9 @@ async def get_course(
                     "content_file_md": topic.content_file_md,
                     "concepts": topic.concepts,
                     "topic_order": topic.topic_order,
-                    "tasks": []
+                    "tasks": [],
                 }
-                
+
                 for task in topic.tasks.order_by(Task.order):
                     task_data = {
                         "id": task.id,
@@ -148,16 +157,16 @@ async def get_course(
                         "type": task.type,
                         "points": task.points,
                         "order": task.order,
-                        "data": task.data
+                        "data": task.data,
                     }
                     topic_data["tasks"].append(task_data)
-                
+
                 lesson_data["topics"].append(topic_data)
-            
+
             course_data["lessons"].append(lesson_data)
-        
+
         return course_data
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -165,7 +174,7 @@ async def get_course(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-# Legacy endpoint for compatibility (mirrors current /api/courses/{course_id})  
+# Legacy endpoint for compatibility (mirrors current /api/courses/{course_id})
 @router.get("/{course_id}/legacy", summary="Get course data (legacy format)")
 async def get_course_legacy_format(course_id: int, db: Session = Depends(get_db)):
     """
@@ -179,7 +188,7 @@ async def get_course_legacy_format(course_id: int, db: Session = Depends(get_db)
             raise HTTPException(status_code=404, detail="Course not found")
 
         logger.info(f"Course data retrieved: {course_id}")
-        
+
         return {
             "id": course.id,
             "courseTitle": course.title,
@@ -194,13 +203,25 @@ async def get_course_legacy_format(course_id: int, db: Session = Depends(get_db)
                     "descTwo": "The course is organised in a series of lectures. Each lecture introduces a specific topic, includes mentions to some related historical facts and to people (indicated between squared brackets) who have provided interesting insights on the subject. The lectures are accompanied by several hands-on sessions for learning the primary constructs of the programming language that will be used for implementing and running the various algorithms proposed.",
                     "overviewList": [
                         {"listItem": "Understand and apply the principles of computational thinking and abstraction."},
-                        {"listItem": "Gain proficiency in Python programming, including variables, assignments, loops, and conditional statements."},
-                        {"listItem": "Use Python data structures like lists, stacks, queues, sets, and dictionaries to organize and manipulate information.."},
-                        {"listItem": "Implement various algorithms—including brute-force, recursive, divide and conquer, dynamic programming, and greedy algorithms—in Python."},
-                        {"listItem": "Analyze the computational cost and complexity of algorithms to understand the limits of computation."},
-                        {"listItem": "Apply algorithms to data structures such as trees and graphs to solve complex problems in the digital humanities."},
+                        {
+                            "listItem": "Gain proficiency in Python programming, including variables, assignments, loops, and conditional statements."
+                        },
+                        {
+                            "listItem": "Use Python data structures like lists, stacks, queues, sets, and dictionaries to organize and manipulate information.."
+                        },
+                        {
+                            "listItem": "Implement various algorithms—including brute-force, recursive, divide and conquer, dynamic programming, and greedy algorithms—in Python."
+                        },
+                        {
+                            "listItem": "Analyze the computational cost and complexity of algorithms to understand the limits of computation."
+                        },
+                        {
+                            "listItem": "Apply algorithms to data structures such as trees and graphs to solve complex problems in the digital humanities."
+                        },
                         {"listItem": "Develop and implement algorithms from scratch using flowcharts and pseudocode."},
-                        {"listItem": "Build a portfolio of Python programs that address computational tasks relevant to digital humanities projects.."},
+                        {
+                            "listItem": "Build a portfolio of Python programs that address computational tasks relevant to digital humanities projects.."
+                        },
                     ],
                 }
             ],
@@ -257,7 +278,7 @@ async def get_course_legacy_format(course_id: int, db: Session = Depends(get_db)
                 }
             ],
         }
-        
+
     except HTTPException:
         raise
     except SQLAlchemyError as e:
@@ -270,27 +291,27 @@ async def get_course_legacy_format(course_id: int, db: Session = Depends(get_db)
 
 # Lesson level endpoints
 @router.get("/{course_id}/lessons/", summary="List course lessons")
-async def get_course_lessons(
-    course_id: int = Path(..., description="Course ID"),
-    db: Session = Depends(get_db)
-):
+async def get_course_lessons(course_id: int = Path(..., description="Course ID"), db: Session = Depends(get_db)):
     """Get all lessons for a specific course"""
     try:
         course = db.query(Course).filter(Course.id == course_id).first()
         if not course:
             raise HTTPException(status_code=404, detail="Course not found")
-            
+
         lessons = db.query(Lesson).filter(Lesson.course_id == course_id).order_by(Lesson.lesson_order).all()
-        
-        return [{
-            "id": lesson.id,
-            "title": lesson.title,
-            "description": lesson.description,
-            "lesson_order": lesson.lesson_order,
-            "textbook": lesson.textbook,
-            "start_date": lesson.start_date
-        } for lesson in lessons]
-        
+
+        return [
+            {
+                "id": lesson.id,
+                "title": lesson.title,
+                "description": lesson.description,
+                "lesson_order": lesson.lesson_order,
+                "textbook": lesson.textbook,
+                "start_date": lesson.start_date,
+            }
+            for lesson in lessons
+        ]
+
     except HTTPException:
         raise
     except Exception as e:
@@ -302,18 +323,15 @@ async def get_course_lessons(
 async def get_lesson(
     course_id: int = Path(..., description="Course ID"),
     lesson_id: int = Path(..., description="Lesson ID"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Get lesson details with topics and tasks"""
     try:
-        lesson = db.query(Lesson).filter(
-            Lesson.id == lesson_id,
-            Lesson.course_id == course_id
-        ).first()
-        
+        lesson = db.query(Lesson).filter(Lesson.id == lesson_id, Lesson.course_id == course_id).first()
+
         if not lesson:
             raise HTTPException(status_code=404, detail="Lesson not found")
-        
+
         lesson_data = {
             "id": lesson.id,
             "title": lesson.title,
@@ -321,9 +339,9 @@ async def get_lesson(
             "lesson_order": lesson.lesson_order,
             "textbook": lesson.textbook,
             "start_date": lesson.start_date,
-            "topics": []
+            "topics": [],
         }
-        
+
         for topic in lesson.topics:
             topic_data = {
                 "id": topic.id,
@@ -333,9 +351,9 @@ async def get_lesson(
                 "content_file_md": topic.content_file_md,
                 "concepts": topic.concepts,
                 "topic_order": topic.topic_order,
-                "tasks": []
+                "tasks": [],
             }
-            
+
             for task in topic.tasks.order_by(Task.order):
                 task_data = {
                     "id": task.id,
@@ -343,14 +361,14 @@ async def get_lesson(
                     "type": task.type,
                     "points": task.points,
                     "order": task.order,
-                    "data": task.data
+                    "data": task.data,
                 }
                 topic_data["tasks"].append(task_data)
-            
+
             lesson_data["topics"].append(topic_data)
-        
+
         return lesson_data
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -363,31 +381,31 @@ async def get_lesson(
 async def get_lesson_topics(
     course_id: int = Path(..., description="Course ID"),
     lesson_id: int = Path(..., description="Lesson ID"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Get all topics for a specific lesson"""
     try:
         # Verify lesson exists and belongs to course
-        lesson = db.query(Lesson).filter(
-            Lesson.id == lesson_id,
-            Lesson.course_id == course_id
-        ).first()
-        
+        lesson = db.query(Lesson).filter(Lesson.id == lesson_id, Lesson.course_id == course_id).first()
+
         if not lesson:
             raise HTTPException(status_code=404, detail="Lesson not found")
-            
+
         topics = db.query(Topic).filter(Topic.lesson_id == lesson_id).order_by(Topic.topic_order).all()
-        
-        return [{
-            "id": topic.id,
-            "title": topic.title,
-            "background": topic.background,
-            "objectives": topic.objectives,
-            "content_file_md": topic.content_file_md,
-            "concepts": topic.concepts,
-            "topic_order": topic.topic_order
-        } for topic in topics]
-        
+
+        return [
+            {
+                "id": topic.id,
+                "title": topic.title,
+                "background": topic.background,
+                "objectives": topic.objectives,
+                "content_file_md": topic.content_file_md,
+                "concepts": topic.concepts,
+                "topic_order": topic.topic_order,
+            }
+            for topic in topics
+        ]
+
     except HTTPException:
         raise
     except Exception as e:
@@ -400,20 +418,21 @@ async def get_topic(
     course_id: int = Path(..., description="Course ID"),
     lesson_id: int = Path(..., description="Lesson ID"),
     topic_id: int = Path(..., description="Topic ID"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Get topic details with tasks"""
     try:
         # Verify the full hierarchy
-        topic = db.query(Topic).join(Lesson).filter(
-            Topic.id == topic_id,
-            Topic.lesson_id == lesson_id,
-            Lesson.course_id == course_id
-        ).first()
-        
+        topic = (
+            db.query(Topic)
+            .join(Lesson)
+            .filter(Topic.id == topic_id, Topic.lesson_id == lesson_id, Lesson.course_id == course_id)
+            .first()
+        )
+
         if not topic:
             raise HTTPException(status_code=404, detail="Topic not found")
-        
+
         topic_data = {
             "id": topic.id,
             "title": topic.title,
@@ -422,9 +441,9 @@ async def get_topic(
             "content_file_md": topic.content_file_md,
             "concepts": topic.concepts,
             "topic_order": topic.topic_order,
-            "tasks": []
+            "tasks": [],
         }
-        
+
         for task in topic.tasks.order_by(Task.order):
             task_data = {
                 "id": task.id,
@@ -432,12 +451,12 @@ async def get_topic(
                 "type": task.type,
                 "points": task.points,
                 "order": task.order,
-                "data": task.data
+                "data": task.data,
             }
             topic_data["tasks"].append(task_data)
-        
+
         return topic_data
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -451,31 +470,35 @@ async def get_topic_tasks(
     course_id: int = Path(..., description="Course ID"),
     lesson_id: int = Path(..., description="Lesson ID"),
     topic_id: int = Path(..., description="Topic ID"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Get all tasks for a specific topic"""
     try:
         # Verify the full hierarchy
-        topic = db.query(Topic).join(Lesson).filter(
-            Topic.id == topic_id,
-            Topic.lesson_id == lesson_id,
-            Lesson.course_id == course_id
-        ).first()
-        
+        topic = (
+            db.query(Topic)
+            .join(Lesson)
+            .filter(Topic.id == topic_id, Topic.lesson_id == lesson_id, Lesson.course_id == course_id)
+            .first()
+        )
+
         if not topic:
             raise HTTPException(status_code=404, detail="Topic not found")
-            
+
         tasks = db.query(Task).filter(Task.topic_id == topic_id).order_by(Task.order).all()
-        
-        return [{
-            "id": task.id,
-            "task_name": task.task_name,
-            "type": task.type,
-            "points": task.points,
-            "order": task.order,
-            "data": task.data
-        } for task in tasks]
-        
+
+        return [
+            {
+                "id": task.id,
+                "task_name": task.task_name,
+                "type": task.type,
+                "points": task.points,
+                "order": task.order,
+                "data": task.data,
+            }
+            for task in tasks
+        ]
+
     except HTTPException:
         raise
     except Exception as e:
@@ -489,21 +512,27 @@ async def get_task(
     lesson_id: int = Path(..., description="Lesson ID"),
     topic_id: int = Path(..., description="Topic ID"),
     task_id: int = Path(..., description="Task ID"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Get task details"""
     try:
         # Verify the full hierarchy
-        task = db.query(Task).join(Topic).join(Lesson).filter(
-            Task.id == task_id,
-            Task.topic_id == topic_id,
-            Topic.lesson_id == lesson_id,
-            Lesson.course_id == course_id
-        ).first()
-        
+        task = (
+            db.query(Task)
+            .join(Topic)
+            .join(Lesson)
+            .filter(
+                Task.id == task_id,
+                Task.topic_id == topic_id,
+                Topic.lesson_id == lesson_id,
+                Lesson.course_id == course_id,
+            )
+            .first()
+        )
+
         if not task:
             raise HTTPException(status_code=404, detail="Task not found")
-        
+
         return {
             "id": task.id,
             "task_name": task.task_name,
@@ -512,9 +541,9 @@ async def get_task(
             "order": task.order,
             "data": task.data,
             "created_at": task.created_at,
-            "updated_at": task.updated_at
+            "updated_at": task.updated_at,
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -527,22 +556,19 @@ async def get_task(
 async def get_lesson_summaries(
     course_id: int = Path(..., description="Course ID"),
     lesson_id: int = Path(..., description="Lesson ID"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Get summaries for all topics in a lesson
     """
     from sqlalchemy.orm import joinedload
-    
+
     # Verify course and lesson exist
-    lesson = db.query(Lesson).filter(
-        Lesson.id == lesson_id,
-        Lesson.course_id == course_id
-    ).first()
-    
+    lesson = db.query(Lesson).filter(Lesson.id == lesson_id, Lesson.course_id == course_id).first()
+
     if not lesson:
         raise HTTPException(status_code=404, detail="Lesson not found")
-    
+
     # Get summaries for the lesson
     summaries = (
         db.query(Summary)
@@ -551,22 +577,24 @@ async def get_lesson_summaries(
         .options(joinedload(Summary.topic))
         .all()
     )
-    
+
     # Format response
     summaries_data = []
     for summary in summaries:
-        summaries_data.append({
-            "id": summary.id,
-            "lesson_name": summary.lesson_name,
-            "lesson_link": summary.lesson_link,
-            "lesson_type": summary.lesson_type,
-            "icon_file": summary.icon_file,
-            "data": summary.data,
-            "topic_id": summary.topic_id,
-            "topic_title": summary.topic.title,
-            "created_at": summary.created_at
-        })
-    
+        summaries_data.append(
+            {
+                "id": summary.id,
+                "lesson_name": summary.lesson_name,
+                "lesson_link": summary.lesson_link,
+                "lesson_type": summary.lesson_type,
+                "icon_file": summary.icon_file,
+                "data": summary.data,
+                "topic_id": summary.topic_id,
+                "topic_title": summary.topic.title,
+                "created_at": summary.created_at,
+            }
+        )
+
     return {"summaries": summaries_data}
 
 
@@ -578,29 +606,37 @@ async def update_task(
     lesson_id: int = Path(..., description="Lesson ID"),
     topic_id: int = Path(..., description="Topic ID"),
     task_id: int = Path(..., description="Task ID"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Update task data - migrated from original task.py
     """
     try:
         # Verify the full hierarchy
-        task = db.query(Task).join(Topic).join(Lesson).filter(
-            Task.id == task_id,
-            Task.topic_id == topic_id,
-            Topic.lesson_id == lesson_id,
-            Lesson.course_id == course_id
-        ).first()
-        
+        task = (
+            db.query(Task)
+            .join(Topic)
+            .join(Lesson)
+            .filter(
+                Task.id == task_id,
+                Task.topic_id == topic_id,
+                Topic.lesson_id == lesson_id,
+                Lesson.course_id == course_id,
+            )
+            .first()
+        )
+
         if not task:
             raise HTTPException(status_code=404, detail="Task not found")
 
         # Update the JSON field based on task type
         task_json = task.data.copy() if task.data else {}
-        
+
         if task.type == "MultipleSelectQuiz":
             task_json["question"] = task_data.newQuestion
-            task_json["options"] = [{"id": str(i + 1), "name": option["name"]} for i, option in enumerate(task_data.newOptions)]
+            task_json["options"] = [
+                {"id": str(i + 1), "name": option["name"]} for i, option in enumerate(task_data.newOptions)
+            ]
             task_json["correctAnswers"] = task_data.newCorrectAnswers
 
         task.data = task_json
@@ -608,9 +644,9 @@ async def update_task(
 
         db.commit()
         logger.info(f"Task {task_id} updated successfully")
-        
+
         return {"message": "Task updated successfully", "task_id": task_id}
-        
+
     except HTTPException:
         raise
     except IntegrityError as e:

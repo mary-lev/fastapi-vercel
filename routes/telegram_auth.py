@@ -22,6 +22,9 @@ router = APIRouter()
 class TelegramLinkRequest(BaseModel):
     telegram_user_id: int
     course_id: Optional[int] = 1  # Default to course 1
+    telegram_username: Optional[str] = None  # Telegram username (without @)
+    first_name: Optional[str] = None  # User's first name from Telegram
+    last_name: Optional[str] = None  # User's last name from Telegram
 
 
 class TelegramLinkResponse(BaseModel):
@@ -71,20 +74,47 @@ async def create_telegram_link(
         course_id = link_request.course_id
         logger.info(f"Creating Telegram link for user: {telegram_user_id}, course: {course_id}")
 
+        # Extract telegram user info from request
+        telegram_username = link_request.telegram_username
+        first_name = link_request.first_name
+        last_name = link_request.last_name
+
+        logger.info(
+            f"Telegram user info - username: {telegram_username}, first_name: {first_name}, last_name: {last_name}"
+        )
+
         # Check if this telegram_user_id is already linked to an existing user
         existing_user = db.query(User).filter(User.telegram_user_id == telegram_user_id).first()
 
         if existing_user:
             logger.info(f"Telegram user {telegram_user_id} already linked to user {existing_user.id}")
-            # For security, we'll still create a new link token but log this event
-            # The frontend can handle this case appropriately
+
+            # Update existing user's info with latest telegram data if provided
+            if telegram_username and existing_user.username.startswith("telegram_user_"):
+                # Only update if current username is the auto-generated one
+                existing_user.username = telegram_username
+                logger.info(f"Updated username for existing user {existing_user.id} to: {telegram_username}")
+
+            if first_name and not existing_user.first_name:
+                existing_user.first_name = first_name
+
+            if last_name and not existing_user.last_name:
+                existing_user.last_name = last_name
+
+            db.commit()
 
         # Create JWT token
         token_data = jwt_manager.create_link_token(telegram_user_id, course_id)
 
         # Store token metadata in database for single-use enforcement
         link_token = TelegramLinkToken(
-            jti=token_data["jti"], telegram_user_id=telegram_user_id, expires_at=token_data["expires_at"], is_used=False
+            jti=token_data["jti"],
+            telegram_user_id=telegram_user_id,
+            expires_at=token_data["expires_at"],
+            is_used=False,
+            telegram_username=telegram_username,
+            first_name=first_name,
+            last_name=last_name,
         )
 
         db.add(link_token)
@@ -176,17 +206,26 @@ async def complete_telegram_link(
 
             internal_user_id = str(uuid.uuid4())
 
-            # Create new user
+            # Use telegram username if available, otherwise fallback to auto-generated
+            username = (
+                token_record.telegram_username
+                if token_record.telegram_username
+                else f"telegram_user_{telegram_user_id}"
+            )
+
+            # Create new user with telegram information
             user = User(
                 internal_user_id=internal_user_id,
                 telegram_user_id=telegram_user_id,
-                username=f"telegram_user_{telegram_user_id}",
+                username=username,
+                first_name=token_record.first_name,
+                last_name=token_record.last_name,
                 hashed_sub=f"telegram:{telegram_user_id}",  # Unique identifier
                 status="STUDENT",  # Will be set based on business logic
             )
 
             db.add(user)
-            logger.info(f"Created new user for Telegram user {telegram_user_id}")
+            logger.info(f"Created new user for Telegram user {telegram_user_id} with username: {username}")
 
         db.commit()
 

@@ -22,6 +22,8 @@ class User(Base):
     internal_user_id = Column(String, index=True)
     hashed_sub = Column(String, unique=True, index=True)
     username = Column(String, unique=False, index=True, default="Anonymous")
+    first_name = Column(String, nullable=True)  # User's first name
+    last_name = Column(String, nullable=True)  # User's last name
     status = Column(Enum(UserStatus), index=True, nullable=True)
     telegram_user_id = Column(BigInteger, nullable=True, unique=True, index=True)
 
@@ -35,6 +37,11 @@ class TelegramLinkToken(Base):
     expires_at = Column(DateTime, nullable=False)
     used_at = Column(DateTime, nullable=True)
     is_used = Column(Boolean, default=False, nullable=False)
+
+    # Telegram user info for user creation
+    telegram_username = Column(String, nullable=True)  # Telegram username (without @)
+    first_name = Column(String, nullable=True)  # User's first name from Telegram
+    last_name = Column(String, nullable=True)  # User's last name from Telegram
 
 
 class CourseEnrollment(Base):

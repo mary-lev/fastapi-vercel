@@ -11,10 +11,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from typing import Dict, List, Optional
 from pydantic import BaseModel
 
-from models import (
-    User, Task, TaskAttempt, TaskSolution, Course, Topic, Lesson,
-    StudentFormSubmission
-)
+from models import User, Task, TaskAttempt, TaskSolution, Course, Topic, Lesson, StudentFormSubmission
 from db import get_db
 from utils.logging_config import logger
 
@@ -36,7 +33,7 @@ class StudentFormResponse(BaseModel):
     operating_system: str
     python_confidence: int
     submitted_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -507,38 +504,30 @@ def get_task_progress_analytics(task_id: int, start_date: str = "2024-11-12", db
 # Student form management (migrated from student_form.py)
 @router.get("/student-forms", response_model=List[StudentFormResponse], summary="Get all student forms")
 async def get_student_forms(
-    limit: int = Query(100, description="Maximum number of forms to return"),
-    db: Session = Depends(get_db)
+    limit: int = Query(100, description="Maximum number of forms to return"), db: Session = Depends(get_db)
 ):
     """Get all student form submissions"""
     try:
-        forms = db.query(StudentFormSubmission).order_by(
-            StudentFormSubmission.submitted_at.desc()
-        ).limit(limit).all()
-        
+        forms = db.query(StudentFormSubmission).order_by(StudentFormSubmission.submitted_at.desc()).limit(limit).all()
+
         return forms
-        
+
     except Exception as e:
         logger.error(f"Error retrieving student forms: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/student-forms/{user_id}", response_model=StudentFormResponse, summary="Get student form by user")
-async def get_student_form_by_user(
-    user_id: int,
-    db: Session = Depends(get_db)
-):
+async def get_student_form_by_user(user_id: int, db: Session = Depends(get_db)):
     """Get student form submission for a specific user"""
     try:
-        form = db.query(StudentFormSubmission).filter(
-            StudentFormSubmission.user_id == user_id
-        ).first()
-        
+        form = db.query(StudentFormSubmission).filter(StudentFormSubmission.user_id == user_id).first()
+
         if not form:
             raise HTTPException(status_code=404, detail="Student form not found")
-            
+
         return form
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -548,17 +537,14 @@ async def get_student_form_by_user(
 
 # Task generation (placeholder for future implementation)
 @router.post("/task-generator/generate", summary="Generate new tasks")
-async def generate_tasks(
-    request: TaskGenerationRequest,
-    db: Session = Depends(get_db)
-):
+async def generate_tasks(request: TaskGenerationRequest, db: Session = Depends(get_db)):
     """Generate new tasks using AI (placeholder for future implementation)"""
     try:
         # Verify topic exists
         topic = db.query(Topic).filter(Topic.id == request.topic_id).first()
         if not topic:
             raise HTTPException(status_code=404, detail="Topic not found")
-        
+
         # Placeholder response - actual AI generation would be implemented here
         return {
             "message": f"Task generation request received for topic {request.topic_id}",
@@ -567,9 +553,9 @@ async def generate_tasks(
             "difficulty": request.difficulty,
             "count": request.count,
             "status": "pending",
-            "note": "Task generation feature is not yet implemented"
+            "note": "Task generation feature is not yet implemented",
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -586,20 +572,20 @@ async def get_task_templates():
                 "type": "CodeTask",
                 "name": "Programming Exercise",
                 "description": "Generate coding tasks with test cases",
-                "difficulties": ["beginner", "intermediate", "advanced"]
+                "difficulties": ["beginner", "intermediate", "advanced"],
             },
             {
                 "type": "MultipleSelectQuiz",
                 "name": "Multiple Choice Quiz",
                 "description": "Generate multiple choice questions",
-                "difficulties": ["easy", "medium", "hard"]
+                "difficulties": ["easy", "medium", "hard"],
             },
             {
                 "type": "TrueFalseQuiz",
                 "name": "True/False Questions",
                 "description": "Generate true/false questions",
-                "difficulties": ["easy", "medium", "hard"]
-            }
+                "difficulties": ["easy", "medium", "hard"],
+            },
         ]
     }
 
@@ -609,25 +595,28 @@ async def get_task_templates():
 async def get_all_users(
     limit: int = Query(100, description="Maximum number of users to return"),
     status: Optional[str] = Query(None, description="Filter by user status"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Get all users with optional filtering"""
     try:
         query = db.query(User)
-        
+
         if status:
             query = query.filter(User.status == status)
-            
+
         users = query.order_by(User.id).limit(limit).all()
-        
-        return [{
-            "id": user.id,
-            "username": user.username,
-            "internal_user_id": user.internal_user_id,
-            "status": user.status.value if user.status else None,
-            "telegram_user_id": user.telegram_user_id
-        } for user in users]
-        
+
+        return [
+            {
+                "id": user.id,
+                "username": user.username,
+                "internal_user_id": user.internal_user_id,
+                "status": user.status.value if user.status else None,
+                "telegram_user_id": user.telegram_user_id,
+            }
+            for user in users
+        ]
+
     except Exception as e:
         logger.error(f"Error retrieving users: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -646,13 +635,13 @@ async def get_system_stats(db: Session = Depends(get_db)):
             "total_tasks": db.query(func.count(Task.id)).scalar(),
             "total_attempts": db.query(func.count(TaskAttempt.id)).scalar(),
             "total_solutions": db.query(func.count(TaskSolution.id)).scalar(),
-            "active_users_last_7_days": db.query(func.count(func.distinct(TaskAttempt.user_id))).filter(
-                TaskAttempt.submitted_at >= datetime.utcnow() - timedelta(days=7)
-            ).scalar(),
+            "active_users_last_7_days": db.query(func.count(func.distinct(TaskAttempt.user_id)))
+            .filter(TaskAttempt.submitted_at >= datetime.utcnow() - timedelta(days=7))
+            .scalar(),
         }
-        
+
         return stats
-        
+
     except Exception as e:
         logger.error(f"Error retrieving system stats: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
