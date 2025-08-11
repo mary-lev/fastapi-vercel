@@ -59,28 +59,29 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Middleware for request tracking
 @app.middleware("http")
 async def add_request_id(request: Request, call_next):
     """Add unique request ID for tracking"""
     request_id = str(uuid.uuid4())
     request.state.request_id = request_id
-    
+
     # Process request and measure time
     start_time = datetime.utcnow()
     response = await call_next(request)
     process_time = (datetime.utcnow() - start_time).total_seconds()
-    
+
     # Add headers to response
     response.headers["X-Request-ID"] = request_id
     response.headers["X-Process-Time"] = str(process_time)
-    
+
     # Log request details
     logger.info(
         f"Request {request_id}: {request.method} {request.url.path} "
         f"completed in {process_time:.3f}s with status {response.status_code}"
     )
-    
+
     return response
 
 
@@ -90,12 +91,10 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     """Handle validation errors with proper structure"""
     errors = []
     for error in exc.errors():
-        errors.append({
-            "field": ".".join(str(loc) for loc in error["loc"]),
-            "message": error["msg"],
-            "code": error["type"]
-        })
-    
+        errors.append(
+            {"field": ".".join(str(loc) for loc in error["loc"]), "message": error["msg"], "code": error["type"]}
+        )
+
     return JSONResponse(
         status_code=422,
         content={
@@ -103,8 +102,8 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "error": "Validation Error",
             "detail": errors,
             "status_code": 422,
-            "request_id": getattr(request.state, "request_id", None)
-        }
+            "request_id": getattr(request.state, "request_id", None),
+        },
     )
 
 
@@ -117,8 +116,8 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
             "success": False,
             "error": exc.detail,
             "status_code": exc.status_code,
-            "request_id": getattr(request.state, "request_id", None)
-        }
+            "request_id": getattr(request.state, "request_id", None),
+        },
     )
 
 
@@ -133,8 +132,8 @@ async def general_exception_handler(request: Request, exc: Exception):
             "error": "Internal Server Error",
             "detail": "An unexpected error occurred. Please try again later.",
             "status_code": 500,
-            "request_id": getattr(request.state, "request_id", None)
-        }
+            "request_id": getattr(request.state, "request_id", None),
+        },
     )
 
 
@@ -168,6 +167,7 @@ app.include_router(
     tags=["👥 Users"],
 )
 
+
 # Root endpoint
 @app.get("/", tags=["System"])
 async def root():
@@ -186,7 +186,7 @@ async def root():
             "students": "/api/v1/students",
             "professor": "/api/v1/professor",
             "auth": "/api/v1/auth",
-        }
+        },
     }
 
 

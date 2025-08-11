@@ -13,6 +13,7 @@ from enum import Enum
 # ENUMS
 # ============================================================================
 
+
 class UserRole(str, Enum):
     STUDENT = "student"
     PROFESSOR = "professor"
@@ -30,14 +31,17 @@ class TaskType(str, Enum):
 # BASE MODELS
 # ============================================================================
 
+
 class BaseResponse(BaseModel):
     """Base response with common fields"""
+
     success: bool = True
     message: Optional[str] = None
 
 
 class PaginationParams(BaseModel):
     """Common pagination parameters"""
+
     limit: int = Field(100, ge=1, le=1000)
     offset: int = Field(0, ge=0)
 
@@ -45,6 +49,7 @@ class PaginationParams(BaseModel):
 # ============================================================================
 # USER MODELS
 # ============================================================================
+
 
 class UserBase(BaseModel):
     username: str
@@ -60,7 +65,7 @@ class UserResponse(UserBase):
     id: int
     internal_user_id: str
     telegram_user_id: Optional[int] = None
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -83,6 +88,7 @@ class UserUpdateRequest(BaseModel):
 # COURSE MODELS
 # ============================================================================
 
+
 class CourseBase(BaseModel):
     title: str
     description: str
@@ -96,7 +102,7 @@ class CourseResponse(CourseBase):
     id: int
     lesson_count: int = 0
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -107,6 +113,7 @@ class CourseListResponse(BaseResponse):
 
 class CourseDetailResponse(CourseResponse):
     """Extended course info with instructor and requirements"""
+
     instructor_name: str
     instructor_title: str
     requirements: List[str]
@@ -116,6 +123,7 @@ class CourseDetailResponse(CourseResponse):
 # ============================================================================
 # LESSON MODELS
 # ============================================================================
+
 
 class LessonBase(BaseModel):
     title: str
@@ -128,7 +136,7 @@ class LessonResponse(LessonBase):
     course_id: int
     topic_count: int = 0
     is_available: bool = True
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -140,6 +148,7 @@ class LessonListResponse(BaseResponse):
 # ============================================================================
 # TOPIC MODELS
 # ============================================================================
+
 
 class TopicBase(BaseModel):
     title: str
@@ -153,18 +162,20 @@ class TopicResponse(TopicBase):
     lesson_id: int
     topic_order: int
     task_count: int = 0
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
 class TopicDetailResponse(TopicResponse):
     """Topic with tasks included"""
-    tasks: List['TaskResponse'] = []
+
+    tasks: List["TaskResponse"] = []
 
 
 # ============================================================================
 # TASK MODELS
 # ============================================================================
+
 
 class TaskBase(BaseModel):
     task_name: str
@@ -179,7 +190,7 @@ class TaskResponse(TaskBase):
     task_link: str
     topic_id: int
     data: Dict[str, Any]
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -200,6 +211,7 @@ class TaskUpdateRequest(BaseModel):
 # TASK ATTEMPT/SOLUTION MODELS
 # ============================================================================
 
+
 class TaskAttemptBase(BaseModel):
     task_id: int
     attempt_content: Dict[str, Any]
@@ -214,7 +226,7 @@ class TaskAttemptResponse(TaskAttemptBase):
     user_id: int
     created_at: datetime
     score: Optional[float] = None
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -235,13 +247,14 @@ class TaskSolutionResponse(TaskSolutionBase):
     points_earned: int = 0
     task_name: Optional[str] = None
     task_type: Optional[TaskType] = None
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
 # ============================================================================
 # PROGRESS & ANALYTICS MODELS
 # ============================================================================
+
 
 class UserProgressResponse(BaseModel):
     user_id: str
@@ -274,6 +287,7 @@ class TaskAnalyticsResponse(BaseModel):
 # ENROLLMENT MODELS
 # ============================================================================
 
+
 class EnrollmentRequest(BaseModel):
     course_id: int
     user_id: str  # internal_user_id
@@ -289,6 +303,7 @@ class EnrollmentResponse(BaseResponse):
 # AI FEEDBACK MODELS
 # ============================================================================
 
+
 class AIFeedbackRequest(BaseModel):
     task_attempt_id: int
     feedback_type: str = "code_review"
@@ -300,13 +315,14 @@ class AIFeedbackResponse(BaseModel):
     feedback_content: str
     score: Optional[float] = None
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
 # ============================================================================
 # SESSION RECORDING MODELS
 # ============================================================================
+
 
 class SessionRecordingRequest(BaseModel):
     session_id: str
@@ -323,6 +339,7 @@ class SessionRecordingResponse(BaseResponse):
 # ============================================================================
 # TELEGRAM AUTH MODELS
 # ============================================================================
+
 
 class TelegramLinkRequest(BaseModel):
     telegram_user_id: int
@@ -348,6 +365,7 @@ class TelegramCompleteResponse(BaseResponse):
 # ERROR MODELS
 # ============================================================================
 
+
 class ErrorDetail(BaseModel):
     field: Optional[str] = None
     message: str
@@ -365,6 +383,7 @@ class ErrorResponse(BaseModel):
 # ============================================================================
 # BATCH OPERATIONS
 # ============================================================================
+
 
 class BatchTaskCreateRequest(BaseModel):
     topic_id: int
@@ -389,6 +408,7 @@ class BatchEnrollResponse(BaseResponse):
 # ============================================================================
 # PROFESSOR/ADMIN MODELS
 # ============================================================================
+
 
 class StudentAnalyticsResponse(BaseModel):
     student_id: str
