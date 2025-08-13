@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from typing import Optional, Dict, Any
 
 from db import get_db
-from models import User, TelegramLinkToken, SessionRecording
+from models import User, TelegramLinkToken
 from utils.jwt_utils import jwt_manager
 from utils.logging_config import logger
 from utils.rate_limiting import rate_limit, telegram_rate_limit_key
@@ -349,98 +349,6 @@ async def get_telegram_link_status(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
 
 
-# Session management endpoints
-@router.post("/sessions/create", summary="Create user session")
-async def create_session(
-    session_request: SessionCreateRequest, user_id: Optional[int] = None, db: Session = Depends(get_db)
-):
-    """Create a new user session for tracking"""
-    try:
-        session_recording = SessionRecording(
-            session_id=session_request.session_id,
-            user_id=user_id,
-            page_url=session_request.page_url,
-            user_agent=session_request.user_agent,
-            session_start=datetime.utcnow(),
-            events_count=0,
-        )
-
-        db.add(session_recording)
-        db.commit()
-        db.refresh(session_recording)
-
-        logger.info(f"Session created: {session_request.session_id}")
-
-        return {
-            "session_id": session_recording.session_id,
-            "created_at": session_recording.session_start,
-            "status": "active",
-        }
-
-    except IntegrityError as e:
-        db.rollback()
-        logger.error(f"Database integrity error in create_session: {e}")
-        raise HTTPException(status_code=409, detail="Session already exists")
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Error creating session: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
-
-
-@router.put("/sessions/{session_id}", summary="Update session")
-async def update_session(session_id: str, session_update: SessionUpdateRequest, db: Session = Depends(get_db)):
-    """Update session with new events and data"""
-    try:
-        session = db.query(SessionRecording).filter(SessionRecording.session_id == session_id).first()
-
-        if not session:
-            raise HTTPException(status_code=404, detail="Session not found")
-
-        session.events_count = session_update.events_count
-        if session_update.session_data:
-            session.session_data = session_update.session_data
-
-        db.commit()
-
-        return {"session_id": session_id, "events_count": session.events_count, "status": "updated"}
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Error updating session {session_id}: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
-
-
-@router.post("/sessions/{session_id}/end", summary="End session")
-async def end_session(session_id: str, db: Session = Depends(get_db)):
-    """End a user session"""
-    try:
-        session = db.query(SessionRecording).filter(SessionRecording.session_id == session_id).first()
-
-        if not session:
-            raise HTTPException(status_code=404, detail="Session not found")
-
-        session.session_end = datetime.utcnow()
-        db.commit()
-
-        duration = (session.session_end - session.session_start).total_seconds()
-
-        logger.info(f"Session ended: {session_id}, duration: {duration}s")
-
-        return {
-            "session_id": session_id,
-            "duration_seconds": duration,
-            "events_count": session.events_count,
-            "status": "ended",
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Error ending session {session_id}: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/sessions/refresh", summary="Refresh session token")

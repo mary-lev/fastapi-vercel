@@ -1,0 +1,77 @@
+[
+    {
+        "lessonType": "Code",
+        "lessonName": "Simple Merge Sort Implementation",
+        "points": 10,
+        "topic_id": 20,
+        "data": {
+            "text": "Implement a simple merge sort algorithm to sort a list of numbers. Ensure you are using recursion and the concept of divide and conquer. Use the following list for testing: [34, 7, 23, 32, 5, 62].",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Debugging Merge Function",
+        "points": 10,
+        "topic_id": 20,
+        "data": {
+            "text": "The following code is intended to merge two sorted lists using the merge function from the merge sort algorithm. However, there are some bugs. Identify and fix the bugs.",
+            "code": "def merge(left, right):\n    result = []\n    while len(left) > 0 or len(right) > 0:\n        if len(left) > 0 and (len(right) == 0 or left[0] <= right[0]):\n            result.append(left.pop(0))\n        elif len(right) > 0 and (len(left) == 0 or right[0] < left[0]):\n            result.append(right.pop(0))\n    return result\n\nleft_list = [2, 8, 15]\nright_list = [5, 10, 20]\nprint(merge(left_list, right_list))"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Complex Task: Text Sorting with Merge Sort",
+        "points": 15,
+        "topic_id": 20,
+        "data": {
+            "text": "Using the merge sort algorithm, sort the following list of book titles: ['The Catcher in the Rye', 'To Kill a Mockingbird', '1984', 'Pride and Prejudice', 'The Great Gatsby']. Ensure your implementation handles strings correctly and maintains the divide and conquer approach.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "MultipleSelectQuiz",
+        "lessonName": "Understanding Floor Division in Merge Sort",
+        "points": 5,
+        "topic_id": 20,
+        "data": {
+            "question": "In the merge sort algorithm, why is floor division used when dividing the list?",
+            "options": [
+                {
+                    "id": "1",
+                    "name": "To ensure the list is split into two equal parts when possible."
+                },
+                {
+                    "id": "2",
+                    "name": "To avoid errors when lists have an odd number of elements."
+                },
+                {
+                    "id": "3",
+                    "name": "To maintain the integrity of the original list."
+                },
+                {
+                    "id": "4",
+                    "name": "To optimize memory usage."
+                }
+            ],
+            "correctAnswers": [
+                "1",
+                "2"
+            ]
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "SingleQuestion",
+        "lessonName": "Mutable vs Immutable in Recursion",
+        "points": 10,
+        "topic_id": 20,
+        "data": {
+            "question": "Explain how mutable and immutable types affect the recursive approach in divide and conquer algorithms, particularly in terms of passing lists or tuples to recursive functions."
+        },
+        "is_active": false
+    }
+]

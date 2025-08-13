@@ -1,0 +1,79 @@
+[
+    {
+        "lessonType": "Code",
+        "lessonName": "Boolean Comparison Basics",
+        "points": 10,
+        "topic_id": 4,
+        "data": {
+            "text": "Write a simple Python code that uses Boolean comparison operators to compare the ages of two characters from Harry Potter. Assign the age of Harry as 17 and Hermione as 18, then use all the comparison operators to compare their ages and print out the results with explanatory text.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Debugging Comparison",
+        "points": 15,
+        "topic_id": 4,
+        "data": {
+            "text": "The following code snippet is intended to compare the lengths of two spells, 'Expelliarmus' and 'Wingardium Leviosa', and print whether they have the same length or which one is longer. However, the code contains errors. Identify and fix them.",
+            "code": "spell1 = 'Expelliarmus'\nspell2 = 'Wingardium Leviosa'\n\nif spell1 == spell2:\n    print('The spells have the same length.')\nelif len(spell1) > spell2:\n    print('Expelliarmus is longer.')\nelse:\n    print('Wingardium Leviosa is longer.')"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Using Logical Operators",
+        "points": 15,
+        "topic_id": 4,
+        "data": {
+            "text": "Using logical operators, write a Python function named 'is_eligible_for_quidditch' that takes two Boolean parameters: 'is_in_third_year' and 'has_broom'. The function should return True if the student is in third year and has a broom. Otherwise, it should return False.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Text Analysis with Booleans",
+        "points": 20,
+        "topic_id": 4,
+        "data": {
+            "text": "You are given a sentence from the book 'The Philosopher's Stone'. Write a Python function 'contains_magic_words' that takes a string and returns True if the string contains either 'Hogwarts' or 'Magic', and False otherwise. Use logical operators to achieve this.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Nested Logical Statements",
+        "points": 20,
+        "topic_id": 4,
+        "data": {
+            "text": "Write a Python function 'can_enter_room_of_requirement' that takes three Boolean parameters: 'needs_help', 'is_aware_of_room', and 'is_with_harry'. The function should return True if the student needs help and is aware of the room, or if they are with Harry. Use nested logical statements to build the function.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Complex Conditionals in Flow Control",
+        "points": 25,
+        "topic_id": 4,
+        "data": {
+            "text": "Create a function named 'determine_house' that takes three Boolean parameters: 'is_brave', 'is_loyal', and 'is_cunning'. Use conditional statements to print out the name of the Hogwarts house a student belongs to based on these traits. If a student is brave, they should be in Gryffindor. If loyal, Hufflepuff. If cunning, Slytherin. If none of these, print 'Ravenclaw'.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Challenging Task: Sorting Hat Logic",
+        "points": 30,
+        "topic_id": 4,
+        "data": {
+            "text": "Write a Python function 'sorting_hat' that takes a dictionary where keys are student names and values are tuples of Boolean traits (is_brave, is_loyal, is_cunning). The function should return a new dictionary where each student is assigned to a Hogwarts house based on the same logic as the previous task. Use Boolean logic and loops to solve this problem.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    }
+]

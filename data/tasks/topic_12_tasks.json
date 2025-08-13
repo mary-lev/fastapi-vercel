@@ -1,0 +1,79 @@
+[
+    {
+        "lessonType": "Code",
+        "lessonName": "Simple List Creation",
+        "points": 5,
+        "topic_id": 12,
+        "data": {
+            "text": "Create a list containing the names of five historical figures significant to the Digital Humanities. Print the entire list.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Debugging List Errors",
+        "points": 10,
+        "topic_id": 12,
+        "data": {
+            "text": "The following code is meant to print the second-to-last item in the list, but it returns an error. Identify and correct the mistake.",
+            "code": "historical_tools = ['Printing Press', 'Typewriter', 'Telegraph']\nprint(historical_tools[-4])"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "List Indexing and Modification",
+        "points": 10,
+        "topic_id": 12,
+        "data": {
+            "text": "You have the following list of historical periods: ['Medieval', 'Renaissance', 'Industrial', 'Modern']. Change 'Industrial' to 'Post-Industrial' and print the updated list.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "List Slicing and Concatenation",
+        "points": 10,
+        "topic_id": 12,
+        "data": {
+            "text": "Given a list of years: [1200, 1350, 1500, 1650, 1800, 1950, 2000], slice out the years from the Renaissance period (1350-1650) and concatenate them with another list [1700, 1850]. Print the final list.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "List Multiplication and Removal",
+        "points": 10,
+        "topic_id": 12,
+        "data": {
+            "text": "Create a list of three major technological inventions for communication. Multiply the list by 3 and then remove the second occurrence of the first item. Print the list.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Nested List Access",
+        "points": 10,
+        "topic_id": 12,
+        "data": {
+            "text": "Consider a nested list that represents different types of cultural artifacts: [['Painting', 'Sculpture'], ['Manuscript', 'Book'], ['Film', 'Photograph']]. Access and print 'Book' and 'Film'.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Complex List Operations",
+        "points": 15,
+        "topic_id": 12,
+        "data": {
+            "text": "You are given two lists: ['Fresco', 'Mosaic', 'Statue'] and ['Digital Image', 'VR Experience']. Concatenate them to form a new list. Then, create a nested list where the first sublist contains all traditional art forms and the second sublist contains all digital art forms. Remove 'Statue' and 'VR Experience' from their respective sublists, and print the final nested list.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    }
+]

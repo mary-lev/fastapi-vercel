@@ -218,15 +218,7 @@ class Summary(Base):
     topic = relationship("Topic", back_populates="summary")
 
 
-class SessionRecording(Base):
-    __tablename__ = "session_recordings"
-
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)  # Link to User
-    created_at = Column(DateTime, default=func.now(), nullable=False)
-    events = Column(JSON, nullable=False)  # Store recorded events in JSON format
-
-    user = relationship("User", backref="session_recordings")
+# Session recording model is no longer used
 
 
 class AIFeedback(Base):

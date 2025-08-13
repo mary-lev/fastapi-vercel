@@ -1,0 +1,46 @@
+[
+    {
+        "lessonType": "Code",
+        "lessonName": "Create a Simple Harry Potter Dictionary",
+        "points": 5,
+        "topic_id": 17,
+        "data": {
+            "text": "Create a dictionary named `harry_potter` which includes the following key-value pairs: 'house': 'Gryffindor', 'year': 5, 'patronus': 'stag'. Print each key and its associated value on a new line.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Debug and Update Harry's Profile",
+        "points": 7,
+        "topic_id": 17,
+        "data": {
+            "text": "The following code snippet has an error and requires you to update Harry Potter's profile by adding a new key-value pair 'wand': 'holly, phoenix feather'. Fix the code and ensure it prints the updated dictionary.",
+            "code": "harry_potter = {'house': 'Gryffindor', 'year': 5, 'patronus': 'stag'}\nprint(harry_potter['house'])\n\n# Add wand information\nharry_potter['wand'] = 'holly, phoenix feather'\nprint(harry_potter)"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Complex Dictionary Operations with Characters",
+        "points": 10,
+        "topic_id": 17,
+        "data": {
+            "text": "Create a dictionary `character_profiles` with profiles for two characters, Harry and Hermione. Each profile should include 'house', 'year', and 'patronus'. Use dictionary methods to print all keys, all values, and all items. Finally, remove the 'patronus' key from Hermione's profile.",
+            "code": "character_profiles = {\n    'Harry': {'house': 'Gryffindor', 'year': 5, 'patronus': 'stag'},\n    'Hermione': {'house': 'Gryffindor', 'year': 5, 'patronus': 'otter'}\n}\n\n# Print keys\nprint(character_profiles.keys())\n\n# Print values\nprint(character_profiles.values())\n\n# Print items\nprint(character_profiles.items())\n\n# Remove patronus from Hermione\n# Your code here\n\n# Print the updated Hermione profile\nprint(character_profiles['Hermione'])"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Dictionary Analysis with Harry Potter Data",
+        "points": 15,
+        "topic_id": 17,
+        "data": {
+            "text": "You have a dictionary `hogwarts_houses` where the keys are house names (e.g., 'Gryffindor') and the values are lists of students in each house. Write a function `add_student` that adds a new student to a specified house. Then, write a function `remove_student` that removes a student from a specified house. Demonstrate these functions by adding 'Neville' to 'Gryffindor' and removing 'Draco' from 'Slytherin'.",
+            "code": "hogwarts_houses = {\n    'Gryffindor': ['Harry', 'Hermione', 'Ron'],\n    'Slytherin': ['Draco', 'Pansy'],\n    'Ravenclaw': ['Luna'],\n    'Hufflepuff': ['Cedric']\n}\n\ndef add_student(houses, house, student):\n    # Your code here to add a student\n    pass\n\ndef remove_student(houses, house, student):\n    # Your code here to remove a student\n    pass\n\nadd_student(hogwarts_houses, 'Gryffindor', 'Neville')\nremove_student(hogwarts_houses, 'Slytherin', 'Draco')\n\nprint(hogwarts_houses)"
+        },
+        "is_active": false
+    }
+]

@@ -1,0 +1,79 @@
+[
+    {
+        "lessonType": "Code",
+        "lessonName": "Basic For Loop",
+        "points": 5,
+        "topic_id": 14,
+        "data": {
+            "text": "Write a for loop to print each character in the string 'Python'.",
+            "code": "string = 'Python'\n# Your code here"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Debugging For Loop",
+        "points": 5,
+        "topic_id": 14,
+        "data": {
+            "text": "The following code should print numbers from 1 to 5. There is a mistake in the code. Identify and fix it.",
+            "code": "for i in range(1, 5)\n    print(i)"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Using Range with For Loop",
+        "points": 10,
+        "topic_id": 14,
+        "data": {
+            "text": "Write a for loop using the range function to print numbers from 10 to 1, in descending order.",
+            "code": "# Your code here"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Nested For Loop",
+        "points": 10,
+        "topic_id": 14,
+        "data": {
+            "text": "Create a nested for loop to print each letter of the words in the list ['Hello', 'World'].",
+            "code": "words = ['Hello', 'World']\n# Your code here"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Break Statement Usage",
+        "points": 10,
+        "topic_id": 14,
+        "data": {
+            "text": "Given a list of strings, use a for loop to find and print the first string that contains the letter 'e'. Exit the loop after finding the first occurrence.",
+            "code": "words = ['apple', 'banana', 'cherry', 'date']\n# Your code here"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Continue Statement Usage",
+        "points": 10,
+        "topic_id": 14,
+        "data": {
+            "text": "Write a for loop that prints all numbers from 1 to 10, but skips numbers that are divisible by 3.",
+            "code": "# Your code here"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "For Loop with Else Block",
+        "points": 15,
+        "topic_id": 14,
+        "data": {
+            "text": "Consider a list of numbers. Use a for loop with an else block to check if all numbers are positive. Print 'All numbers are positive' if the loop completes normally, otherwise print 'Contains non-positive numbers'.",
+            "code": "numbers = [3, 5, 7, -2, 9]\n# Your code here"
+        },
+        "is_active": false
+    }
+]

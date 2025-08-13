@@ -1,0 +1,736 @@
+{
+  "lesson": [
+      {
+          "id": 0,
+          "title": "How To Construct While Loops",
+          "isShow": true,
+          "summary": {
+              "background": "Students have experience with ordered structures and basic Python programming.",
+              "objectives": "This lesson introduces Python's while loop, a control structure that repeats code execution based on a specified Boolean condition. Unlike for loops that run a fixed number of times, while loops continue running as long as the condition is True, making them useful for scenarios where the number of iterations isn't predetermined. Through practical examples, the lesson demonstrates the syntax, implementation, and use cases for while loops, including handling user input and developing a basic command-line guessing game. Additionally, it emphasizes the importance of conditions, breaking loops, and preventing infinite loops.",
+              "content": "topic_3_how_to_construct_while_loops.md",
+              "concepts": "While Loop, Boolean Condition, Infinite Loop, Break Statement, Input Handling, Loop Iterations"
+          },
+          "listItem": [
+              {
+                  "lssonLink": "summary-while-loops",
+                  "lessonName": "Summary",
+                  "lessonType": "Summary",
+                  "lable": true,
+                  "time": 0,
+                  "unread": true,
+                  "isCircle": true,
+                  "iconFile": "file-text",
+                  "data": {
+                      "description": "This lesson introduces Python's while loop, a control structure that repeats code execution based on a specified Boolean condition. Unlike for loops that run a fixed number of times, while loops continue running as long as the condition is True, making them useful for scenarios where the number of iterations isn't predetermined. Through practical examples, the lesson demonstrates the syntax, implementation, and use cases for while loops, including handling user input and developing a basic command-line guessing game. Additionally, it emphasizes the importance of conditions, breaking loops, and preventing infinite loops.",
+                      "items": {
+                          "While Loop": "A loop that executes code repeatedly as long as a given condition is True.",
+                          "Boolean Condition": "The condition that controls the execution of the while loop.",
+                          "Infinite Loop": "A loop that continues indefinitely if the stopping condition is never met.",
+                          "Break Statement": "Used to exit the loop prematurely when a certain condition is met.",
+                          "Input Handling": "Using input() to gather user input within a while loop.",
+                          "Loop Iterations": "Counting iterations to limit the loop's execution."
+                      },
+                      "textbooks": [
+                          {
+                              "chapter": "How To Construct While Loops // How To Code in Python",
+                              "link": "https://www.digitalocean.com/community/tutorials/how-to-construct-while-loops-in-python-3"
+                          },
+                          {
+                              "chapter": "Brute-force algorithms // Computational Thinking and Programming",
+                              "link": "https://comp-think.github.io/book/06.pdff"
+                          }
+                      ]
+                  },
+                  "nextUrl": "part_0_question-1",
+                  "prevUrl": ""
+              },
+              {
+                  "lessonType": "MultipleSelectQuiz",
+                  "lssonLink": "part_0_question-1",
+                  "lessonName": "Understanding Check: While Loop Structure",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "question": "What is a characteristic feature of a Python while loop?",
+                      "options": [
+                          {
+                              "id": "1",
+                              "name": "A. It executes a fixed number of times."
+                          },
+                          {
+                              "id": "2",
+                              "name": "B. It continues as long as a condition is True."
+                          },
+                          {
+                              "id": "3",
+                              "name": "C. It must iterate over a sequence."
+                          },
+                          {
+                              "id": "4",
+                              "name": "D. It requires initialization of a loop variable inside the loop."
+                          }
+                      ],
+                      "correctAnswers": "2"
+                  },
+                  "prevUrl": "summary-while-loops",
+                  "nextUrl": "part_0_question-2"
+              },
+              {
+                  "lessonType": "TrueFalse",
+                  "lssonLink": "part_0_question-2",
+                  "lessonName": "Understanding Check: Infinite Loop",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "question": "A while loop can potentially run indefinitely if the condition never evaluates to False.",
+                      "correctAnswers": "True"
+                  },
+                  "prevUrl": "part_0_question-1",
+                  "nextUrl": "part_0_question-3"
+              },
+              {
+                  "lessonType": "MultipleSelectQuiz",
+                  "lssonLink": "part_0_question-3",
+                  "lessonName": "Concept Recognition: Break Statement",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "question": "In the context of a while loop, what does the break statement do?",
+                      "options": [
+                          {
+                              "id": "1",
+                              "name": "A. It pauses the loop for a specified amount of time."
+                          },
+                          {
+                              "id": "2",
+                              "name": "B. It stops the current iteration and continues with the next."
+                          },
+                          {
+                              "id": "3",
+                              "name": "C. It exits the loop immediately."
+                          },
+                          {
+                              "id": "4",
+                              "name": "D. It restarts the loop from the beginning."
+                          }
+                      ],
+                      "correctAnswers": "3"
+                  },
+                  "prevUrl": "part_0_question-2",
+                  "nextUrl": "part_0_code-task-4"
+              },
+              {
+                  "lessonType": "Code",
+                  "lssonLink": "part_0_code-task-4",
+                  "lessonName": "Simple Coding Task: Basic While Loop",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "text": "Write a while loop that prints the numbers from 1 to 5.",
+                      "code": "# Write your code here\n# Hint: Use a variable to keep track of the number and increment it."
+                  },
+                  "prevUrl": "part_0_question-3",
+                  "nextUrl": "part_0_code-task-5"
+              },
+              {
+                  "lessonType": "Code",
+                  "lssonLink": "part_0_code-task-5",
+                  "lessonName": "Debugging Task: Fix Infinite Loop",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "text": "Find and fix the error in the following code to prevent it from entering an infinite loop.",
+                      "code": "count = 0\nwhile count < 3:\n    print(\"Count is:\", count)\n    # missing increment\n    # count += 1"
+                  },
+                  "prevUrl": "part_0_code-task-4",
+                  "nextUrl": "part_0_code-task-6"
+              },
+              {
+                  "lessonType": "Code",
+                  "lssonLink": "part_0_code-task-6",
+                  "lessonName": "Complex Coding Task: Password Guessing Loop",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "text": "Write a program similar to password.py where a user can attempt to guess a hidden word 'secret'. The program should inform the user how many attempts they have left and congratulate them if they guess correctly.",
+                      "code": "# Write your code here\n# Start with implementing a while loop\n# Ensure to decrease the attempts after each guess"
+                  },
+                  "prevUrl": "part_0_code-task-5",
+                  "nextUrl": "part_0_question-7"
+              },
+              {
+                  "lessonType": "SingleQuestion",
+                  "lssonLink": "part_0_question-7",
+                  "lessonName": "Explanation Task: Explain Code Behavior",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "question": "In your own words, explain how the while loop in the password guessing game prevents an infinite loop."
+                  },
+                  "prevUrl": "part_0_code-task-6",
+                  "nextUrl": ""
+              }
+          ]
+      },
+      {
+          "id": 1,
+          "title": "How To Construct For Loops",
+          "isShow": false,
+          "summary": {
+              "background": "Students have experience with ordered structures and basic Python programming.",
+              "objectives": "The for loop in Python is used to iterate over elements in a sequence (like lists, tuples, strings, etc.) and execute a block of code for each element. It is best suited for cases where the number of iterations is predetermined. The loop can be controlled with break (to exit early) and continue (to skip an iteration). Additionally, for loops can use the range() function for iteration over a specified range, and can also be combined with an optional else block that runs if the loop completes without hitting a break statement. This lesson covers using for loops to iterate through various data structures and modify them as needed.",
+              "content": "topic_3_how_to_construct_for_loops.md",
+              "concepts": "For Loop, Iterator Variable, Range Function, Break Statement, Continue Statement, Else Block"
+          },
+          "listItem": [
+              {
+                  "lssonLink": "summary-for-loops",
+                  "lessonName": "Summary",
+                  "lessonType": "Summary",
+                  "lable": true,
+                  "time": 0,
+                  "unread": true,
+                  "isCircle": true,
+                  "iconFile": "file-text",
+                  "data": {
+                      "description": "The for loop in Python is used to iterate over elements in a sequence (like lists, tuples, strings, etc.) and execute a block of code for each element. It is best suited for cases where the number of iterations is predetermined. The loop can be controlled with break (to exit early) and continue (to skip an iteration). Additionally, for loops can use the range() function for iteration over a specified range, and can also be combined with an optional else block that runs if the loop completes without hitting a break statement. This lesson covers using for loops to iterate through various data structures and modify them as needed.",
+                      "items": {
+                          "For Loop": "Iterates over elements in a sequence to execute a block of code for each element.",
+                          "Iterator Variable": "The variable used to hold the current element being processed in the loop.",
+                          "Range Function": "Used to create a range of numbers for iteration.",
+                          "Break Statement": "Exits the loop prematurely when a condition is met.",
+                          "Continue Statement": "Skips the current iteration when a condition is met.",
+                          "Else Block": "Executes after a for loop completes normally, without a break."
+                      },
+                      "textbooks": [
+                          {
+                              "chapter": "Python For Loops // How To Code in Python",
+                              "link": "https://www.digitalocean.com/community/tutorials/python-for-loop-example"
+                          }
+                      ]
+                  },
+                  "nextUrl": "part_1_question-1",
+                  "prevUrl": ""
+              },
+              {
+                  "lessonType": "MultipleSelectQuiz",
+                  "lssonLink": "part_1_question-1",
+                  "lessonName": "Understanding the Basic For Loop",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "question": "What will be the output of the following code?\n\n```\nnums = [3, 6, 9]\nfor num in nums:\n    print(num)\n```\n",
+                      "options": [
+                          {
+                              "id": "1",
+                              "name": "3 6 9"
+                          },
+                          {
+                              "id": "2",
+                              "name": "3 9 6"
+                          },
+                          {
+                              "id": "3",
+                              "name": "3, 6, 9"
+                          },
+                          {
+                              "id": "4",
+                              "name": "None of the above"
+                          }
+                      ],
+                      "correctAnswers": "1"
+                  },
+                  "prevUrl": "summary-for-loops",
+                  "nextUrl": "part_1_question-2"
+              },
+              {
+                  "lessonType": "TrueFalse",
+                  "lssonLink": "part_1_question-2",
+                  "lessonName": "Functionality of Break Statement",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "question": "The break statement in a for loop allows the loop to terminate when a specific condition is met.",
+                      "correctAnswers": "True"
+                  },
+                  "prevUrl": "part_1_question-1",
+                  "nextUrl": "part_1_question-3"
+              },
+              {
+                  "lessonType": "SingleQuestion",
+                  "lssonLink": "part_1_question-3",
+                  "lessonName": "Concept Recognition on Iterators",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "question": "Explain in your own words what an iterator variable is in the context of a for loop."
+                  },
+                  "prevUrl": "part_1_question-2",
+                  "nextUrl": "part_1_code-task-4"
+              },
+              {
+                  "lessonType": "Code",
+                  "lssonLink": "part_1_code-task-4",
+                  "lessonName": "Simple Code: Print Characters",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "text": "Write a simple code to print each character of the string 'python'.",
+                      "code": "# Your code is here..."
+                  },
+                  "prevUrl": "part_1_question-3",
+                  "nextUrl": "part_1_code-task-5"
+              },
+              {
+                  "lessonType": "Code",
+                  "lssonLink": "part_1_code-task-5",
+                  "lessonName": "Debugging Code: Fix the For Loop",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "text": "Fix the following code snippet to correctly print each item in the list 'fruits'.\n\n```\nfruits = ['apple', 'banana', 'cherry']\nfor item in fuit:\n    print(fruit)\n```\n",
+                      "code": "fruits = ['apple', 'banana', 'cherry']\nfor item in fuit:\n    print(fruit)\n"
+                  },
+                  "prevUrl": "part_1_code-task-4",
+                  "nextUrl": "part_1_code-task-6"
+              },
+              {
+                  "lessonType": "Code",
+                  "lssonLink": "part_1_code-task-6",
+                  "lessonName": "Complex Task: Sum of Even Numbers",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "text": "Write a program using a for loop that iterates through the list of numbers [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] and calculates the sum of even numbers.",
+                      "code": "# Your code is here..."
+                  },
+                  "prevUrl": "part_1_code-task-5",
+                  "nextUrl": "part_1_question-7"
+              },
+              {
+                  "lessonType": "SingleQuestion",
+                  "lssonLink": "part_1_question-7",
+                  "lessonName": "Explain For Loop with Else Block",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "question": "Explain what happens when a for loop is combined with an else block and give an example scenario where this might be useful."
+                  },
+                  "prevUrl": "part_1_code-task-6",
+                  "nextUrl": ""
+              }
+          ]
+      },
+      {
+          "id": 2,
+          "title": "Understanding Tuples",
+          "isShow": false,
+          "summary": {
+              "background": "Students have experience with ordered structures and basic Python programming.",
+              "objectives": "A tuple is an immutable, ordered sequence of elements, meaning its values cannot be changed once defined. Tuples use parentheses ( ) to contain values, making them useful for grouping data that should remain constant. You can access tuple elements via indexing and slicing, similar to lists. Tuples can be concatenated or multiplied, but not modified directly. Built-in functions like len(), max(), and min() can be used with tuples to analyze their contents. Due to their immutability, tuples provide slight performance advantages over lists and signal that the data should not be changed.",
+              "content": "topic_3_understanding_tuples.md",
+              "concepts": "Tuple, Indexing, Slicing, Concatenation, Multiplication, len(), max(), min()"
+          },
+          "listItem": [
+              {
+                  "lssonLink": "summary-tuples",
+                  "lessonName": "Summary",
+                  "lessonType": "Summary",
+                  "lable": true,
+                  "time": 0,
+                  "unread": true,
+                  "isCircle": true,
+                  "iconFile": "file-text",
+                  "data": {
+                      "description": "A tuple is an immutable, ordered sequence of elements, meaning its values cannot be changed once defined. Tuples use parentheses ( ) to contain values, making them useful for grouping data that should remain constant. You can access tuple elements via indexing and slicing, similar to lists. Tuples can be concatenated or multiplied, but not modified directly. Built-in functions like len(), max(), and min() can be used with tuples to analyze their contents. Due to their immutability, tuples provide slight performance advantages over lists and signal that the data should not be changed.",
+                      "items": {
+                          "Tuple": "An immutable, ordered sequence of elements used to group constant data.",
+                          "Indexing": "Accesses specific elements in a tuple using index numbers, starting at 0.",
+                          "Slicing": "Extracts a range of elements from a tuple, using start, stop, and stride indices.",
+                          "Concatenation": "Combines two or more tuples to create a new tuple.",
+                          "Multiplication": "Repeats the elements in a tuple a specified number of times.",
+                          "len()": "Returns the number of elements in a tuple.",
+                          "max()": "Finds the maximum value in a tuple of numbers.",
+                          "min()": "Finds the minimum value in a tuple of numbers."
+                      },
+                      "textbooks": [
+                          {
+                              "chapter": "Understanding Tuples // How To Code in Python",
+                              "link": "https://www.digitalocean.com/community/tutorials/understanding-tuples-in-python-3"
+                          }
+                      ]
+                  },
+                  "nextUrl": "part_2_question-1",
+                  "prevUrl": ""
+              },
+              {
+                  "lessonType": "MultipleSelectQuiz",
+                  "lssonLink": "part_2_question-1",
+                  "lessonName": "Understanding Check 1",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "question": "What is the main characteristic that distinguishes a tuple from a list in Python?",
+                      "options": [
+                          {
+                              "id": "1",
+                              "name": "A. Tuples are ordered and mutable."
+                          },
+                          {
+                              "id": "2",
+                              "name": "B. Tuples are unordered and mutable."
+                          },
+                          {
+                              "id": "3",
+                              "name": "C. Tuples are ordered and immutable."
+                          },
+                          {
+                              "id": "4",
+                              "name": "D. Tuples are unordered and immutable."
+                          }
+                      ],
+                      "correctAnswers": "3"
+                  },
+                  "prevUrl": "summary-tuples",
+                  "nextUrl": "part_2_question-2"
+              },
+              {
+                  "lessonType": "TrueFalse",
+                  "lssonLink": "part_2_question-2",
+                  "lessonName": "Understanding Check 2",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "question": "True or False: Tuples in Python allow you to change their elements directly.",
+                      "correctAnswers": "True"
+                  },
+                  "prevUrl": "part_2_question-1",
+                  "nextUrl": "part_2_question-3"
+              },
+              {
+                  "lessonType": "MultipleSelectQuiz",
+                  "lssonLink": "part_2_question-3",
+                  "lessonName": "Concept Recognition 1",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "question": "Which of the following operations allows you to combine two tuples into one?",
+                      "options": [
+                          {
+                              "id": "1",
+                              "name": "A. Addition operator (+)"
+                          },
+                          {
+                              "id": "2",
+                              "name": "B. Subtraction operator (-)"
+                          },
+                          {
+                              "id": "3",
+                              "name": "C. Multiplication operator (*)"
+                          },
+                          {
+                              "id": "4",
+                              "name": "D. Division operator (/)"
+                          }
+                      ],
+                      "correctAnswers": "1"
+                  },
+                  "prevUrl": "part_2_question-2",
+                  "nextUrl": "part_2_code-task-4"
+              },
+              {
+                  "lessonType": "Code",
+                  "lssonLink": "part_2_code-task-4",
+                  "lessonName": "Simple Coding Task 1",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "text": "Write a tuple named 'artifacts' that contains the following elements: 'statue', 'vase', 'coin'.",
+                      "code": "artifacts = ('statue', 'vase', 'coin')"
+                  },
+                  "prevUrl": "part_2_question-3",
+                  "nextUrl": "part_2_code-task-5"
+              },
+              {
+                  "lessonType": "Code",
+                  "lssonLink": "part_2_code-task-5",
+                  "lessonName": "Debugging Task 1",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "text": "There is an error in accessing an element from the tuple. Find and fix it. \n```python\ndocumentation = ('doc1', 'doc2', 'doc3')\nprint(documentation[3])\n```",
+                      "code": "# The index 3 is out of range since it should be 0, 1, or 2 for this tuple.\nprint(documentation[2])  # Fixed code"
+                  },
+                  "prevUrl": "part_2_code-task-4",
+                  "nextUrl": "part_2_code-task-6"
+              },
+              {
+                  "lessonType": "Code",
+                  "lssonLink": "part_2_code-task-6",
+                  "lessonName": "Complex Coding Task 1",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "text": "Consider the tuple `historical_dates = (1066, 1215, 1492, 1776, 1945)`. Use slicing to create a new tuple containing only the years after 1492.",
+                      "code": "historical_dates = (1066, 1215, 1492, 1776, 1945)\nnew_dates = historical_dates[3:]  # Slicing the tuple\nprint(new_dates)"
+                  },
+                  "prevUrl": "part_2_code-task-5",
+                  "nextUrl": "part_2_question-7"
+              },
+              {
+                  "lessonType": "SingleQuestion",
+                  "lssonLink": "part_2_question-7",
+                  "lessonName": "Explanation Task",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "question": "In your own words, explain why you might choose a tuple over a list in a Python program."
+                  },
+                  "prevUrl": "part_2_code-task-6",
+                  "nextUrl": ""
+              }
+          ]
+      },
+      {
+          "id": 3,
+          "title": "Understanding Lists",
+          "isShow": false,
+          "summary": {
+              "background": "Students have experience with ordered structures and basic Python programming.",
+              "objectives": "Lists in Python are mutable, ordered sequences that support various built-in methods for adding, removing, and modifying elements. These methods allow for efficient list management, including operations like appending elements, inserting or extending lists, removing items, reversing, sorting, and copying lists. Additionally, methods such as count() and index() help find element counts and positions. Understanding these list methods allows for more sophisticated manipulation and control of data in Python programs.",
+              "content": "topic_3_use_list_methods.md",
+              "concepts": "List, Append, Insert, Extend, Remove, Reverse, Sort, Copy, count(), index()"
+          },
+          "listItem": [
+              {
+                  "lssonLink": "summary-list-methods",
+                  "lessonName": "Summary",
+                  "lessonType": "Summary",
+                  "lable": true,
+                  "time": 0,
+                  "unread": true,
+                  "isCircle": true,
+                  "iconFile": "file-text",
+                  "data": {
+                      "description": "Lists in Python are mutable, ordered sequences that support various built-in methods for adding, removing, and modifying elements. These methods allow for efficient list management, including operations like appending elements, inserting or extending lists, removing items, reversing, sorting, and copying lists. Additionally, methods such as count() and index() help find element counts and positions. Understanding these list methods allows for more sophisticated manipulation and control of data in Python programs.",
+                      "items": {
+                          "Tuple": "An immutable, ordered sequence of elements used to group constant data.",
+                          "Indexing": "Accesses specific elements in a tuple using index numbers, starting at 0.",
+                          "Slicing": "Extracts a range of elements from a tuple, using start, stop, and stride indices.",
+                          "Concatenation": "Combines two or more tuples to create a new tuple.",
+                          "Multiplication": "Repeats the elements in a tuple a specified number of times.",
+                          "len()": "Returns the number of elements in a tuple.",
+                          "max()": "Finds the maximum value in a tuple of numbers.",
+                          "min()": "Finds the minimum value in a tuple of numbers."
+                      },
+                      "textbooks": [
+                          {
+                              "chapter": "How To Use List Methods in Python 3 // How To Code in Python",
+                              "link": "https://www.digitalocean.com/community/tutorials/how-to-use-list-methods-in-python-3"
+                          }
+                      ]
+                  },
+                  "nextUrl": "part_3_question-1",
+                  "prevUrl": ""
+              },
+              {
+                  "lessonType": "MultipleSelectQuiz",
+                  "lssonLink": "part_3_question-1",
+                  "lessonName": "Understanding Check 1",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "question": "Which of the following methods is used to add an item to the end of a Python list?",
+                      "options": [
+                          {
+                              "id": "1",
+                              "name": "list.append(x)"
+                          },
+                          {
+                              "id": "2",
+                              "name": "list.insert(i, x)"
+                          },
+                          {
+                              "id": "3",
+                              "name": "list.remove(x)"
+                          },
+                          {
+                              "id": "4",
+                              "name": "list.reverse()"
+                          }
+                      ],
+                      "correctAnswers": "1"
+                  },
+                  "prevUrl": "summary-list-methods",
+                  "nextUrl": "part_3_question-2"
+              },
+              {
+                  "lessonType": "MultipleSelectQuiz",
+                  "lssonLink": "part_3_question-2",
+                  "lessonName": "Understanding Check 2",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "question": "What will happen if you try to remove an item not present in the list using list.remove(x)?",
+                      "options": [
+                          {
+                              "id": "1",
+                              "name": "The list will remain unchanged."
+                          },
+                          {
+                              "id": "2",
+                              "name": "The method will return 'None'."
+                          },
+                          {
+                              "id": "3",
+                              "name": "A ValueError will be raised."
+                          },
+                          {
+                              "id": "4",
+                              "name": "The last item in the list will be removed."
+                          }
+                      ],
+                      "correctAnswers": "3"
+                  },
+                  "prevUrl": "part_3_question-1",
+                  "nextUrl": "part_3_question-3"
+              },
+              {
+                  "lessonType": "TrueFalse",
+                  "lssonLink": "part_3_question-3",
+                  "lessonName": "Understanding Check 3",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "question": "The method list.copy() creates a deep copy of a list in Python.",
+                      "correctAnswers": "False"
+                  },
+                  "prevUrl": "part_3_question-2",
+                  "nextUrl": "part_3_code-task-4"
+              },
+              {
+                  "lessonType": "Code",
+                  "lssonLink": "part_3_code-task-4",
+                  "lessonName": "Concept Recognition 1",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "text": "Use the list.extend() method to combine the provided lists into a single list.",
+                      "code": "list_a = ['pencil', 'book']\nlist_b = ['eraser', 'sharpener']\n# Combine list_b into list_a\n# Your code here\nprint(list_a)"
+                  },
+                  "prevUrl": "part_3_question-3",
+                  "nextUrl": "part_3_code-task-5"
+              },
+              {
+                  "lessonType": "Code",
+                  "lssonLink": "part_3_code-task-5",
+                  "lessonName": "Simple Coding Task",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "text": "Add 'shark' to the end of the list fish using a list method.",
+                      "code": "fish = ['barracuda', 'cod', 'devil ray', 'eel']\n# Your code here\nprint(fish)"
+                  },
+                  "prevUrl": "part_3_code-task-4",
+                  "nextUrl": "part_3_code-task-6"
+              },
+              {
+                  "lessonType": "Code",
+                  "lssonLink": "part_3_code-task-6",
+                  "lessonName": "Debugging Task",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "text": "There is an error in the code snippet below. Fix it to correctly remove 'goby' from the list.",
+                      "code": "fish = ['anchovy', 'barracuda', 'goby', 'cod', 'goby']\nfish.remove('goby')\nfish.remove('goby')\nprint(fish)  # Expecting ['anchovy', 'barracuda', 'cod']"
+                  },
+                  "prevUrl": "part_3_code-task-5",
+                  "nextUrl": "part_3_code-task-7"
+              },
+              {
+                  "lessonType": "Code",
+                  "lssonLink": "part_3_code-task-7",
+                  "lessonName": "Complex Coding Task",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "text": "Sort the list fish by the length of each string in reverse order (longest first).",
+                      "code": "fish = ['barracuda', 'cod', 'eel', 'flounder', 'goby', 'herring', 'ide', 'anchovy']\n# Your code here to sort by length in reverse order\nprint(fish)"
+                  },
+                  "prevUrl": "part_3_code-task-6",
+                  "nextUrl": "part_3_question-8"
+              },
+              {
+                  "lessonType": "SingleQuestion",
+                  "lssonLink": "part_3_question-8",
+                  "lessonName": "Explanation Task",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "question": "Explain in your own words how the list.insert(i, x) method works and give an example of its use."
+                  },
+                  "prevUrl": "part_3_code-task-7",
+                  "nextUrl": ""
+              }
+          ]
+      }
+  ]
+}

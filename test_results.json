@@ -1,0 +1,131 @@
+{
+  "timestamp": "2025-08-10T12:07:31.672768",
+  "summary": {
+    "total": 20,
+    "passed": 19,
+    "failed": 1,
+    "success_rate": 95.0
+  },
+  "results": [
+    {
+      "test": "Root endpoint",
+      "passed": true,
+      "message": "Status: 200",
+      "timestamp": "2025-08-10T12:07:06.748441"
+    },
+    {
+      "test": "Health check",
+      "passed": true,
+      "message": "Status: 200",
+      "timestamp": "2025-08-10T12:07:06.749664"
+    },
+    {
+      "test": "API v1 info",
+      "passed": true,
+      "message": "Status: 200",
+      "timestamp": "2025-08-10T12:07:06.750880"
+    },
+    {
+      "test": "Get all courses",
+      "passed": true,
+      "message": "Status: 200",
+      "timestamp": "2025-08-10T12:07:06.957119"
+    },
+    {
+      "test": "Get course 1",
+      "passed": true,
+      "message": "Status: 200",
+      "timestamp": "2025-08-10T12:07:10.875650"
+    },
+    {
+      "test": "Get lessons for course 1",
+      "passed": true,
+      "message": "Status: 200",
+      "timestamp": "2025-08-10T12:07:11.250465"
+    },
+    {
+      "test": "Compile valid code",
+      "passed": true,
+      "message": "Status: 200",
+      "timestamp": "2025-08-10T12:07:11.569151"
+    },
+    {
+      "test": "Compile code with syntax error",
+      "passed": true,
+      "message": "Status: 200",
+      "timestamp": "2025-08-10T12:07:11.859182"
+    },
+    {
+      "test": "Compile empty code (should fail)",
+      "passed": true,
+      "message": "Status: 400",
+      "timestamp": "2025-08-10T12:07:12.213765"
+    },
+    {
+      "test": "Submit code solution",
+      "passed": true,
+      "message": "Status: 200",
+      "timestamp": "2025-08-10T12:07:17.825007"
+    },
+    {
+      "test": "Submit text answer",
+      "passed": true,
+      "message": "Status: 200",
+      "timestamp": "2025-08-10T12:07:21.981982"
+    },
+    {
+      "test": "Get user solutions",
+      "passed": true,
+      "message": "Status: 200",
+      "timestamp": "2025-08-10T12:07:25.022745"
+    },
+    {
+      "test": "Get user profile",
+      "passed": true,
+      "message": "Status: 200",
+      "timestamp": "2025-08-10T12:07:25.342424"
+    },
+    {
+      "test": "Get user course progress",
+      "passed": true,
+      "message": "Status: 200",
+      "timestamp": "2025-08-10T12:07:26.062008"
+    },
+    {
+      "test": "Invalid JSON handling",
+      "passed": true,
+      "message": "Returns 422",
+      "timestamp": "2025-08-10T12:07:26.142555"
+    },
+    {
+      "test": "Missing required field",
+      "passed": true,
+      "message": "Status: 422",
+      "timestamp": "2025-08-10T12:07:26.144390"
+    },
+    {
+      "test": "Non-existent endpoint",
+      "passed": true,
+      "message": "Status: 404",
+      "timestamp": "2025-08-10T12:07:26.145606"
+    },
+    {
+      "test": "Code execution performance",
+      "passed": true,
+      "message": "Status: 200",
+      "timestamp": "2025-08-10T12:07:26.356878"
+    },
+    {
+      "test": "Response time check",
+      "passed": true,
+      "message": "Responded in 0.21s",
+      "timestamp": "2025-08-10T12:07:26.356906"
+    },
+    {
+      "test": "Infinite loop handling",
+      "passed": false,
+      "message": "Connection failed",
+      "timestamp": "2025-08-10T12:07:31.672694"
+    }
+  ]
+}

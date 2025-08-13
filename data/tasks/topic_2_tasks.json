@@ -1,0 +1,57 @@
+[
+    {
+        "lessonType": "Code",
+        "lessonName": "Simple Data Types Exercise",
+        "points": 5,
+        "topic_id": 2,
+        "data": {
+            "text": "Create a Python script where you define a string variable with the name of a Harry Potter character and an integer variable with the year they were born. Form a sentence using these variables and print it. Example output: 'Harry Potter was born in 1980.'",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Debugging Task: Fix the Type Error",
+        "points": 10,
+        "topic_id": 2,
+        "data": {
+            "text": "The following code snippet is meant to print out a character's age by subtracting their birth year from 2023, but it contains a type mismatch error. Debug the code.",
+            "code": "character_name = 'Hermione Granger'\nbirth_year = '1979'\ncurrent_year = 2023\nage = current_year - birth_year\nprint(character_name + ' is ' + age + ' years old.')"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Intermediate Task: Boolean Evaluation",
+        "points": 10,
+        "topic_id": 2,
+        "data": {
+            "text": "Write a Python program that evaluates whether a character is part of Gryffindor. Create a string variable `house` with the value 'Gryffindor' or another Hogwarts house. Use a Boolean to evaluate if the character's house is 'Gryffindor' and print the result.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Advanced Task: Data Type Conversion",
+        "points": 10,
+        "topic_id": 2,
+        "data": {
+            "text": "Create a Python script that captures the following scenario: Hermione Granger has read 200.5 books. Convert this number into an integer and form a sentence stating 'Hermione has read x books', where x is the integer number of books. Print the final sentence.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Complex Task: Text Analysis",
+        "points": 15,
+        "topic_id": 2,
+        "data": {
+            "text": "Implement a Python program that analyzes a text excerpt from a Harry Potter book, counting the number of words and determining if a specific keyword (e.g., 'magic') is present. Use appropriate data types to store the text and results, and print the analysis in a readable format.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    }
+]

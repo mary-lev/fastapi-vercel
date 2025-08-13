@@ -1,0 +1,90 @@
+[
+    {
+        "lessonType": "Code",
+        "lessonName": "Understanding Dynamic Programming",
+        "points": 5,
+        "topic_id": 21,
+        "data": {
+            "text": "Write a simple Python function using dynamic programming to calculate the Fibonacci sequence up to the nth number. Use a dictionary to store previously calculated values. Begin by initializing an empty dictionary and ensure that your function can handle the base cases for Fibonacci (f(0)=0, f(1)=1).",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Debugging Dynamic Programming",
+        "points": 10,
+        "topic_id": 21,
+        "data": {
+            "text": "The following code intends to calculate the Fibonacci sequence using dynamic programming, but it contains a bug. Identify and correct the mistake.",
+            "code": "def fib_dp_bug(n, d):\n    if n in d:\n        return d[n]\n    if n <= 1:\n        d[n] = n\n    else:\n        d[n] = fib_dp_bug(n-1, d) + fib_dp_bug(n-2, d)\n    return d[n]\n\n# Test\nprint(fib_dp_bug(5, {}))"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Fibonacci Sequence Optimization",
+        "points": 10,
+        "topic_id": 21,
+        "data": {
+            "text": "Optimize the recursive Fibonacci function using dynamic programming to store intermediate results in a dictionary. Compare the execution time with the naive recursive approach for calculating the 30th Fibonacci number.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Iterative Dynamic Programming",
+        "points": 10,
+        "topic_id": 21,
+        "data": {
+            "text": "Convert the recursive dynamic programming solution for the Fibonacci sequence into an iterative solution. Use a bottom-up approach to fill an array with Fibonacci values up to the nth number.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Text Analysis with Dynamic Programming",
+        "points": 15,
+        "topic_id": 21,
+        "data": {
+            "text": "Using dynamic programming, write a function to find the longest common subsequence (LCS) between two strings. This can be useful in text analysis for comparing historical documents. Use a 2D array to store results of subproblems.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Historical Dataset Optimization",
+        "points": 15,
+        "topic_id": 21,
+        "data": {
+            "text": "Given a dataset representing monthly rabbit populations following the Fibonacci sequence, optimize the calculation of total rabbit pairs over a year using dynamic programming. Assume the dataset is stored as a list of integers representing each month's rabbit pairs.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Cultural Artifact Processing",
+        "points": 15,
+        "topic_id": 21,
+        "data": {
+            "text": "Implement a dynamic programming algorithm to solve the coin change problem, where you need to determine the minimum number of coins needed to make change for a given amount. This problem can be related to processing transactions in historical datasets.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Advanced Computational Thinking",
+        "points": 15,
+        "topic_id": 21,
+        "data": {
+            "text": "Challenge: Implement a dynamic programming solution for the knapsack problem. Consider a scenario where you are archiving a collection of cultural artifacts with limited storage space. The goal is to maximize the total value of artifacts stored, given their individual sizes and values.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    }
+]

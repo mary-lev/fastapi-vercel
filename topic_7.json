@@ -1,0 +1,168 @@
+{
+    "lesson": [
+        {
+            "id": 0,
+            "title": "Dynamic programming algorithms",
+            "isShow": true,
+            "summary": {
+                "background": "Students have experience with ordered structures and basic Python programming.",
+                "objectives": "Dynamic programming is an optimization technique that enhances efficiency by storing solutions to subproblems for reuse, reducing redundant computations. It shares similarities with the divide and conquer strategy but emphasizes memorization to handle repetitive subproblems. An example is the Fibonacci sequence, which can be optimized using dynamic programming by keeping track of previously computed Fibonacci numbers. This approach minimizes repeated calculations and speeds up execution, making it more effective for problems with overlapping subproblems.",
+                "content": "topic_7_dynamic_programming_algorithms.md",
+                "concepts": "Dynamic programming, Fibonacci sequence, optimization, subproblems, memorization, divide and conquer, efficiency, overlapping subproblems, recursive, iterative, bottom-up, top-down, brute-force algorithms, computational thinking, programming"
+            },
+            "listItem": [
+                {
+                    "lssonLink": "summary-while-loops",
+                    "lessonName": "Summary",
+                    "lessonType": "Summary",
+                    "lable": true,
+                    "time": 0,
+                    "unread": true,
+                    "isCircle": true,
+                    "iconFile": "file-text",
+                    "data": {
+                        "description": "Dynamic programming is an optimization technique that enhances efficiency by storing solutions to subproblems for reuse, reducing redundant computations. It shares similarities with the divide and conquer strategy but emphasizes memorization to handle repetitive subproblems. An example is the Fibonacci sequence, which can be optimized using dynamic programming by keeping track of previously computed Fibonacci numbers. This approach minimizes repeated calculations and speeds up execution, making it more effective for problems with overlapping subproblems.",
+                        "items": {
+                            "Dynamic Programming": "An algorithmic technique that optimizes recursive solutions by storing previously computed results to avoid redundant calculations.",
+                            "Divide and Conquer": "A strategy to solve problems by breaking them into smaller subproblems, solving each recursively, and then combining the results.",
+                            "Memorization": "The process of storing results of subproblems to reuse them in future calculations, enhancing efficiency.",
+                            "Fibonacci Sequence": "A numerical series where each number is the sum of the two preceding ones, used as an example of dynamic programming.",
+                            "Base Case": "The simplest scenario in recursion that stops further splitting of the problem.",
+                            "Recursive Step": "The process of solving a problem by applying the same algorithm to subproblems.",
+                            "Leonardo of Pisa (Fibonacci)": "A medieval mathematician who introduced the Fibonacci sequence and the Hindu-Arabic numeral system to Europe."
+                        },
+                        "textbooks": [
+                            {
+                                "chapter": "Dynamic programming algorithms // Computational Thinking and Programming",
+                                "link": "https://comp-think.github.io/book/10.pdf"
+                            }
+                        ]
+                    },
+                    "nextUrl": "part_0_question-1",
+                    "prevUrl": ""
+                },
+                {
+                    "lessonType": "MultipleSelectQuiz",
+                    "lssonLink": "part_0_question-1",
+                    "lessonName": "Understanding Check: Dynamic Programming Definition",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "question": "Which of the following best describes dynamic programming?",
+                        "options": [
+                            {
+                                "id": "1",
+                                "name": "A technique to solve complex problems by breaking them into simpler overlapping subproblems and storing their solutions."
+                            },
+                            {
+                                "id": "2",
+                                "name": "A technique to solve problems by rearranging elements in a list to achieve a certain order."
+                            },
+                            {
+                                "id": "3",
+                                "name": "A technique to solve problems by continually dividing them into half-sized subproblems."
+                            },
+                            {
+                                "id": "4",
+                                "name": "A technique primarily used for sorting algorithms."
+                            }
+                        ],
+                        "correctAnswers": "1"
+                    },
+                    "prevUrl": "summary-while-loops",
+                    "nextUrl": "part_0_question-2"
+                },
+                {
+                    "lessonType": "TrueFalse",
+                    "lssonLink": "part_0_question-2",
+                    "lessonName": "Understanding Check: Fibonacci Sequence Relation",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "question": "True or False: The Fibonacci sequence is directly related to the golden ratio.",
+                        "correctAnswers": "True"
+                    },
+                    "prevUrl": "part_0_question-1",
+                    "nextUrl": "part_0_question-3"
+                },
+                {
+                    "lessonType": "SingleQuestion",
+                    "lssonLink": "part_0_question-3",
+                    "lessonName": "Concept Recognition: Key Concepts of Dynamic Programming",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "question": "List three key concepts of dynamic programming that distinguish it from the divide and conquer approach. Explain briefly how each concept contributes to the efficiency of dynamic programming."
+                    },
+                    "prevUrl": "part_0_question-2",
+                    "nextUrl": "part_0_code-task-4"
+                },
+                {
+                    "lessonType": "Code",
+                    "lssonLink": "part_0_code-task-4",
+                    "lessonName": "Coding Exercise: Simple Fibonacci",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "text": "Implement a simple recursive function to compute Fibonacci numbers without using dynamic programming.",
+                        "code": "def fibonacci(n):\n    # Base cases\n    if n == 0:\n        return 0\n    if n == 1:\n        return 1\n    # Recursive case\n    return fibonacci(n-1) + fibonacci(n-2)"
+                    },
+                    "prevUrl": "part_0_question-3",
+                    "nextUrl": "part_0_code-task-5"
+                },
+                {
+                    "lessonType": "Code",
+                    "lssonLink": "part_0_code-task-5",
+                    "lessonName": "Debugging Task: Fix Fibonacci with Memoization",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "text": "Fix the following code to correctly implement the Fibonacci sequence using dynamic programming with memoization.",
+                        "code": "def fib(n, memo={}):\n    if n in memo:\n        return memo[n]\n    if n <= 1:\n        return n\n    result = fib(n-1) + fib(n-2)  # Error: missing memoization step\n    return result"
+                    },
+                    "prevUrl": "part_0_code-task-4",
+                    "nextUrl": "part_0_code-task-6"
+                },
+                {
+                    "lessonType": "Code",
+                    "lssonLink": "part_0_code-task-6",
+                    "lessonName": "Complex Coding Exercise: Fibonacci Iterative",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "text": "Create an iterative version of the Fibonacci sequence computation using dynamic programming.",
+                        "code": "def fibonacci_iterative(n):\n    if n <= 0:\n        return 0\n    if n == 1:\n        return 1\n\n    fib = [0, 1]\n    for i in range(2, n+1):\n        fib.append(fib[i-1] + fib[i-2])\n    return fib[n]"
+                    },
+                    "prevUrl": "part_0_code-task-5",
+                    "nextUrl": "part_0_question-7"
+                },
+                {
+                    "lessonType": "SingleQuestion",
+                    "lssonLink": "part_0_question-7",
+                    "lessonName": "Explanation Task: Explain Memoization",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "question": "In your own words, explain what memoization is in the context of dynamic programming and how it improves algorithm efficiency."
+                    },
+                    "prevUrl": "part_0_code-task-6",
+                    "nextUrl": ""
+                }
+            ]
+        }
+    ]
+}

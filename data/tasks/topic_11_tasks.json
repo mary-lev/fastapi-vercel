@@ -1,0 +1,57 @@
+[
+    {
+        "lessonType": "Code",
+        "lessonName": "Basic Module Import",
+        "points": 5,
+        "topic_id": 11,
+        "data": {
+            "text": "Write a simple Python code to import the math module and use it to calculate the square root of 16. Use the dot notation to access the function you need from the math module.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Debugging Module Import",
+        "points": 10,
+        "topic_id": 11,
+        "data": {
+            "text": "The following code is meant to import the random module and print a random integer between 1 and 10. However, there is an error in the code. Identify and fix the error.",
+            "code": "import random\n\nprint(random.randint(1, 10)"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Using 'from ... import' Syntax",
+        "points": 10,
+        "topic_id": 11,
+        "data": {
+            "text": "Write a Python program that imports only the pi constant from the math module using the 'from ... import' syntax and prints it out.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Aliasing a Module",
+        "points": 10,
+        "topic_id": 11,
+        "data": {
+            "text": "Modify the code to import the math module as 'm' using aliasing. Then use this alias to print both the value of pi and the square root of 49.",
+            "code": "import math\n\nprint(math.pi)\nprint(math.sqrt(49))"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Advanced Module Usage",
+        "points": 15,
+        "topic_id": 11,
+        "data": {
+            "text": "Create a Python program that imports both the random and math modules. Use random to generate five random integers between 1 and 100, and for each integer, use math to check if the number is closer to pi or the square root of 100. Print out the integer and the result indicating which it is closer to (pi or square root of 100).",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    }
+]

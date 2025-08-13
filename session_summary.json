@@ -1,0 +1,95 @@
+[
+  {
+    "session_id": 0,
+    "start_time": "2024-10-27T01:48:12.799000",
+    "session_duration_seconds": 2031.128,
+    "typing_analysis": {
+      "typing_history": [
+        [
+          "admin",
+          1729987172187
+        ],
+        [
+          "****",
+          1729987172192
+        ],
+        [
+          "M",
+          1729987180000
+        ],
+        [
+          "Ma",
+          1729987180200
+        ],
+        [
+          "Mar",
+          1729987180431
+        ],
+        [
+          "Mari",
+          1729987180591
+        ],
+        [
+          "Maria",
+          1729987180727
+        ],
+        [
+          "L",
+          1729987181801
+        ],
+        [
+          "Le",
+          1729987181930
+        ],
+        [
+          "Lev",
+          1729987182128
+        ],
+        [
+          "Levc",
+          1729987182223
+        ],
+        [
+          "Levch",
+          1729987182351
+        ],
+        [
+          "Levche",
+          1729987182463
+        ],
+        [
+          "Levchen",
+          1729987182593
+        ],
+        [
+          "Levchenk",
+          1729987182807
+        ],
+        [
+          "Levchenko",
+          1729987182897
+        ],
+        [
+          "admin",
+          1729988520632
+        ],
+        [
+          "****",
+          1729988520633
+        ]
+      ],
+      "average_typing_speed": 79320.35294117648
+    },
+    "mouse_movement_analysis": {
+      "total_movements": 47
+    },
+    "element_interaction_analysis": {
+      "attributes_changes": 174,
+      "total_elements_added": 1701,
+      "total_elements_removed": 40
+    },
+    "page_visit_analysis": {
+      "page_visits": []
+    }
+  }
+]

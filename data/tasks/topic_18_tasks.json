@@ -1,0 +1,24 @@
+[
+    {
+        "lessonType": "Code",
+        "lessonName": "Create a Simple Class",
+        "points": 5,
+        "topic_id": 18,
+        "data": {
+            "text": "Create a Python class named `Artifact` to represent a cultural artifact in a museum. This class should have attributes `name` and `origin`. Define an `__init__` method to initialize these attributes. Create a method `describe()` that prints a statement describing the artifact's name and origin. Instantiate an object of this class with the name 'Rosetta Stone' and origin 'Egypt', then call the `describe()` method.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Debug the Class Initialization",
+        "points": 10,
+        "topic_id": 18,
+        "data": {
+            "text": "The following code snippet is supposed to create a `Painting` class with attributes `title` and `artist`. The method `display()` should print out a description of the painting. However, the code contains an error that prevents it from running correctly. Identify and fix the bug.",
+            "code": "class Painting:\n    def init(self, title, artist):\n        self.title = title\n        self.artist = artist\n    \n    def display(self):\n        print(f'Title: {self.title}, Artist: {self.artist}')\n\nmona_lisa = Painting('Mona Lisa', 'Leonardo da Vinci')\nmona_lisa.display()"
+        },
+        "is_active": false
+    }
+]

@@ -1,0 +1,79 @@
+[
+    {
+        "lessonType": "Code",
+        "lessonName": "Task 1: Basic List Manipulation",
+        "points": 10,
+        "topic_id": 16,
+        "data": {
+            "text": "Create a list named `hogwarts_houses` with the following elements: 'Gryffindor', 'Hufflepuff', 'Ravenclaw', 'Slytherin'. Add 'Dumbledore's Army' to the end of the list using the appropriate list method. Print the list to confirm the addition.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Task 2: Debugging List Operations",
+        "points": 10,
+        "topic_id": 16,
+        "data": {
+            "text": "The following code attempts to add 'Quidditch Team' to the beginning of the `hogwarts_houses` list and then remove 'Dumbledore's Army'. However, there is an error in the code. Identify and fix the error:",
+            "code": "hogwarts_houses = ['Gryffindor', 'Hufflepuff', 'Ravenclaw', 'Slytherin', \"Dumbledore's Army\"]\nhogwarts_houses.add('Quidditch Team')\nhogwarts_houses.remove('Dumbledore Army')\nprint(hogwarts_houses)"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Task 3: Intermediate List Operations",
+        "points": 15,
+        "topic_id": 16,
+        "data": {
+            "text": "Using the `hogwarts_houses` list, insert 'Professor's Office' in the second position and extend the list with another list: `['Forbidden Forest', 'The Burrow']`. Print the updated list.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Task 4: Advanced List Removal",
+        "points": 15,
+        "topic_id": 16,
+        "data": {
+            "text": "Given the list `magical_creatures = ['house elf', 'hippogriff', 'dragon', 'basilisk', 'unicorn', 'dragon']`, remove the first occurrence of 'dragon', then use a method to remove 'basilisk' by its index. Print the remaining list.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Task 5: List Copy and Reverse",
+        "points": 15,
+        "topic_id": 16,
+        "data": {
+            "text": "Create a copy of the `magical_creatures` list, reverse the order of the copied list, and print both the original and reversed lists to show that the original list remains unchanged.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Task 6: Counting and Sorting List Elements",
+        "points": 15,
+        "topic_id": 16,
+        "data": {
+            "text": "Use the list `wand_cores = ['phoenix feather', 'dragon heartstring', 'unicorn hair', 'phoenix feather', 'phoenix feather']`. Count how many times 'phoenix feather' appears, sort the list in alphabetical order, and print the sorted list.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Task 7: Complex List Manipulation Challenge",
+        "points": 20,
+        "topic_id": 16,
+        "data": {
+            "text": "Given two lists: `spell_books = ['Beginner Spells', 'Intermediate Spells', 'Advanced Spells']` and `new_spell_books = ['Dark Arts', 'Charms']`, extend the `spell_books` list with `new_spell_books`, then reverse and sort the list alphabetically. Finally, clear the list and print it to confirm it is empty.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    }
+]

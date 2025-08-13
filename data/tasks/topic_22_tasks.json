@@ -1,0 +1,90 @@
+[
+    {
+        "lessonType": "Code",
+        "lessonName": "Basic Tree Implementation",
+        "points": 5,
+        "topic_id": 22,
+        "data": {
+            "text": "Implement a simple tree structure in Python using anytree package. Create a tree for a fictional character family, starting from the root node representing the family name (e.g., 'Buendia'). Add children for each generation, using at least three generations. Display the tree using RenderTree.",
+            "code": "from anytree import Node, RenderTree\n\n# Create root node\nfamily = Node('Buendia')\n\n# Add children for each generation\nfirst_gen = Node('Jose Arcadio Buendia', parent=family)\nsecond_gen = Node('Aureliano Buendia', parent=first_gen)\nthird_gen = Node('Aureliano Segundo', parent=second_gen)\n\n# Display the tree\nfor pre, fill, node in RenderTree(family):\n    print(\"%s%s\" % (pre, node.name))"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Debugging Tree Structure",
+        "points": 5,
+        "topic_id": 22,
+        "data": {
+            "text": "The following code is supposed to create a binary tree structure for a text markup. However, it contains a bug and does not display the hierarchy correctly. Identify and fix the bug.",
+            "code": "from anytree import Node, RenderTree\n\n# Create nodes\nroot = Node('Book')\nchapter1 = Node('Chapter 1', parent=root)\nchapter2 = Node('Chapter 2', parent=root)\nparagraph1 = Node('Paragraph 1', parent=chapter1)\nparagraph2 = Node('Paragraph 2', parent=chapter2)\n\n# Incorrect assignment\nparagraph3 = Node('Paragraph 3')  # Missing parent assignment\n\n# Display the tree\nfor pre, fill, node in RenderTree(root):\n    print(\"%s%s\" % (pre, node.name))"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Tree Traversal Method",
+        "points": 10,
+        "topic_id": 22,
+        "data": {
+            "text": "Implement a function to perform in-order traversal on a binary tree created using anytree. Return the nodes' names in the order they were visited.",
+            "code": "def in_order_traversal(node):\n    if node is None:\n        return []\n    result = []\n    for child in node.children:\n        result.extend(in_order_traversal(child))\n    result.append(node.name)\n    return result\n\n# Testing with a simple tree\nroot = Node('Root')\nleft = Node('Left', parent=root)\nright = Node('Right', parent=root)\nprint(in_order_traversal(root))"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Add Node Relations",
+        "points": 10,
+        "topic_id": 22,
+        "data": {
+            "text": "Create a tree to represent the hierarchy of a historical text using anytree. Include the relationships: book -> chapters -> paragraphs. Add at least 2 chapters and 3 paragraphs under each chapter. Implement a function to return all descendants of a given node.",
+            "code": "from anytree import Node\n\n# Create the tree\nbook = Node('Book')\nchapter1 = Node('Chapter 1', parent=book)\nchapter2 = Node('Chapter 2', parent=book)\n\n# Add paragraphs\nparagraph1 = Node('Paragraph 1', parent=chapter1)\nparagraph2 = Node('Paragraph 2', parent=chapter1)\nparagraph3 = Node('Paragraph 3', parent=chapter1)\nparagraph4 = Node('Paragraph 1', parent=chapter2)\nparagraph5 = Node('Paragraph 2', parent=chapter2)\nparagraph6 = Node('Paragraph 3', parent=chapter2)\n\n# Function to get descendants\ndef get_descendants(node):\n    return [descendant.name for descendant in node.descendants]\n\n# Test\nprint(get_descendants(chapter1))"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Binary Search Tree Implementation",
+        "points": 15,
+        "topic_id": 22,
+        "data": {
+            "text": "Implement a basic binary search tree (BST) that allows insertion of nodes and performs an in-order traversal to return a sorted list of node values. Assume nodes contain integer values.",
+            "code": "class TreeNode:\n    def __init__(self, value):\n        self.value = value\n        self.left = None\n        self.right = None\n\nclass BinarySearchTree:\n    def __init__(self):\n        self.root = None\n\n    def insert(self, value):\n        if self.root is None:\n            self.root = TreeNode(value)\n        else:\n            self._insert_recursive(self.root, value)\n\n    def _insert_recursive(self, node, value):\n        if value < node.value:\n            if node.left is None:\n                node.left = TreeNode(value)\n            else:\n                self._insert_recursive(node.left, value)\n        else:\n            if node.right is None:\n                node.right = TreeNode(value)\n            else:\n                self._insert_recursive(node.right, value)\n\n    def in_order_traversal(self):\n        return self._in_order_recursive(self.root)\n\n    def _in_order_recursive(self, node):\n        if node is None:\n            return []\n        return (self._in_order_recursive(node.left) +\n                [node.value] +\n                self._in_order_recursive(node.right))\n\n# Test the BST\nbst = BinarySearchTree()\nfor value in [7, 3, 9, 1, 5, 8, 10]:\n    bst.insert(value)\nprint(bst.in_order_traversal())"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Balanced Tree Implementation",
+        "points": 15,
+        "topic_id": 22,
+        "data": {
+            "text": "Implement a function that checks if a given binary tree is balanced. A balanced tree is one where the depth of the two subtrees of any node never differ by more than one.",
+            "code": "class TreeNode:\n    def __init__(self, value):\n        self.value = value\n        self.left = None\n        self.right = None\n\nclass BinaryTree:\n    def __init__(self, root=None):\n        self.root = TreeNode(root)\n\n    def is_balanced(self):\n        def check_balance(node):\n            if node is None:\n                return 0\n            left_height = check_balance(node.left)\n            right_height = check_balance(node.right)\n            if left_height == -1 or right_height == -1:\n                return -1\n            if abs(left_height - right_height) > 1:\n                return -1\n            return max(left_height, right_height) + 1\n\n        return check_balance(self.root) != -1\n\n# Test balanced tree\nbt = BinaryTree(1)\nnode2 = TreeNode(2)\nnode3 = TreeNode(3)\nbt.root.left = node2\nbt.root.right = node3\nprint(bt.is_balanced())"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Tree Visualization with Historical Data",
+        "points": 10,
+        "topic_id": 22,
+        "data": {
+            "text": "Using the anytree package, represent a historical dataset as a tree. Consider a simplified dataset of a royal family tree with at least four generations. Visualize the tree and ensure proper hierarchical relationships are maintained.",
+            "code": "from anytree import Node, RenderTree\n\n# Create the royal family tree\nking = Node('King')\nprince = Node('Prince', parent=king)\nprince_son = Node('Prince Son', parent=prince)\nprince_grandson = Node('Prince Grandson', parent=prince_son)\n\n# Add more generations\nduke = Node('Duke', parent=king)\nduke_son = Node('Duke Son', parent=duke)\nduke_grandson = Node('Duke Grandson', parent=duke_son)\n\nduchess = Node('Duchess', parent=king)\n\n# Visualize the tree\nfor pre, fill, node in RenderTree(king):\n    print(\"%s%s\" % (pre, node.name))"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Complex Tree Application",
+        "points": 15,
+        "topic_id": 22,
+        "data": {
+            "text": "Design and implement a decision tree to classify text based on certain keywords. Each node should represent a question or decision point, with branches leading to further questions or a classification result. Use a simple dataset and test your tree with at least three different inputs.",
+            "code": "class DecisionTreeNode:\n    def __init__(self, question, yes_branch=None, no_branch=None):\n        self.question = question\n        self.yes_branch = yes_branch\n        self.no_branch = no_branch\n\n    def is_leaf(self):\n        return self.yes_branch is None and self.no_branch is None\n\nclass DecisionTree:\n    def __init__(self, root):\n        self.root = root\n\n    def classify(self, input_text):\n        node = self.root\n        while not node.is_leaf():\n            if node.question in input_text:\n                node = node.yes_branch\n            else:\n                node = node.no_branch\n        return node.question\n\n# Create a simple decision tree\nleaf_positive = DecisionTreeNode(\"Positive Text\")\nleaf_negative = DecisionTreeNode(\"Negative Text\")\nnode1 = DecisionTreeNode(\"contains 'happy'\", leaf_positive, leaf_negative)\nroot = DecisionTreeNode(\"contains 'good'\", node1, leaf_negative)\n\ndtree = DecisionTree(root)\n\n# Test with inputs\nprint(dtree.classify(\"This is a good day\"))  # Should classify as Positive Text\nprint(dtree.classify(\"This is a bad day\"))   # Should classify as Negative Text\nprint(dtree.classify(\"Happy good morning\")) # Should classify as Positive Text"
+        },
+        "is_active": false
+    }
+]

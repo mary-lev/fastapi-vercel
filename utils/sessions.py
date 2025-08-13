@@ -18,8 +18,9 @@ def load_all_events():
     return all_events
 
 
-events = load_all_events()
-print(f"Loaded {len(events)} events.")
+if __name__ == "__main__":
+    events = load_all_events()
+    print(f"Loaded {len(events)} events.")
 
 
 def segment_sessions(events):
@@ -35,8 +36,7 @@ def segment_sessions(events):
     return sessions
 
 
-segmented_sessions = segment_sessions(events)
-print(f"Detected {len(segmented_sessions)} sessions.")
+    # no-op at definition time
 
 
 # Updated Analysis Functions
@@ -110,13 +110,17 @@ def analyze_session(events, session_id):
     }
 
 
-# Analyze all segmented sessions and save results
-all_summaries = [analyze_session(session, i) for i, session in enumerate(segmented_sessions)]
+if __name__ == "__main__":
+    segmented_sessions = segment_sessions(events)
+    print(f"Detected {len(segmented_sessions)} sessions.")
 
-# Output summary for each session
-for summary in all_summaries:
-    print("Session Summary:", json.dumps(summary, indent=2))
+    # Analyze all segmented sessions and save results
+    all_summaries = [analyze_session(session, i) for i, session in enumerate(segmented_sessions)]
 
-summary_output_path = "session_summary.json"
-with open(summary_output_path, "w") as outfile:
-    json.dump(all_summaries, outfile, indent=2)
+    # Output summary for each session
+    for summary in all_summaries:
+        print("Session Summary:", json.dumps(summary, indent=2))
+
+    summary_output_path = "session_summary.json"
+    with open(summary_output_path, "w") as outfile:
+        json.dump(all_summaries, outfile, indent=2)

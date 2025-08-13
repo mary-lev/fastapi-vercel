@@ -4,7 +4,7 @@ import json
 from fastapi import APIRouter, HTTPException, Request, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from models import SessionRecording, User
+from models import User
 from db import get_db
 from utils.logging_config import logger
 from schemas.validation import SessionRecordingSchema
@@ -34,13 +34,14 @@ async def record_session(session_data: SessionRecordingSchema, db: Session = Dep
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        # Save session recording
-        session_recording = SessionRecording(user_id=user.id, events=events)
-        db.add(session_recording)
-        db.commit()
+        # Sessions are not stored in DB anymore. Persist to file for now.
+        import uuid
+        session_id = str(uuid.uuid4())
+        with open(f"data/sessions/{session_id}.json", "w") as f:
+            json.dump({"user_id": user_id, "events": events}, f)
 
-        logger.info(f"Session recorded successfully for user: {user_id}")
-        return {"message": "Session recording saved successfully"}
+        logger.info(f"Session recorded to file for user: {user_id}")
+        return {"message": "Session recording saved", "session_id": session_id}
 
     except ValueError as e:
         logger.error(f"Validation error in record_session: {e}")

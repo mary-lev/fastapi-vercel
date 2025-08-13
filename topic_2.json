@@ -1,0 +1,572 @@
+{
+  "lesson": [
+    {
+      "id": 0,
+      "title": "How To Write Comments",
+      "isShow": false,
+      "summary": {
+        "background": "Before the second lesson, students have learned about Python\u2019s basic data types: integers, floats, Booleans, and strings. They now understand how these types represent real-world data in a Python program. However, they have no prior experience with more complex data structures like lists, tuples, dictionaries, or functions, and are still building their foundational knowledge in Python programming.",
+        "objectives": "This lesson introduces the use of comments in Python programming. It explains how comments improve code readability, serve as notes for future reference, and help collaborators understand the code. Different types of comments, such as inline comments, block comments, and commenting out code for testing, are covered along with their best practices.",
+        "content": "topic_2_how_to_write_comments.md",
+        "concepts": [
+          "Comments in Python, Comment Syntax, Block Comments, Inline Comments, Commenting Out Code for Testing"
+        ]
+      },
+      "listItem": [
+        {
+          "lssonLink": "summary-comments",
+          "lessonName": "Summary",
+          "lessonType": "Summary",
+          "lable": true,
+          "time": 0,
+          "unread": true,
+          "isCircle": true,
+          "iconFile": "file-text",
+          "data": {
+            "description": "In this lesson, you learn the importance of using comments in your Python programs. Comments make your code more understandable by providing explanations about what each part does, helping you and others to follow the logic easily. You'll explore different types of comments, like block comments, inline comments, and commenting out code for testing. By mastering these skills, you’ll be able to create clearer, more maintainable code, making it easier for you to debug, update, or collaborate with others on your projects.",
+            "items": {
+              "1": "Purpose of comments in Python",
+              "Types of comments": "Block comments, Inline comments, Commenting out code for testing",
+              "2": "Comment syntax (#)",
+              "3": "Using comments for code readability and maintenance",
+              "4": "Best practices for writing useful comments"
+            },
+            "textbooks": [
+              {
+                "chapter": "How To Write Comments // How To Code in Python",
+                "link": "https://www.digitalocean.com/community/tutorials/how-to-write-comments-in-python-3"
+              },
+              {
+                "chapter": "Organising information: ordered structures // Computational Thinking and Programming",
+                "link": "https://comp-think.github.io/book/05.pdf"
+              }
+            ]
+          },
+          "nextUrl": "part_0_question-1",
+          "prevUrl": ""
+        },
+        {
+          "lessonType": "MultipleSelectQuiz",
+          "lssonLink": "part_0_question-1",
+          "lessonName": "Comment Purpose",
+          "lable": true,
+          "time": 5,
+          "unread": true,
+          "isCircle": true,
+          "data": {
+            "question": "What is the primary purpose of comments in a Python program?",
+            "options": [
+              {
+                "id": "1",
+                "name": "To make the code run faster"
+              },
+              {
+                "id": "2",
+                "name": "To improve code readability for humans"
+              },
+              {
+                "id": "3",
+                "name": "To increase the program's security"
+              },
+              {
+                "id": "4",
+                "name": "To execute alternative code"
+              }
+            ],
+            "correctAnswers": "2"
+          },
+          "prevUrl": "summary-comments",
+          "nextUrl": "part_0_question-2"
+        },
+        {
+          "lessonType": "TrueFalse",
+          "lssonLink": "part_0_question-2",
+          "lessonName": "Executing Comments",
+          "lable": true,
+          "time": 5,
+          "unread": true,
+          "isCircle": true,
+          "data": {
+            "question": "Comments in Python are executed by the interpreter.",
+            "correctAnswers": "True"
+          },
+          "prevUrl": "part_0_question-1",
+          "nextUrl": "part_0_question-3"
+        },
+        {
+          "lessonType": "MultipleSelectQuiz",
+          "lssonLink": "part_0_question-3",
+          "lessonName": "Commenting Best Practices",
+          "lable": true,
+          "time": 5,
+          "unread": true,
+          "isCircle": true,
+          "data": {
+            "question": "Which of the following is considered a good practice when writing comments?",
+            "options": [
+              {
+                "id": "1",
+                "name": "Over-commenting to the point of redundancy"
+              },
+              {
+                "id": "2",
+                "name": "Using comments to restate the code in plain English"
+              },
+              {
+                "id": "3",
+                "name": "Answering the 'why' behind the code in comments"
+              },
+              {
+                "id": "4",
+                "name": "Ignoring the importance of comments"
+              }
+            ],
+            "correctAnswers": "3"
+          },
+          "prevUrl": "part_0_question-2",
+          "nextUrl": "part_0_code-task-4"
+        },
+        {
+          "lessonType": "Code",
+          "lssonLink": "part_0_code-task-4",
+          "lessonName": "Simple Comment Task",
+          "lable": true,
+          "time": 5,
+          "unread": true,
+          "isCircle": true,
+          "data": {
+            "text": "Add comments to the following code to explain what it does.",
+            "code": "greeting = \"Hello, World!\"\nprint(greeting)"
+          },
+          "prevUrl": "part_0_question-3",
+          "nextUrl": "part_0_code-task-5"
+        },
+        {
+          "lessonType": "Code",
+          "lssonLink": "part_0_code-task-5",
+          "lessonName": "Debug Inline Comments",
+          "lable": true,
+          "time": 5,
+          "unread": true,
+          "isCircle": true,
+          "data": {
+            "text": "The following code snippet has unnecessary inline comments. Optimize the comments by removing redundancies.",
+            "code": "a = 5  # Set variable a to 5\nb = 10  # Set variable b to 10\nc = a + b  # Add a and b, store in c\n# Print the result of c\nprint(c)"
+          },
+          "prevUrl": "part_0_code-task-4",
+          "nextUrl": "part_0_code-task-6"
+        },
+        {
+          "lessonType": "Code",
+          "lssonLink": "part_0_code-task-6",
+          "lessonName": "Complex Commenting Out",
+          "lable": true,
+          "time": 5,
+          "unread": true,
+          "isCircle": true,
+          "data": {
+            "text": "The following code intends to iterate through a list using both a for loop and a while loop. Comment out the for loop and leave the while loop active.",
+            "code": "numbers = [1, 2, 3, 4, 5]\n\n# for num in numbers:\n#     print(num)\n\nindex = 0\nwhile index < len(numbers):\n    print(numbers[index])\n    index += 1"
+          },
+          "prevUrl": "part_0_code-task-5",
+          "nextUrl": "part_0_question-7"
+        },
+        {
+          "lessonType": "SingleQuestion",
+          "lssonLink": "part_0_question-7",
+          "lessonName": "Explaining Comments",
+          "lable": true,
+          "time": 5,
+          "unread": true,
+          "isCircle": true,
+          "data": {
+            "question": "In your own words, explain why using comments in a Python program can be beneficial for a project you might collaborate on in a digital humanities context."
+          },
+          "prevUrl": "part_0_code-task-6",
+          "nextUrl": "summary-modules"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "title": "How To Import Modules",
+      "isShow": false,
+      "summary": {
+        "background": "Students have developed a solid understanding of Python's basic data types (integers, floats, Booleans, and strings) and the role of variables in programming. They can now effectively assign, reassign, and use variables to store and manipulate data, they understand concepts like conditional statements and functions and how to write comments.",
+        "objectives": "This lesson teaches students how to use built-in Python functions and import external modules to extend functionality. They will learn to import modules, use their functions, and apply techniques like aliasing and selective importing.",
+        "content": "topic_2_how_to_import_modules.md",
+        "concepts": [
+          "Built-in functions (print(), abs(), int(), len())",
+          "Python modules",
+          "Importing modules",
+          "Dot notation for module functions",
+          "from ... import for specific functions",
+          "Aliasing modules with as"
+        ]
+      },
+      "listItem": [
+        {
+          "lssonLink": "summary-modules",
+          "lessonName": "Summary",
+          "lessonType": "Summary",
+          "lable": true,
+          "time": 0,
+          "unread": true,
+          "isCircle": true,
+          "iconFile": "file-text",
+          "data": {
+            "description": "In this lesson, you'll learn how to use Python's built-in functions and enhance your programs by importing external modules. The lesson covers how to check, install, and import modules, demonstrating the use of common built-in functions (print(), abs(), int(), len()) and external modules like random and math. You'll explore different ways to import functions, use dot notation, apply the from ... import syntax, and create aliases for modules to make coding more efficient. By understanding modules, you can extend Python’s functionality, build more powerful programs, and reuse code effectively.",
+            "items": {
+              "Built-in Functions": "Basic functions in Python like print(), abs(), int(), and len().",
+              "Modules": "Python files containing reusable code that can be imported.",
+              "Importing Modules": "Using the import statement to access external modules in Python programs.",
+              "From Import": "Selective importing of specific functions from a module to use them directly.",
+              "Aliasing": "Renaming modules or functions using the as keyword for convenience."
+            },
+            "textbooks": [
+              {
+                "chapter": "How to Import Modules // How To Code in Python",
+                "link": "https://www.digitalocean.com/community/tutorials/how-to-import-modules-in-python-3"
+              }
+            ]
+          },
+          "nextUrl": "part_1_question-1",
+          "prevUrl": "part_0_question-7"
+        },
+        {
+          "lessonType": "MultipleSelectQuiz",
+          "lssonLink": "part_1_question-1",
+          "lessonName": "Understanding Check: Built-in Functions",
+          "lable": true,
+          "time": 5,
+          "unread": true,
+          "isCircle": true,
+          "data": {
+            "question": "Which of the following is NOT a built-in Python function?",
+            "options": [
+              {
+                "id": "1",
+                "name": "print()"
+              },
+              {
+                "id": "2",
+                "name": "math()"
+              },
+              {
+                "id": "3",
+                "name": "int()"
+              },
+              {
+                "id": "4",
+                "name": "len()"
+              }
+            ],
+            "correctAnswers": "2"
+          },
+          "prevUrl": "",
+          "nextUrl": "part_1_question-2"
+        },
+        {
+          "lessonType": "TrueFalse",
+          "lssonLink": "part_1_question-2",
+          "lessonName": "Understanding Check: Module Import",
+          "lable": true,
+          "time": 5,
+          "unread": true,
+          "isCircle": true,
+          "data": {
+            "question": "True or False: Importing a module in Python brings all its functions and variables into the global namespace by default.",
+            "correctAnswers": "True"
+          },
+          "prevUrl": "part_1_question-1",
+          "nextUrl": "part_1_question-3"
+        },
+        {
+          "lessonType": "MultipleSelectQuiz",
+          "lssonLink": "part_1_question-3",
+          "lessonName": "Concept Recognition: Module Search",
+          "lable": true,
+          "time": 5,
+          "unread": true,
+          "isCircle": true,
+          "data": {
+            "question": "When Python imports a module, where does it look first?",
+            "options": [
+              {
+                "id": "1",
+                "name": "Current directory"
+              },
+              {
+                "id": "2",
+                "name": "System path directories"
+              },
+              {
+                "id": "3",
+                "name": "Built-in modules"
+              },
+              {
+                "id": "4",
+                "name": "All directories at once"
+              }
+            ],
+            "correctAnswers": "3"
+          },
+          "prevUrl": "part_1_question-2",
+          "nextUrl": "part_1_code-task-4"
+        },
+        {
+          "lessonType": "Code",
+          "lssonLink": "part_1_code-task-4",
+          "lessonName": "Simple Coding Task: Using Built-in Functions",
+          "lable": true,
+          "time": 5,
+          "unread": true,
+          "isCircle": true,
+          "data": {
+            "text": "Write a Python script that uses built-in functions to find the absolute value of a number and the length of a given string.",
+            "code": "# Your code here\nnumber = -10\ntext = \"Digital Humanities\""
+          },
+          "prevUrl": "part_1_question-3",
+          "nextUrl": "part_1_code-task-5"
+        },
+        {
+          "lessonType": "Code",
+          "lssonLink": "part_1_code-task-5",
+          "lessonName": "Debugging Task: Module Import Error",
+          "lable": true,
+          "time": 5,
+          "unread": true,
+          "isCircle": true,
+          "data": {
+            "text": "Fix the import error in the following code snippet.",
+            "code": "# Your code here\nprnt.math.pi"
+          },
+          "prevUrl": "part_1_code-task-4",
+          "nextUrl": "part_1_code-task-6"
+        },
+        {
+          "lessonType": "Code",
+          "lssonLink": "part_1_code-task-6",
+          "lessonName": "Complex Coding Task: Random Integers and Pi",
+          "lable": true,
+          "time": 5,
+          "unread": true,
+          "isCircle": true,
+          "data": {
+            "text": "Write a program that imports the 'random' and 'math' modules, generates 5 random integers between 1 and 100, and prints them along with the value of pi (\u03c0) to 5 decimal places.",
+            "code": "# Your program here"
+          },
+          "prevUrl": "part_1_code-task-5",
+          "nextUrl": "part_1_question-7"
+        },
+        {
+          "lessonType": "SingleQuestion",
+          "lssonLink": "part_1_question-7",
+          "lessonName": "Explanation Task: Module Aliasing",
+          "lable": true,
+          "time": 5,
+          "unread": true,
+          "isCircle": true,
+          "data": {
+            "question": "Explain in your own words why and how you might use aliasing when importing Python modules."
+          },
+          "prevUrl": "part_1_code-task-6",
+          "nextUrl": "summary-lists"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Understanding Lists",
+      "isShow": false,
+      "summary": {
+        "background": "Students have developed a solid understanding of Python's basic data types (integers, floats, Booleans, and strings) and the role of variables in programming. They can now effectively assign, reassign, and use variables to store and manipulate data, they understand concepts like conditional statements and functions and how to write comments and import modules.",
+        "objectives": "The objective of this lesson is to teach students how to work with Python lists, covering their creation, indexing, modification, and manipulation. Students will learn how to access list items using both positive and negative indexing, modify list elements, slice lists, and perform operations like concatenation and multiplication. The lesson also introduces the use of nested lists and methods to remove items from lists.",
+        "content": "topic_2_understanding_lists.md",
+        "concepts": "List creation and structure. Indexing (positive and negative). Modifying list items. Slicing lists. List concatenation and multiplication. Removing items from lists. Nested lists and accessing their elements"
+      },
+      "listItem": [
+        {
+          "lssonLink": "summary-lists",
+          "lessonName": "Summary",
+          "lessonType": "Summary",
+          "lable": true,
+          "time": 0,
+          "unread": true,
+          "isCircle": true,
+          "iconFile": "file-text",
+          "data": {
+            "description": "In this lesson, you will explore the flexibility and functionality of lists in Python, which are ordered, mutable sequences of elements. You’ll learn how to define lists, access their elements using indexing, modify them, and perform operations like concatenation, slicing, and replication. Additionally, the lesson covers using operators to alter lists, removing elements, and working with nested lists. By understanding these concepts, you’ll gain control over how to manage collections of data efficiently in Python, allowing for more dynamic and interactive programs.",
+            "items": {
+              "Lists": "Mutable, ordered sequences of elements enclosed in square brackets.",
+              "Indexing": "Accessing individual elements of a list using their index positions.",
+              "Negative Indexing": "Accessing elements from the end of the list using negative indices.",
+              "Slicing": "Extracting a sublist by specifying a range of indices, with optional stride.",
+              "Concatenation": "Combining two or more lists using the '+' operator.",
+              "Replication": "Multiplying lists using the '*' operator to duplicate their elements.",
+              "Modification": "Changing list elements by assigning new values to specific indices.",
+              "Deletion": "Removing elements from a list using the 'del' statement.",
+              "Nested Lists": "Lists containing other lists as elements, requiring multiple indices for access."
+            },
+            "textbooks": [
+              {
+                "chapter": "Understanding Data Types in Python 3 (Lists) // How To Code in Python",
+                "link": "https://www.digitalocean.com/community/tutorials/understanding-data-types-in-python-3"
+              },
+              {
+                "chapter": "Understanding Lists // How To Code in Python",
+                "link": "https://www.digitalocean.com/community/tutorials/understanding-lists-in-python-3"
+              },
+              {
+                "chapter": "How To Use List Methods in Python 3 // How To Code in Python",
+                "link": "https://www.digitalocean.com/community/tutorials/how-to-use-list-methods-in-python-3"
+              }
+            ]
+          },
+          "nextUrl": "part_2_question-1",
+          "prevUrl": "part_1_question-7"
+        },
+        {
+          "lessonType": "MultipleSelectQuiz",
+          "lssonLink": "part_2_question-1",
+          "lessonName": "Understanding List Definition",
+          "lable": true,
+          "time": 5,
+          "unread": true,
+          "isCircle": true,
+          "data": {
+            "question": "What is a list in Python?",
+            "options": [
+              {
+                "id": "1",
+                "name": "A mutable, ordered sequence of elements"
+              },
+              {
+                "id": "2",
+                "name": "A non-changeable, ordered sequence of numbers"
+              },
+              {
+                "id": "3",
+                "name": "A data type used only for storing strings"
+              },
+              {
+                "id": "4",
+                "name": "An unordered collection of key-value pairs"
+              }
+            ],
+            "correctAnswers": "1"
+          },
+          "prevUrl": "summary-lists",
+          "nextUrl": "part_2_question-2"
+        },
+        {
+          "lessonType": "TrueFalse",
+          "lssonLink": "part_2_question-2",
+          "lessonName": "Negative Indexing",
+          "lable": true,
+          "time": 5,
+          "unread": true,
+          "isCircle": true,
+          "data": {
+            "question": "In Python, you can access the last element of a list using negative indexing.",
+            "correctAnswers": "True"
+          },
+          "prevUrl": "part_2_question-1",
+          "nextUrl": "part_2_question-3"
+        },
+        {
+          "lessonType": "MultipleSelectQuiz",
+          "lssonLink": "part_2_question-3",
+          "lessonName": "Modifying Lists",
+          "lable": true,
+          "time": 5,
+          "unread": true,
+          "isCircle": true,
+          "data": {
+            "question": "How can you change an item in a list?",
+            "options": [
+              {
+                "id": "1",
+                "name": "By using the 'replace' function"
+              },
+              {
+                "id": "2",
+                "name": "By assigning a new value to its specific index position"
+              },
+              {
+                "id": "3",
+                "name": "By using the 'modify' method"
+              },
+              {
+                "id": "4",
+                "name": "By directly typing over the item in the list"
+              }
+            ],
+            "correctAnswers": "2"
+          },
+          "prevUrl": "part_2_question-2",
+          "nextUrl": "part_2_code-task-4"
+        },
+        {
+          "lessonType": "Code",
+          "lssonLink": "part_2_code-task-4",
+          "lessonName": "Simple List Modification",
+          "lable": true,
+          "time": 5,
+          "unread": true,
+          "isCircle": true,
+          "data": {
+            "text": "Create a list of three string elements and change the second element.",
+            "code": "my_list = ['apple', 'banana', 'cherry']\n# Change the second element to 'orange'\n# Complete the line of code below\n\nmy_list[1] = 'orange'"
+          },
+          "prevUrl": "part_2_question-3",
+          "nextUrl": "part_2_code-task-5"
+        },
+        {
+          "lessonType": "Code",
+          "lssonLink": "part_2_code-task-5",
+          "lessonName": "Debugging List Slicing",
+          "lable": true,
+          "time": 5,
+          "unread": true,
+          "isCircle": true,
+          "data": {
+            "text": "Fix the code snippet to correctly slice the list.",
+            "code": "fruits = ['apple', 'banana', 'cherry', 'date', 'elderberry']\nsliced_fruits = fruits[1:3]\n# Expected output: ['banana', 'cherry']\nprint(sliced_fruits)"
+          },
+          "prevUrl": "part_2_code-task-4",
+          "nextUrl": "part_2_code-task-6"
+        },
+        {
+          "lessonType": "Code",
+          "lssonLink": "part_2_code-task-6",
+          "lessonName": "Complex List Task",
+          "lable": true,
+          "time": 5,
+          "unread": true,
+          "isCircle": true,
+          "data": {
+            "text": "Implement a program that concatenates two lists of fruits and removes the first element of the concatenated list using slicing.",
+            "code": "fruits1 = ['apple', 'banana']\nfruits2 = ['cherry', 'date']\n# Concatenate and remove the first element\n# Add your code here"
+          },
+          "prevUrl": "part_2_code-task-5",
+          "nextUrl": "part_2_question-7"
+        },
+        {
+          "lessonType": "SingleQuestion",
+          "lssonLink": "part_2_question-7",
+          "lessonName": "Explain List Concatenation and Multiplication",
+          "lable": true,
+          "time": 5,
+          "unread": true,
+          "isCircle": true,
+          "data": {
+            "question": "In your own words, explain how list concatenation and multiplication work in Python. Provide an example with your explanation."
+          },
+          "prevUrl": "part_2_code-task-6",
+          "nextUrl": ""
+        }
+      ]
+    }
+  ]
+}

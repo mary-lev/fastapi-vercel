@@ -1,0 +1,57 @@
+[
+    {
+        "lessonType": "Code",
+        "lessonName": "Simple Recursive Function - Factorial",
+        "points": 5,
+        "topic_id": 19,
+        "data": {
+            "text": "Write a recursive function to calculate the factorial of a given number. Recall that the factorial of a non-negative integer n is the product of all positive integers less than or equal to n. Use a base case to stop the recursion.",
+            "code": "def factorial(n):\n    # Base case\n    if n == 0:\n        return 1\n    # Recursive step\n    else:\n        return n * factorial(n-1)"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Debugging Recursive Fibonacci",
+        "points": 7,
+        "topic_id": 19,
+        "data": {
+            "text": "The following code is supposed to calculate the nth Fibonacci number using recursion, but it contains a bug that causes it to return incorrect results. Identify and fix the error in the code.",
+            "code": "def fibonacci(n):\n    if n <= 1:\n        return n\n    else:\n        return fibonacci(n-1) + fibonacci(n+2)"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Recursive String Reversal",
+        "points": 10,
+        "topic_id": 19,
+        "data": {
+            "text": "Implement a recursive function that reverses a given string. The function should use a base case to handle an empty string and a recursive step to handle the string reversal.",
+            "code": "def reverse_string(s):\n    # Base case\n    if s == \"\":\n        return s\n    # Recursive step\n    else:\n        return reverse_string(s[1:]) + s[0]"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Towers of Hanoi",
+        "points": 12,
+        "topic_id": 19,
+        "data": {
+            "text": "Implement a recursive function to solve the Towers of Hanoi problem. The function should print the steps needed to move n disks from the source rod to the target rod, using an auxiliary rod.",
+            "code": "def towers_of_hanoi(n, source, target, auxiliary):\n    if n == 1:\n        print(f\"Move disk 1 from {source} to {target}\")\n        return\n    towers_of_hanoi(n-1, source, auxiliary, target)\n    print(f\"Move disk {n} from {source} to {target}\")\n    towers_of_hanoi(n-1, auxiliary, target, source)"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Calculate Nested List Sum Recursively",
+        "points": 15,
+        "topic_id": 19,
+        "data": {
+            "text": "Create a recursive function to calculate the sum of all numbers in a nested list. The list can contain integers or other lists of integers. The function should handle arbitrarily nested lists and return the total sum.",
+            "code": "def nested_list_sum(lst):\n    total = 0\n    for element in lst:\n        if isinstance(element, list):\n            total += nested_list_sum(element)\n        else:\n            total += element\n    return total"
+        },
+        "is_active": false
+    }
+]

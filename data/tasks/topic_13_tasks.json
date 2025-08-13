@@ -1,0 +1,57 @@
+[
+    {
+        "lessonType": "Code",
+        "lessonName": "Basic While Loop Implementation",
+        "points": 5,
+        "topic_id": 13,
+        "data": {
+            "text": "Write a simple program using a while loop that prints numbers from 1 to 10.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Debugging an Infinite Loop",
+        "points": 10,
+        "topic_id": 13,
+        "data": {
+            "text": "The following code is supposed to print numbers from 1 to 5, but it ends up in an infinite loop. Identify and fix the issue.",
+            "code": "i = 1\nwhile i < 5:\n    print(i)"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Interactive Input Handling",
+        "points": 10,
+        "topic_id": 13,
+        "data": {
+            "text": "Create a while loop that continuously asks the user to enter a number. If the user enters 'exit', the loop should break. Print each number entered (except 'exit').",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Guessing Game with Hints",
+        "points": 15,
+        "topic_id": 13,
+        "data": {
+            "text": "Write a program that implements a number guessing game. The program should generate a random number between 1 and 100. Allow the user to guess up to 10 times. After each guess, provide feedback if the guessed number is too high or too low. If the user guesses correctly, display a success message and exit the loop.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Text Analysis with While Loop",
+        "points": 15,
+        "topic_id": 13,
+        "data": {
+            "text": "Using a while loop, write a program that processes a list of sentences and prints each sentence until a sentence containing the word 'stop' is encountered. Assume the list is called `sentences`.",
+            "code": "sentences = [\"The first sentence.\", \"Another one.\", \"Stop this now.\", \"This should not be printed.\"]\n# Your code here"
+        },
+        "is_active": false
+    }
+]

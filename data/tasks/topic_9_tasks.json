@@ -1,0 +1,35 @@
+[
+    {
+        "lessonType": "Code",
+        "lessonName": "Basic Comment Syntax",
+        "points": 5,
+        "topic_id": 9,
+        "data": {
+            "text": "Write a Python script that prints the names of the Hogwarts houses. Include comments explaining each part of your code.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Debugging Comments",
+        "points": 10,
+        "topic_id": 9,
+        "data": {
+            "text": "The following code is intended to print the first book of the Harry Potter series, but it contains incorrect and missing comments. Correct and complete the comments.",
+            "code": "# Define a variable to store the book title\nbook_title = \"Harry Potter and the Philosopher's Stone\"\n\n# Print the book title\nprint(book_title)\n# This line prints the wrong book title\n# print(\"Harry Potter and the Chamber of Secrets\")\n\n# Comment out one of these lines for testing\n# print(\"Testing: Harry Potter and the Goblet of Fire\")\n# print(\"Testing: Harry Potter and the Order of the Phoenix\")"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Complex Commenting Task",
+        "points": 15,
+        "topic_id": 9,
+        "data": {
+            "text": "Create a Python script that simulates a sorting hat decision. The script should randomly assign a student to one of the Hogwarts houses. Use block comments to describe the function's purpose and inline comments for any complex code parts.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    }
+]

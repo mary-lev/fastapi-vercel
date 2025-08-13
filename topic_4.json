@@ -1,0 +1,447 @@
+{
+  "lesson": [
+      {
+          "id": 0,
+          "title": "Understanding Dictionaries",
+          "isShow": true,
+          "summary": {
+              "background": "Students have experience with ordered structures and basic Python programming.",
+              "objectives": "Dictionaries in Python are mutable mappings that store data as key-value pairs, making them useful for organizing related information. You can add, modify, access, and delete elements using keys. They also support various built-in methods for accessing keys, values, and items, making dictionaries an efficient and flexible data structure for retrieving values based on meaningful keys.",
+              "content": "topic_4_dictionaries.md",
+              "concepts": "Dictionaries, Keys, Values, Accessing Elements, dict.keys(), dict.values(), dict.items(), Adding Elements, Modifying Elements, Deleting Elements"
+          },
+          "listItem": [
+              {
+                  "lssonLink": "summary-dictionaries",
+                  "lessonName": "Summary",
+                  "lessonType": "Summary",
+                  "lable": true,
+                  "time": 0,
+                  "unread": true,
+                  "isCircle": true,
+                  "iconFile": "file-text",
+                  "data": {
+                      "description": "Dictionaries in Python are mutable mappings that store data as key-value pairs, making them useful for organizing related information. You can add, modify, access, and delete elements using keys. They also support various built-in methods for accessing keys, values, and items, making dictionaries an efficient and flexible data structure for retrieving values based on meaningful keys.",
+                      "items": {
+                          "Dictionaries": "Data structures that store key-value pairs.",
+                          "Keys": "Immutable elements used to identify values in a dictionary.",
+                          "Values": "Elements associated with keys in a dictionary.",
+                          "Accessing Elements": "Retrieve values using keys.",
+                          "dict.keys()": "Returns an iterable view of dictionary keys.",
+                          "dict.values()": "Returns an iterable view of dictionary values.",
+                          "dict.items()": "Returns an iterable view of (key, value) tuple pairs.",
+                          "Adding Elements": "Use dict[key] = value or dict.update() to add items.",
+                          "Modifying Elements": "Change values using dict[key] = value or dict.update().",
+                          "Deleting Elements": "Remove items with del dict[key] or dict.clear()."
+                      },
+                      "textbooks": [
+                          {
+                              "chapter": "Understanding Dictionaries in Python 3 // How To Code in Python",
+                              "link": "https://www.digitalocean.com/community/tutorials/understanding-dictionaries-in-python-3"
+                          },
+                          {
+                              "chapter": "Organising information: unordered structures // Computational Thinking and Programming",
+                              "link": "https://comp-think.github.io/book/07.pdf"
+                          }
+                      ]
+                  },
+                  "nextUrl": "part_1_question-1",
+                  "prevUrl": ""
+              },
+              {
+                "lessonType": "MultipleSelectQuiz",
+                "lssonLink": "question-1",
+                "lessonName": "Understanding Check 1",
+                "lable": true,
+                "time": 5,
+                "unread": true,
+                "isCircle": true,
+                "data": {
+                    "question": "What type of data structure is a Python dictionary?",
+                    "options": [
+                        {
+                            "id": "1",
+                            "name": "Ordered list of items"
+                        },
+                        {
+                            "id": "2",
+                            "name": "Mutable mapping of key-value pairs"
+                        },
+                        {
+                            "id": "3",
+                            "name": "Immutable set of keys"
+                        },
+                        {
+                            "id": "4",
+                            "name": "Immutable tuple pairs"
+                        }
+                    ],
+                    "correctAnswers": "2"
+                },
+                "prevUrl": "summary-dictionaries",
+                "nextUrl": "question-2"
+            },
+            {
+                "lessonType": "TrueFalse",
+                "lssonLink": "question-2",
+                "lessonName": "Understanding Check 2",
+                "lable": true,
+                "time": 5,
+                "unread": true,
+                "isCircle": true,
+                "data": {
+                    "question": "In Python 3.6 and later, dictionaries maintain the order of key-value pairs added to them.",
+                    "correctAnswers": "True"
+                },
+                "prevUrl": "question-1",
+                "nextUrl": "question-3"
+            },
+            {
+                "lessonType": "MultipleSelectQuiz",
+                "lssonLink": "question-3",
+                "lessonName": "Concept Recognition 1",
+                "lable": true,
+                "time": 5,
+                "unread": true,
+                "isCircle": true,
+                "data": {
+                    "question": "Which of the following methods is used to access only the keys of a dictionary?",
+                    "options": [
+                        {
+                            "id": "1",
+                            "name": ".keys()"
+                        },
+                        {
+                            "id": "2",
+                            "name": ".values()"
+                        },
+                        {
+                            "id": "3",
+                            "name": ".items()"
+                        },
+                        {
+                            "id": "4",
+                            "name": "dict[]"
+                        }
+                    ],
+                    "correctAnswers": "1"
+                },
+                "prevUrl": "question-2",
+                "nextUrl": "question-4"
+            },
+            {
+                "lessonType": "MultipleSelectQuiz",
+                "lssonLink": "question-4",
+                "lessonName": "Concept Recognition 2",
+                "lable": true,
+                "time": 5,
+                "unread": true,
+                "isCircle": true,
+                "data": {
+                    "question": "How do you delete a key-value pair in a dictionary?",
+                    "options": [
+                        {
+                            "id": "1",
+                            "name": "dict.remove(key)"
+                        },
+                        {
+                            "id": "2",
+                            "name": "del dict[key]"
+                        },
+                        {
+                            "id": "3",
+                            "name": "dict.clear(key)"
+                        },
+                        {
+                            "id": "4",
+                            "name": "delete dict[key]"
+                        }
+                    ],
+                    "correctAnswers": "2"
+                },
+                "prevUrl": "question-3",
+                "nextUrl": "code-task-5"
+            },
+            {
+                "lessonType": "Code",
+                "lssonLink": "code-task-5",
+                "lessonName": "Simple Coding Task 1",
+                "lable": true,
+                "time": 5,
+                "unread": true,
+                "isCircle": true,
+                "data": {
+                    "text": "Add a new key-value pair to the dictionary 'sammy' where the key is 'location' and the value is 'ocean'. Then print the updated dictionary.",
+                    "code": "sammy = {'username': 'sammy-shark', 'online': True, 'followers': 987} # Add your code here #"
+                },
+                "prevUrl": "question-4",
+                "nextUrl": "code-task-6"
+            },
+            {
+                "lessonType": "Code",
+                "lssonLink": "code-task-6",
+                "lessonName": "Debugging Task 1",
+                "lable": true,
+                "time": 5,
+                "unread": true,
+                "isCircle": true,
+                "data": {
+                    "text": "The code tries to print the number of followers for the username 'Jamie'. Can you spot the mistake and fix it?",
+                    "code": "usernames = {'Sammy': 'sammy-shark', 'Jamie': 'mantisshrimp54'} followers = {'sammy-shark': 500, 'mantisshrimp54': 1200} print(usernames['Jamie']->followers['mantisshrimp54'])"
+                },
+                "prevUrl": "code-task-5",
+                "nextUrl": "code-task-7"
+            },
+            {
+                "lessonType": "Code",
+                "lssonLink": "code-task-7",
+                "lessonName": "Complex Coding Task 1",
+                "lable": true,
+                "time": 5,
+                "unread": true,
+                "isCircle": true,
+                "data": {
+                    "text": "Write a function `merge_dictionaries` that takes two dictionaries as arguments. It should return a new dictionary that merges both, updating existing keys with values from the second dictionary.",
+                    "code": "def merge_dictionaries(dict1, dict2): # Your code here #"
+                },
+                "prevUrl": "code-task-6",
+                "nextUrl": "question-8"
+            },
+            {
+                "lessonType": "SingleQuestion",
+                "lssonLink": "question-8",
+                "lessonName": "Explanation Task 1",
+                "lable": true,
+                "time": 5,
+                "unread": true,
+                "isCircle": true,
+                "data": {
+                    "question": "Explain in your own words how the dict.update() method works to add or modify dictionary contents."
+                },
+                "prevUrl": "code-task-7",
+                "nextUrl": "summary-classes"
+            }
+
+          ]
+      },
+      {
+          "id": 1,
+          "title": "How To Construct Classes and Define Objects",
+          "isShow": false,
+          "summary": {
+              "background": "Students have experience with ordered structures and basic Python programming.",
+              "objectives": "In Python, object-oriented programming (OOP) is a paradigm focused on creating classes and objects. Classes are blueprints for creating objects, while objects are instances of these classes. Python's __init__ constructor method initializes attributes for each object. OOP is useful for creating reusable, maintainable, and organized code. You can create multiple objects from a class, each with its own distinct attributes.",
+              "content": "topic_4_classes.md",
+              "concepts": "Classes, Objects, __init__ Method, Attributes, Object-Oriented Programming, Reusability, Maintainability, Organization"
+          },
+          "listItem": [
+              {
+                  "lssonLink": "summary-classes",
+                  "lessonName": "Summary",
+                  "lessonType": "Summary",
+                  "lable": true,
+                  "time": 0,
+                  "unread": true,
+                  "isCircle": true,
+                  "iconFile": "file-text",
+                  "data": {
+                      "description": "In Python, object-oriented programming (OOP) is a paradigm focused on creating classes and objects. Classes are blueprints for creating objects, while objects are instances of these classes. Python\u2019s __init__ constructor method initializes attributes for each object. OOP is useful for creating reusable, maintainable, and organized code. You can create multiple objects from a class, each with its own distinct attributes.",
+                      "items": {
+                          "Object-Oriented Programming (OOP)": "A paradigm that focuses on creating reusable code patterns using classes and objects.",
+                          "Class": "A blueprint for creating objects, defining attributes and methods.",
+                          "Object": "An instance of a class, representing a realized version of the class.",
+                          "Methods": "Functions defined within a class to operate on its objects.",
+                          "__init__ (Constructor)": "Method that initializes an object's attributes during instantiation.",
+                          "self": "A reference to the current instance of the class, used to access attributes and methods.",
+                          "Dot Operator": "Used to call methods or access attributes of an object.",
+                          "Multiple Objects": "Classes can create many objects, each with its own attributes, allowing for efficient code reuse."
+                      },
+                      "textbooks": [
+                          {
+                              "chapter": "How To Construct Classes and Define Objects in Python 3 // How To Code in Python",
+                              "link": "https://www.digitalocean.com/community/tutorials/how-to-construct-classes-and-define-objects-in-python-3"
+                          }
+                      ]
+                  },
+                  "nextUrl": "question-8",
+                  "prevUrl": "part_1_question-1"
+              },
+              {
+                "lessonType": "MultipleSelectQuiz",
+                "lssonLink": "part_1_question-1",
+                "lessonName": "Understanding Check: OOP Basics",
+                "lable": true,
+                "time": 5,
+                "unread": true,
+                "isCircle": true,
+                "data": {
+                    "question": "What is the primary focus of object-oriented programming (OOP)?",
+                    "options": [
+                        {
+                            "id": "1",
+                            "name": "Creating reusable patterns of code"
+                        },
+                        {
+                            "id": "2",
+                            "name": "Following explicit sequenced instructions"
+                        },
+                        {
+                            "id": "3",
+                            "name": "Improving hardware performance"
+                        }
+                    ],
+                    "correctAnswers": "1"
+                },
+                "prevUrl": "summary-classes",
+                "nextUrl": "part_1_question-2"
+            },
+            {
+                "lessonType": "TrueFalse",
+                "lssonLink": "part_1_question-2",
+                "lessonName": "Understanding Check: Class and Object Distinction",
+                "lable": true,
+                "time": 5,
+                "unread": true,
+                "isCircle": true,
+                "data": {
+                    "question": "True or False: In OOP, an object is the blueprint for a class.",
+                    "correctAnswers": "False"
+                },
+                "prevUrl": "part_1_question-1",
+                "nextUrl": "part_1_question-3"
+            },
+            {
+                "lessonType": "MultipleSelectQuiz",
+                "lssonLink": "part_1_question-3",
+                "lessonName": "Understanding Check: Method Identification",
+                "lable": true,
+                "time": 5,
+                "unread": true,
+                "isCircle": true,
+                "data": {
+                    "question": "What is a method in a class?",
+                    "options": [
+                        {
+                            "id": "1",
+                            "name": "A variable outside of the class"
+                        },
+                        {
+                            "id": "2",
+                            "name": "A special function inside a class"
+                        },
+                        {
+                            "id": "3",
+                            "name": "An error in the program"
+                        }
+                    ],
+                    "correctAnswers": "2"
+                },
+                "prevUrl": "part_1_question-2",
+                "nextUrl": "part_1_question-4"
+            },
+            {
+                "lessonType": "SingleQuestion",
+                "lssonLink": "part_1_question-4",
+                "lessonName": "Concept Recognition: Identifying Classes and Objects",
+                "lable": true,
+                "time": 5,
+                "unread": true,
+                "isCircle": true,
+                "data": {
+                    "question": "Identify whether 'sammy' is a class or an object based on the following code snippet: sammy = Shark()"
+                },
+                "prevUrl": "part_1_question-3",
+                "nextUrl": "part_1_question-5"
+            },
+            {
+                "lessonType": "SingleQuestion",
+                "lssonLink": "part_1_question-5",
+                "lessonName": "Concept Recognition: Understanding Constructors",
+                "lable": true,
+                "time": 5,
+                "unread": true,
+                "isCircle": true,
+                "data": {
+                    "question": "What happens when an object is instantiated in Python with a defined __init__ method?"
+                },
+                "prevUrl": "part_1_question-4",
+                "nextUrl": "part_1_code-task-6"
+            },
+            {
+                "lessonType": "Code",
+                "lssonLink": "part_1_code-task-6",
+                "lessonName": "Simple Coding Task: Create a Class",
+                "lable": true,
+                "time": 5,
+                "unread": true,
+                "isCircle": true,
+                "data": {
+                    "text": "Write a simple Python class called 'Dog' with two methods: bark() that prints 'The dog is barking.' and wag_tail() that prints 'The dog is wagging its tail.'",
+                    "code": "# Your code is here..."
+                },
+                "prevUrl": "part_1_question-5",
+                "nextUrl": "part_1_code-task-7"
+            },
+            {
+                "lessonType": "Code",
+                "lssonLink": "part_1_code-task-7",
+                "lessonName": "Simple Coding Task: Instantiate an Object",
+                "lable": true,
+                "time": 5,
+                "unread": true,
+                "isCircle": true,
+                "data": {
+                    "text": "Use the 'Dog' class you created to instantiate an object named 'buddy', and call both the bark() and wag_tail() methods.",
+                    "code": "class Dog:\n    def bark(self):\n        print(\"The dog is barking.\")\n\n    def wag_tail(self):\n        print(\"The dog is wagging its tail.\")"
+                },
+                "prevUrl": "part_1_code-task-6",
+                "nextUrl": "part_1_code-task-8"
+            },
+            {
+                "lessonType": "Code",
+                "lssonLink": "part_1_code-task-8",
+                "lessonName": "Debugging Task: Fix the Constructor",
+                "lable": true,
+                "time": 5,
+                "unread": true,
+                "isCircle": true,
+                "data": {
+                    "text": "The following code snippet is supposed to print the name of the shark whenever swim() is called, but it doesn't. Identify and fix the bug.",
+                    "code": "class Shark:\n    def __init__(self, name):\n        name = name\n\n    def swim(self):\n        print(name + \" is swimming.\")\n\nsammy = Shark(\"Sammy\")\nsammy.swim()"
+                },
+                "prevUrl": "part_1_code-task-7",
+                "nextUrl": "part_1_code-task-9"
+            },
+            {
+                "lessonType": "Code",
+                "lssonLink": "part_1_code-task-9",
+                "lessonName": "Complex Coding Task: Multiple Objects",
+                "lable": true,
+                "time": 5,
+                "unread": true,
+                "isCircle": true,
+                "data": {
+                    "text": "Create a class called 'Book' with attributes 'title' and 'author'. Write a method 'describe' that prints the title and author. Instantiate two books with different titles and authors and call their describe methods.",
+                    "code": "# Your code is here..."
+                },
+                "prevUrl": "part_1_code-task-8",
+                "nextUrl": "part_1_question-10"
+            },
+            {
+                "lessonType": "SingleQuestion",
+                "lssonLink": "part_1_question-10",
+                "lessonName": "Explanation Task: Explain Code Instantiation",
+                "lable": true,
+                "time": 5,
+                "unread": true,
+                "isCircle": true,
+                "data": {
+                    "question": "In your own words, explain how the '__init__' method works when creating a new object from a class in Python and why it is important."
+                },
+                "prevUrl": "part_1_code-task-9",
+                "nextUrl": ""
+            }
+          ]
+      }
+  ]
+}

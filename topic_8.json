@@ -1,0 +1,189 @@
+{
+    "lesson": [
+        {
+            "id": 0,
+            "title": "Organising information: trees",
+            "isShow": true,
+            "summary": {
+                "background": "Students have experience with ordered structures and basic Python programming.",
+                "objectives": "Trees are hierarchical data structures that represent relationships, like family trees or textual structures in markup languages. In computing, they organize data using nodes linked by parent-child relationships. Each tree has a single root node, while nodes at the end are called leaf nodes. Trees are used to structure texts, databases, and various hierarchical systems. Python's anytree package provides tools to create, modify, and visualize trees.",
+                "content": "topic_8.md",
+                "concepts": "Tree, Node, Root, Leaf, Parent, Child, Sibling, Descendant, Ancestor, Depth, Height, Binary Tree, Binary Search Tree, Traversal, Pre-order, In-order, Post-order, Level-order, Depth-first Search, Breadth-first Search, Balanced Tree, AVL Tree, Red-Black Tree, B-tree, B+ Tree, Trie, Huffman Tree, Decision Tree, Spanning Tree, Minimum Spanning Tree, Maximum Spanning Tree, Tree Data Structure, Tree Algorithms, Tree Visualization, Tree Implementation, Tree Applications"
+            },
+            "listItem": [
+                {
+                    "lssonLink": "summary-while-loops",
+                    "lessonName": "Summary",
+                    "lessonType": "Summary",
+                    "lable": true,
+                    "time": 0,
+                    "unread": true,
+                    "isCircle": true,
+                    "iconFile": "file-text",
+                    "data": {
+                        "description": "Trees are hierarchical data structures that represent relationships, like family trees or textual structures in markup languages. In computing, they organize data using nodes linked by parent-child relationships. Each tree has a single root node, while nodes at the end are called leaf nodes. Trees are used to structure texts, databases, and various hierarchical systems. Python's anytree package provides tools to create, modify, and visualize trees.",
+                        "items": {
+                            "Tree": "A hierarchical data structure consisting of nodes connected by parent-child relationships.",
+                            "Node": "The fundamental unit of a tree, containing data and references to child nodes.",
+                            "Root Node": "The topmost node of a tree without any parent.",
+                            "Leaf Node": "A node without any children, located at the bottom of the tree.",
+                            "Parent Node": "A node directly connected to another node closer to the root.",
+                            "Child Node": "A node directly connected to another node further from the root.",
+                            "Sibling Node": "Nodes that share the same parent.",
+                            "Markup Language": "A system for annotating documents that is readable by humans and machines, often represented as a tree (e.g., HTML, TEI).",
+                            "Gabriel Garc\u00eda M\u00e1rquez": "Colombian author used to illustrate hierarchical structures through family trees in literature."
+                        },
+                        "textbooks": [
+                            {
+                                "chapter": "Organising information: trees // Computational Thinking and Programming",
+                                "link": "https://comp-think.github.io/book/11.pdf"
+                            }
+                        ]
+                    },
+                    "nextUrl": "part_0_question-1",
+                    "prevUrl": ""
+                },
+                {
+                    "lessonType": "MultipleSelectQuiz",
+                    "lssonLink": "part_0_question-1",
+                    "lessonName": "Understanding Check: Tree Structure",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "question": "What is the root node in a tree data structure?",
+                        "options": [
+                            {
+                                "id": "1",
+                                "name": "A node with no child nodes"
+                            },
+                            {
+                                "id": "2",
+                                "name": "A node with no parent nodes"
+                            },
+                            {
+                                "id": "3",
+                                "name": "A node with exactly two children"
+                            },
+                            {
+                                "id": "4",
+                                "name": "A node connected to all other nodes"
+                            }
+                        ],
+                        "correctAnswers": "2"
+                    },
+                    "prevUrl": "summary-while-loops",
+                    "nextUrl": "part_0_question-2"
+                },
+                {
+                    "lessonType": "TrueFalse",
+                    "lssonLink": "part_0_question-2",
+                    "lessonName": "True or False: Leaf Nodes",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "question": "True or False: A leaf node in a tree has no children.",
+                        "correctAnswers": "True"
+                    },
+                    "prevUrl": "part_0_question-1",
+                    "nextUrl": "part_0_question-3"
+                },
+                {
+                    "lessonType": "MultipleSelectQuiz",
+                    "lssonLink": "part_0_question-3",
+                    "lessonName": "Concept Recognition: Node Terms",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "question": "Which of the following terms is used to describe nodes with the same parent in a tree?",
+                        "options": [
+                            {
+                                "id": "1",
+                                "name": "Ancestors"
+                            },
+                            {
+                                "id": "2",
+                                "name": "Descendants"
+                            },
+                            {
+                                "id": "3",
+                                "name": "Siblings"
+                            },
+                            {
+                                "id": "4",
+                                "name": "Children"
+                            }
+                        ],
+                        "correctAnswers": "3"
+                    },
+                    "prevUrl": "part_0_question-2",
+                    "nextUrl": "part_0_code-task-4"
+                },
+                {
+                    "lessonType": "Code",
+                    "lssonLink": "part_0_code-task-4",
+                    "lessonName": "Simple Coding Task: Create Tree",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "text": "Write a Python script using anytree to create a simple tree with a root 'A' with children 'B' and 'C'.",
+                        "code": "# Your code is here..."
+                    },
+                    "prevUrl": "part_0_question-3",
+                    "nextUrl": "part_0_code-task-5"
+                },
+                {
+                    "lessonType": "Code",
+                    "lssonLink": "part_0_code-task-5",
+                    "lessonName": "Debugging Task: Fix Parent-Child Assignment",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "text": "Fix the provided code so that node 'D' becomes a child of node 'B'.",
+                        "code": "from anytree import Node\nA = Node(\"A\")\nB = Node(\"B\", A)\nC = Node(\"C\", A)\nD = Node(\"D\") # needs parent"
+                    },
+                    "prevUrl": "part_0_code-task-4",
+                    "nextUrl": "part_0_code-task-6"
+                },
+                {
+                    "lessonType": "Code",
+                    "lssonLink": "part_0_code-task-6",
+                    "lessonName": "Complex Coding Task: Breadth-First Function",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "text": "Implement a function breadth_first_visit(root_node) that returns a list of nodes in breadth-first order from the tree.",
+                        "code": "# Your code is here..."
+                    },
+                    "prevUrl": "part_0_code-task-5",
+                    "nextUrl": "part_0_question-7"
+                },
+                {
+                    "lessonType": "SingleQuestion",
+                    "lssonLink": "part_0_question-7",
+                    "lessonName": "Explanation Task: Tree Nodes",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "question": "Explain in your own words what a node is in the context of a tree data structure and how Python's anytree package utilizes nodes."
+                    },
+                    "prevUrl": "part_0_code-task-6",
+                    "nextUrl": ""
+                }
+            ]
+        }
+    ]
+}

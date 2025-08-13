@@ -1,0 +1,112 @@
+[
+    {
+        "lessonType": "Code",
+        "lessonName": "Define a Simple Function",
+        "points": 5,
+        "topic_id": 6,
+        "data": {
+            "text": "Create a simple function named `hello_world` that prints 'Hello, World!' to the console. Call the function once.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Debugging Function Parameters",
+        "points": 5,
+        "topic_id": 6,
+        "data": {
+            "text": "The following code intends to take two numbers as input and return their sum, but there is a bug. Fix it.",
+            "code": "def add_numbers(a, b)\n    return a + b\n\nresult = add_numbers(5, 3)\nprint(reslt)"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Parameter Usage in Functions",
+        "points": 5,
+        "topic_id": 6,
+        "data": {
+            "text": "Write a function named `literary_genre` that takes a single parameter `genre` and prints 'The genre is ' followed by the provided genre. Call the function with the argument 'Renaissance'.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Return Statement Practice",
+        "points": 5,
+        "topic_id": 6,
+        "data": {
+            "text": "Define a function `square_number` that takes a number as a parameter, squares it, and returns the result. Call the function with the number 4 and print the returned value.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Function with Multiple Parameters",
+        "points": 10,
+        "topic_id": 6,
+        "data": {
+            "text": "Create a function `describe_book` that takes two parameters: `title` and `author`. The function should return a string in the format 'The book \"title\" is written by author.'. Use the function with the book 'Inferno' by 'Dante Alighieri'.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Debugging Keyword Arguments",
+        "points": 5,
+        "topic_id": 6,
+        "data": {
+            "text": "The following code tries to use keyword arguments but has a bug. Correct the bug and ensure it prints the correct output.",
+            "code": "def book_info(title, pages):\n    print(f'Title: {title}, Pages: {pages}')\n\nbook_info(pages=300, title='The Prince')"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Default Parameter Values",
+        "points": 10,
+        "topic_id": 6,
+        "data": {
+            "text": "Write a function `character_info` that takes two parameters: `name` and `role`, where `role` has a default value of 'protagonist'. The function should print 'Name: name, Role: role'. Call the function for 'Don Quixote' without specifying the role.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Return Multiple Values",
+        "points": 10,
+        "topic_id": 6,
+        "data": {
+            "text": "Define a function `historical_references` that takes one parameter `text` representing a string of text. The function should return the length of the text and the number of words in it. Test it with the text 'All the world's a stage'.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Function with Conditional Logic",
+        "points": 10,
+        "topic_id": 6,
+        "data": {
+            "text": "Create a function `is_vowel` that takes a single character as a parameter and returns True if the character is a vowel, otherwise False. Test it with the character 'e'.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Complex Function: Text Analysis",
+        "points": 15,
+        "topic_id": 6,
+        "data": {
+            "text": "Write a function `analyze_text` that accepts a string and returns a dictionary with the number of vowels, the number of consonants, and the total number of characters in the text. Test the function with the text 'La Divina Commedia'.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    }
+]

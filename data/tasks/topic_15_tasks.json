@@ -1,0 +1,79 @@
+[
+    {
+        "lessonType": "Code",
+        "lessonName": "Creating a Tuple",
+        "points": 5,
+        "topic_id": 15,
+        "data": {
+            "text": "Create a tuple named `hogwarts_houses` containing the names of the four Hogwarts houses: 'Gryffindor', 'Hufflepuff', 'Ravenclaw', 'Slytherin'. Use the `print()` function to display the tuple.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Debugging Tuple Indexing",
+        "points": 10,
+        "topic_id": 15,
+        "data": {
+            "text": "The following code snippet is supposed to print the third item in the tuple `hogwarts_professors`, but it throws an error. Identify and fix the issue.",
+            "code": "hogwarts_professors = ('Dumbledore', 'McGonagall', 'Snape', 'Hooch')\nprint(hogwarts_professors[4])"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Slicing Tuples",
+        "points": 10,
+        "topic_id": 15,
+        "data": {
+            "text": "Given the tuple `characters = ('Harry', 'Ron', 'Hermione', 'Neville', 'Luna', 'Ginny')`, write a code that slices the tuple to print only the middle three characters.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Tuple Concatenation",
+        "points": 10,
+        "topic_id": 15,
+        "data": {
+            "text": "Create two tuples: `houses1` containing 'Gryffindor', 'Hufflepuff' and `houses2` containing 'Ravenclaw', 'Slytherin'. Concatenate these tuples into a new tuple `all_houses` and print it.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Tuple Multiplication",
+        "points": 10,
+        "topic_id": 15,
+        "data": {
+            "text": "You have a tuple `magic_spells = ('Expelliarmus', 'Lumos', 'Alohomora')`. Write a code to create a new tuple `repeated_spells` that repeats the elements of `magic_spells` three times and print the result.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Using Tuple Functions",
+        "points": 10,
+        "topic_id": 15,
+        "data": {
+            "text": "Given the tuple of magic points `magic_points = (50, 75, 100, 65, 85)`, write a code to find and print the maximum and minimum magic points using tuple functions.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Complex Tuple Manipulation",
+        "points": 15,
+        "topic_id": 15,
+        "data": {
+            "text": "Imagine you have a tuple storing exam scores `exam_scores = (95, 85, 75, 65, 55)`. Write a code to calculate the average score, using the built-in functions and tuple operations, and print it. Assume all numbers in the tuple are integers.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    }
+]

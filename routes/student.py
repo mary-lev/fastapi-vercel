@@ -267,8 +267,8 @@ async def get_user_lesson_progress(
                 TaskSolution.id.label("solution_id"),
             )
             .join(Topic)
-            .outerjoin(TaskAttempt, (TaskAttempt.task_id == Task.id) & (TaskAttempt.user_id == user.id))
-            .outerjoin(TaskSolution, (TaskSolution.task_id == Task.id) & (TaskSolution.user_id == user.id))
+            .outerjoin(TaskAttempt, (TaskAttempt.task_id == Task.id) & (TaskAttempt.user_id == user_id))
+            .outerjoin(TaskSolution, (TaskSolution.task_id == Task.id) & (TaskSolution.user_id == user_id))
             .filter(Topic.lesson_id == lesson_id)
             .group_by(Task.id, Task.task_name, Task.points, TaskSolution.id)
             .all()
@@ -337,7 +337,7 @@ async def submit_task_attempt(
             user_id=user.id,
             task_id=submission.task_id,
             attempt_number=attempt_number,
-            submitted_data=submission.submission_data,
+            attempt_content=submission.submission_data,
             submitted_at=datetime.utcnow(),
             is_successful=False,  # Will be updated when solution is created
         )
@@ -391,7 +391,7 @@ async def get_user_submissions(
                 "attempt_id": attempt.id,
                 "task_id": attempt.task_id,
                 "attempt_number": attempt.attempt_number,
-                "submitted_data": attempt.submitted_data,
+                "attempt_content": attempt.attempt_content,
                 "submitted_at": attempt.submitted_at,
                 "is_successful": attempt.is_successful,
             }

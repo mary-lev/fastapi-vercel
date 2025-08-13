@@ -1,0 +1,79 @@
+[
+    {
+        "lessonType": "Code",
+        "lessonName": "Simple Variable Assignment",
+        "points": 10,
+        "topic_id": 3,
+        "data": {
+            "text": "Write a Python script to create a variable named `house` and assign it the value 'Gryffindor'. Then print out the value of the variable.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Debugging Variable Assignment",
+        "points": 10,
+        "topic_id": 3,
+        "data": {
+            "text": "The following code has a mistake. Identify and correct the error so that it runs without errors.",
+            "code": "house-name = 'Hufflepuff'\nprint(house-name)"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Variable Reassignment",
+        "points": 15,
+        "topic_id": 3,
+        "data": {
+            "text": "Create a variable called `wizard` and assign it the value 'Harry'. Then reassign the variable to a number representing Harry's age, 11. Print the variable each time after assignment.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Multiple Assignment",
+        "points": 15,
+        "topic_id": 3,
+        "data": {
+            "text": "Using a single line of code, assign the value 'Hogwarts' to three variables: `school1`, `school2`, and `school3`. Print each variable on a new line.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Assign Multiple Values",
+        "points": 15,
+        "topic_id": 3,
+        "data": {
+            "text": "Assign the string 'Hermione', the integer 12, and the float 4.5 to the variables `name`, `age`, and `score` respectively, using a single line of code. Print each variable to verify their values.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Global vs Local Variables",
+        "points": 20,
+        "topic_id": 3,
+        "data": {
+            "text": "Write a function `potions_class()` that declares a local variable `subject` as 'Potions'. Also have a global variable `subject` with the value 'Defense Against the Dark Arts'. Inside the function, print the local `subject`. Outside the function, print the global `subject`.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Complex Task: Text Analysis with Variables",
+        "points": 25,
+        "topic_id": 3,
+        "data": {
+            "text": "Create a script that assigns a paragraph from any Harry Potter book to a variable `text`. Then, using variables, count and print the number of times the word 'magic' appears in the text. You may not use any built-in string methods other than basic iteration, indexing, and length checking.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    }
+]

@@ -1,0 +1,185 @@
+{
+    "lesson": [
+        {
+            "id": 0,
+            "title": "Organising information: graphs",
+            "isShow": true,
+            "summary": {
+                "background": "Students have experience with ordered structures and basic Python programming.",
+                "objectives": "Graphs are a crucial data structure in computer science, representing networks of connected nodes. They model various real-world connections, from cities and social networks to webpages. There are two types of graphs: undirected graphs (edges have no direction) and directed graphs (edges have direction). Euler, through his work on the K\u00f6nigsberg bridge problem, laid the foundation for graph theory.",
+                "content": "topic_10.md",
+                "concepts": "Graph, Node, Edge, Directed Graph, Undirected Graph, Eulerian Path, Eulerian Circuit, K\u00f6nigsberg Bridge Problem"
+            },
+            "listItem": [
+                {
+                    "lssonLink": "summary-graphs",
+                    "lessonName": "Summary",
+                    "lessonType": "Summary",
+                    "lable": true,
+                    "time": 0,
+                    "unread": true,
+                    "isCircle": true,
+                    "iconFile": "file-text",
+                    "data": {
+                        "description": "Graphs are a crucial data structure in computer science, representing networks of connected nodes. They model various real-world connections, from cities and social networks to webpages. There are two types of graphs: undirected graphs (edges have no direction) and directed graphs (edges have direction). Euler, through his work on the K\u00f6nigsberg bridge problem, laid the foundation for graph theory.",
+                        "items": {
+                            "Graphs": "Structures of connected nodes, useful for modeling networks and relations.",
+                            "Euler's Contribution": "Introduced graph theory, solving the K\u00f6nigsberg bridge problem using graph representation.",
+                            "Undirected Graphs": "Edges can be traversed in both directions.",
+                            "Directed Graphs": "Edges have a specific direction from one node to another.",
+                            "NetworkX": "Python library for creating and analyzing graphs, supporting both undirected and directed graphs."
+                        },
+                        "textbooks": [
+                            {
+                                "chapter": "Organising information: graphs // Computational Thinking and Programming",
+                                "link": "https://comp-think.github.io/book/13.pdf"
+                            }
+                        ]
+                    },
+                    "nextUrl": "part_0_question-1",
+                    "prevUrl": ""
+                },
+                {
+                    "lessonType": "MultipleSelectQuiz",
+                    "lssonLink": "part_0_question-1",
+                    "lessonName": "Understanding Check - Graph Types",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "question": "What type of graph allows you to have multiple edges between the same two nodes?",
+                        "options": [
+                            {
+                                "id": "1",
+                                "name": "Directed Graph"
+                            },
+                            {
+                                "id": "2",
+                                "name": "Undirected Graph"
+                            },
+                            {
+                                "id": "3",
+                                "name": "MultiGraph"
+                            },
+                            {
+                                "id": "4",
+                                "name": "Tree"
+                            }
+                        ],
+                        "correctAnswers": "3"
+                    },
+                    "prevUrl": "summary-graphs",
+                    "nextUrl": "part_0_question-2"
+                },
+                {
+                    "lessonType": "TrueFalse",
+                    "lssonLink": "part_0_question-2",
+                    "lessonName": "Understanding Check - Eulerian Path",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "question": "True or False: An Eulerian path exists in a graph if and only if exactly two vertices have an odd degree.",
+                        "correctAnswers": "True"
+                    },
+                    "prevUrl": "part_0_question-1",
+                    "nextUrl": "part_0_question-3"
+                },
+                {
+                    "lessonType": "MultipleSelectQuiz",
+                    "lssonLink": "part_0_question-3",
+                    "lessonName": "Concept Recognition - Graph Concepts",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "question": "Which concept did Euler introduce through the seven bridges problem?",
+                        "options": [
+                            {
+                                "id": "1",
+                                "name": "Graph theory"
+                            },
+                            {
+                                "id": "2",
+                                "name": "Boolean algebra"
+                            },
+                            {
+                                "id": "3",
+                                "name": "Tree structures"
+                            },
+                            {
+                                "id": "4",
+                                "name": "Digital circuit design"
+                            }
+                        ],
+                        "correctAnswers": "1"
+                    },
+                    "prevUrl": "part_0_question-2",
+                    "nextUrl": "part_0_code-task-4"
+                },
+                {
+                    "lessonType": "Code",
+                    "lssonLink": "part_0_code-task-4",
+                    "lessonName": "Coding Exercise - Simple Graph",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "text": "Write Python code to create an undirected graph using NetworkX with three nodes and two edges.",
+                        "code": "from networkx import Graph\n\n# Create a new graph\nG = Graph()\n# Add nodes\n# Add edges\n"
+                    },
+                    "prevUrl": "part_0_question-3",
+                    "nextUrl": "part_0_code-task-5"
+                },
+                {
+                    "lessonType": "Code",
+                    "lssonLink": "part_0_code-task-5",
+                    "lessonName": "Debugging Task - Fix Graph Code",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "text": "Identify and fix the error in the following code snippet to add a node with metadata.",
+                        "code": "from networkx import Graph\n\nG = Graph()\nG.add_node(1, name='Alice', surname='Smith')\nprint(G.nodes(data=True)) # Incorrect output expected: NodeDataView({1: {}})"
+                    },
+                    "prevUrl": "part_0_code-task-4",
+                    "nextUrl": "part_0_code-task-6"
+                },
+                {
+                    "lessonType": "Code",
+                    "lssonLink": "part_0_code-task-6",
+                    "lessonName": "Complex Coding Task - Weighted Undirected Graph",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "text": "Create an undirected graph that represents a social network with weights on the edges indicating connection strength. The graph should have at least four nodes and six weighted edges.",
+                        "code": "from networkx import Graph\n\n# Create graph\nG = Graph()\n# Add nodes and weighted edges\n\n# Example: adding a weighted edge\n# G.add_edge(node1, node2, weight=3)\n"
+                    },
+                    "prevUrl": "part_0_code-task-5",
+                    "nextUrl": "part_0_question-7"
+                },
+                {
+                    "lessonType": "SingleQuestion",
+                    "lssonLink": "part_0_question-7",
+                    "lessonName": "Explanation Task - Node and Edge Use",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "question": "In your own words, explain how a node and an edge in a graph can represent real-world entities and relationships. Consider examples from digital humanities such as social networks or historical data analysis."
+                    },
+                    "prevUrl": "part_0_code-task-6",
+                    "nextUrl": ""
+                }
+            ]
+        }
+    ]
+}

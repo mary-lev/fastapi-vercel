@@ -1,0 +1,20 @@
+# Test case for the function
+def test_f(i, expected):
+    result = f(i)
+    if expected == result:
+        return True
+    else:
+        return False
+
+
+# Code of the function
+def f(i):
+    return i % 2 == 0
+
+
+# Tests
+print(test_f(2, True))
+print(test_f(3, False))
+print(test_f(0, True))
+print(test_f(7, False))
+print(test_f(108, True))

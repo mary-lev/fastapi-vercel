@@ -1,0 +1,112 @@
+[
+    {
+        "lessonType": "Code",
+        "lessonName": "Basic Conditional Statement",
+        "points": 5,
+        "topic_id": 5,
+        "data": {
+            "text": "Write a Python program that checks if a given Italian poem line contains the word 'amore'. If it does, print 'Love is mentioned'. If not, print 'No mention of love'.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Debugging: Fix the Conditional",
+        "points": 10,
+        "topic_id": 5,
+        "data": {
+            "text": "The following code is meant to check if a line from Dante's Divine Comedy has the word 'paradiso'. However, it has a bug. Fix it so it works correctly.",
+            "code": "line = 'Nel mezzo del cammin di nostra vita'\n\nif 'paradiso' > line:\n    print('Heavenly reference found')\nelse:\n    print('No heavenly reference')"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Intermediate: Multiple Conditions",
+        "points": 10,
+        "topic_id": 5,
+        "data": {
+            "text": "Create a Python program that evaluates the length of a string from an Italian sonnet. If the string length is more than 50 characters, print 'Long stanza'. If it is between 30 and 50 characters, print 'Medium stanza'. Otherwise, print 'Short stanza'.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Intermediate: Grade Evaluation",
+        "points": 10,
+        "topic_id": 5,
+        "data": {
+            "text": "Write a Python function that takes an integer representing a student's score on an Italian literature exam and returns the grade. Use the following grading scheme:\n- 90-100: 'Ottimo' \n- 80-89: 'Buono' \n- 70-79: 'Sufficiente' \n- 60-69: 'Insufficiente' \n- Below 60: 'Gravemente insufficiente'",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Nested Conditionals: Dante's Circles",
+        "points": 15,
+        "topic_id": 5,
+        "data": {
+            "text": "In Dante's Inferno, create a script that places a character in one of the nine circles of Hell based on their sins. Use nested conditionals to check for 'lust', 'gluttony', 'greed', and other sins, and print the corresponding circle number.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Advanced: Historical Text Analysis",
+        "points": 15,
+        "topic_id": 5,
+        "data": {
+            "text": "Write a Python program that analyzes a list of historical Italian texts. For each text, check if the text contains the word 'libert\u00e0'. If it does, then further check if it also contains 'giustizia'. Print 'Freedom and Justice mentioned' if both are found, 'Only Freedom mentioned' if only 'libert\u00e0' is found, and 'Neither mentioned' otherwise.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Challenging: Complex Text Analysis",
+        "points": 15,
+        "topic_id": 5,
+        "data": {
+            "text": "Create a function that takes a paragraph from Machiavelli's 'The Prince' and evaluates if it discusses 'power', 'virtue', or both. Use a combination of if, elif, and nested conditions to output the appropriate message: 'Discusses Power', 'Discusses Virtue', 'Discusses Both', or 'Neither mentioned'.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Complex: Nested Conditions in Art Analysis",
+        "points": 15,
+        "topic_id": 5,
+        "data": {
+            "text": "Write a program that evaluates whether an art piece description mentions 'Renaissance', 'Baroque', or 'Modernism'. If 'Renaissance' is mentioned, check if it includes 'da Vinci' or 'Michelangelo'. Print corresponding messages based on these nested conditions.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Real-World Application: Manuscript Authentication",
+        "points": 10,
+        "topic_id": 5,
+        "data": {
+            "text": "You have a list of manuscript descriptions. Write a program using conditional statements to check if a manuscript is 'authentic', 'replica', or 'unknown'. Use keywords like 'original', 'copy', and 'undetermined' to decide its category and print the result.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Extra Challenge: Conditional Formatting",
+        "points": 10,
+        "topic_id": 5,
+        "data": {
+            "text": "Given a text file containing quotes from Italian authors, write a Python script that reads each line and prints it with a prefix indicating its length category: 'Short Quote', 'Medium Quote', or 'Long Quote'. Use conditionals to determine the category based on character count.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    }
+]

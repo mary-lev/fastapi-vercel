@@ -1,0 +1,201 @@
+{
+    "lesson": [
+        {
+            "id": 0,
+            "title": "Backtracking algorithms",
+            "isShow": true,
+            "summary": {
+                "background": "Students have experience with ordered structures and basic Python programming.",
+                "objectives": "Backtracking is an algorithmic technique used to solve constrained problems, like puzzles or board games, by incrementally building potential solutions. If a partial solution fails, it backtracks to a previous step, attempting different options. It explores all potential paths in a 'tree of choices' until it finds a solution or exhausts all options. The key applications include abstract games like Go or peg solitaire.",
+                "content": "topic_9.md",
+                "concepts": "Backtracking, Recursion, Tree of Choices, Partial Solution, Constraint, Exhaustive Search, Abstract Games"
+            },
+            "listItem": [
+                {
+                    "lssonLink": "summary-backtracks",
+                    "lessonName": "Summary",
+                    "lessonType": "Summary",
+                    "lable": true,
+                    "time": 0,
+                    "unread": true,
+                    "isCircle": true,
+                    "iconFile": "file-text",
+                    "data": {
+                        "description": "Backtracking is an algorithmic technique used to solve constrained problems, like puzzles or board games, by incrementally building potential solutions. If a partial solution fails, it backtracks to a previous step, attempting different options. It explores all potential paths in a 'tree of choices' until it finds a solution or exhausts all options. The key applications include abstract games like Go or peg solitaire.",
+                        "items": {
+                            "Backtracking": "An algorithmic technique that incrementally builds solutions and abandons paths that fail to meet criteria.",
+                            "Tree of Choices": "A conceptual tree where each node represents a possible move or decision in a problem.",
+                            "Peg Solitaire": "A single-player board game used here to demonstrate backtracking, where pegs jump over each other to empty holes.",
+                            "AlphaGo": "An AI by Google DeepMind that uses tree search and backtracking principles to play the board game Go.",
+                            "Leaf Nodes": "In backtracking, leaf nodes represent potential end states, which can be winning or losing configurations.",
+                            "Recursive Step": "The part of backtracking where the algorithm explores potential moves or decisions from the current state."
+                        },
+                        "textbooks": [
+                            {
+                                "chapter": "Backtracking algorithms // Computational Thinking and Programming",
+                                "link": "https://comp-think.github.io/book/12.pdf"
+                            }
+                        ]
+                    },
+                    "nextUrl": "part_0_question-1",
+                    "prevUrl": ""
+                },
+                {
+                    "lessonType": "MultipleSelectQuiz",
+                    "lssonLink": "part_0_question-1",
+                    "lessonName": "Understanding Check - 1",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "question": "What is the purpose of backtracking in computational problems like peg solitaire?",
+                        "options": [
+                            {
+                                "id": "1",
+                                "name": "To find the shortest path to the solution"
+                            },
+                            {
+                                "id": "2",
+                                "name": "To incrementally build potential solutions and backtrack upon failure"
+                            },
+                            {
+                                "id": "3",
+                                "name": "To optimize memory usage during computations"
+                            },
+                            {
+                                "id": "4",
+                                "name": "To visualize data structures better"
+                            }
+                        ],
+                        "correctAnswers": "2"
+                    },
+                    "prevUrl": "summary-backtracks",
+                    "nextUrl": "part_0_question-2"
+                },
+                {
+                    "lessonType": "MultipleSelectQuiz",
+                    "lssonLink": "part_0_question-2",
+                    "lessonName": "Understanding Check - 2",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "question": "Which of the following best describes the 'leaf-win' condition in a backtracking algorithm?",
+                        "options": [
+                            {
+                                "id": "1",
+                                "name": "When all possible nodes have been visited"
+                            },
+                            {
+                                "id": "2",
+                                "name": "When the current node is the end of a branch without results"
+                            },
+                            {
+                                "id": "3",
+                                "name": "When the current node represents a successful solution"
+                            },
+                            {
+                                "id": "4",
+                                "name": "When the current node is the starting point of exploration"
+                            }
+                        ],
+                        "correctAnswers": "3"
+                    },
+                    "prevUrl": "part_0_question-1",
+                    "nextUrl": "part_0_question-3"
+                },
+                {
+                    "lessonType": "TrueFalse",
+                    "lssonLink": "part_0_question-3",
+                    "lessonName": "Concept Recognition - Backtracking",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "question": "True or False: In backtracking, if a partial solution is identified as failing, the algorithm proceeds to the next step regardless.",
+                        "correctAnswers": "True"
+                    },
+                    "prevUrl": "part_0_question-2",
+                    "nextUrl": "part_0_question-4"
+                },
+                {
+                    "lessonType": "TrueFalse",
+                    "lssonLink": "part_0_question-4",
+                    "lessonName": "Concept Recognition - Tree of Choices",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "question": "True or False: In a 'tree of choices', each node represents a different potential move or decision.",
+                        "correctAnswers": "False"
+                    },
+                    "prevUrl": "part_0_question-3",
+                    "nextUrl": "part_0_code-task-5"
+                },
+                {
+                    "lessonType": "Code",
+                    "lssonLink": "part_0_code-task-5",
+                    "lessonName": "Coding Exercises - Simple Task",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "text": "",
+                        "code": "# Initialize the start node of the tree of moves with no children.\nfrom anytree import Node\n\npegs, holes = create_board()\nstart_node = Node(\"start\")\n\nprint(start_node.name)"
+                    },
+                    "prevUrl": "part_0_question-4",
+                    "nextUrl": "part_0_code-task-6"
+                },
+                {
+                    "lessonType": "Code",
+                    "lssonLink": "part_0_code-task-6",
+                    "lessonName": "Coding Exercises - Debugging Task",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "text": "The function valid_moves(pegs, holes) should correctly list all valid moves. However, it doesn't print anything. Fix this issue.",
+                        "code": "from anytree import Node\n\ndef valid_moves(pegs, holes):\n    result = list()\n\n    for x, y in holes:\n        if (x-1, y) in pegs and (x-2, y) in pegs:\n            result.append(Node({\"move\": (x-2, y), \"in\": (x, y), \n                                \"remove\": (x-1, y)}))\n        if (x+1, y) in pegs and (x+2, y) in pegs:\n            result.append(Node({\"move\": (x+2, y), \"in\": (x, y), \n                                \"remove\": (x+1, y)}))\n        if (x, y-1) in pegs and (x, y-2) in pegs:\n            result.append(Node({\"move\": (x, y-2), \"in\": (x, y), \n                                \"remove\": (x, y-1)}))\n        if (x, y+1) in pegs and (x, y+2) in pegs:\n            result.append(Node({\"move\": (x, y+2), \"in\": (x, y), \n                                \"remove\": (x, y+1)}))\n\n    print(result)\n\t\nvalid_moves({}, {(3, 3)})"
+                    },
+                    "prevUrl": "part_0_code-task-5",
+                    "nextUrl": "part_0_code-task-7"
+                },
+                {
+                    "lessonType": "Code",
+                    "lssonLink": "part_0_code-task-7",
+                    "lessonName": "Coding Exercises - Complex Task",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "text": "Modify the solve function to avoid backtracking through previously encountered unsuccessful configurations.",
+                        "code": "from collections import deque\n\ndef solve(pegs, holes, last_move, visited=set()):\n    # Adjust the function to account for visited configurations and prevent revisiting them.\n    # You can use the sets of pegs and holes as a unique key to identify a configuration.\n    # This can lead to faster solutions by avoiding already tested paths.\n    pass\n\n# Example call\n# visited_positions = set()\n# solve(pegs, holes, start_node, visited_positions)"
+                    },
+                    "prevUrl": "part_0_code-task-6",
+                    "nextUrl": "part_0_question-8"
+                },
+                {
+                    "lessonType": "SingleQuestion",
+                    "lssonLink": "part_0_question-8",
+                    "lessonName": "Explanation Task",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "question": "In your own words, explain how the backtracking algorithm navigates a tree of choices to solve peg solitaire. What role do recursion and the 'leaf-win' condition play in this algorithm?"
+                    },
+                    "prevUrl": "part_0_code-task-7",
+                    "nextUrl": ""
+                }
+            ]
+        }
+    ]
+}

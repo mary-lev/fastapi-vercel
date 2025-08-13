@@ -1,0 +1,1 @@
+{"username": "b603ba91-1ddd-4b84-9dc6-470fb8d4e6fb", "session_id": "session_1730039669851", "start_time": "2024-10-27T14:34:29.851Z", "events": [{"type": 3, "data": {"source": 1, "positions": [{"x": 390, "y": 264, "id": 2788, "timeOffset": -451}]}, "timestamp": 1730039663627}, {"type": 3, "data": {"source": 2, "type": 6, "id": 2793}, "timestamp": 1730039666259}]}

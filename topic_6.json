@@ -1,0 +1,186 @@
+{
+    "lesson": [
+        {
+            "id": 0,
+            "title": "Divide and Conquer algorithms",
+            "isShow": true,
+            "summary": {
+                "background": "Students have experience with ordered structures and basic Python programming.",
+                "objectives": "Divide and conquer is an algorithmic strategy that breaks down a problem into smaller subproblems, solves them recursively, and then combines the results to form the solution. This approach is efficient, especially for sorting algorithms like merge sort, introduced by John von Neumann in 1945. Merge sort splits the input list into two halves, sorts them recursively, and merges the results. The technique ensures better performance on large datasets compared to simpler algorithms like insertion sort.",
+                "content": "topic_6_divide_and_conquer_algorithms.md",
+                "concepts": "Divide and Conquer, Merge Sort, Base Case, Recursive Step, Mutable and Immutable Values, Floor Division"
+            },
+            "listItem": [
+                {
+                    "lssonLink": "summary-divide",
+                    "lessonName": "Summary",
+                    "lessonType": "Summary",
+                    "lable": true,
+                    "time": 0,
+                    "unread": true,
+                    "isCircle": true,
+                    "iconFile": "file-text",
+                    "data": {
+                        "description": "Divide and conquer is an algorithmic strategy that breaks down a problem into smaller subproblems, solves them recursively, and then combines the results to form the solution. This approach is efficient, especially for sorting algorithms like merge sort, introduced by John von Neumann in 1945. Merge sort splits the input list into two halves, sorts them recursively, and merges the results. The technique ensures better performance on large datasets compared to simpler algorithms like insertion sort.",
+                        "items": {
+                            "Divide and Conquer": "An algorithmic strategy that splits a problem into subproblems, solves them recursively, and combines the results.",
+                            "Merge Sort": "A sorting algorithm that uses divide and conquer to sort lists efficiently by splitting, sorting, and merging.",
+                            "Base Case": "The simplest scenario in recursion that stops further splitting of the problem.",
+                            "Recursive Step": "The part of the algorithm where the problem is divided into smaller subproblems.",
+                            "Mutable and Immutable Values": "Mutable objects can be changed, while immutable objects cannot, impacting how values are handled in algorithms.",
+                            "Floor Division": "Division that returns the integer part of the quotient, used to split lists in divide and conquer."
+                        },
+                        "textbooks": [
+                            {
+                                "chapter": " Divide and conquer algorithms // Computational Thinking and Programming",
+                                "link": "https://comp-think.github.io/book/09.pdf"
+                            }
+                        ]
+                    },
+                    "nextUrl": "part_0_question-1",
+                    "prevUrl": ""
+                },
+                {
+                    "lessonType": "MultipleSelectQuiz",
+                    "lssonLink": "part_0_question-1",
+                    "lessonName": "Understanding Check: Divide and Conquer",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "question": "Which of the following best describes the 'divide and conquer' approach?",
+                        "options": [
+                            {
+                                "id": "1",
+                                "name": "A method that splits a problem into smaller parts, solves them independently, and combines the solutions."
+                            },
+                            {
+                                "id": "2",
+                                "name": "A linear approach to solve problems by checking each element sequentially."
+                            },
+                            {
+                                "id": "3",
+                                "name": "A technique to enhance computational speed by parallel processing."
+                            },
+                            {
+                                "id": "4",
+                                "name": "A strategy to create data structures more efficiently."
+                            }
+                        ],
+                        "correctAnswers": "1"
+                    },
+                    "prevUrl": "summary-divide",
+                    "nextUrl": "part_0_question-2"
+                },
+                {
+                    "lessonType": "TrueFalse",
+                    "lssonLink": "part_0_question-2",
+                    "lessonName": "Understanding Check: Merge Sort Efficiency",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "question": "Merge sort is generally more efficient than insertion sort for large datasets.",
+                        "correctAnswers": "True"
+                    },
+                    "prevUrl": "part_0_question-1",
+                    "nextUrl": "part_0_question-3"
+                },
+                {
+                    "lessonType": "MultipleSelectQuiz",
+                    "lssonLink": "part_0_question-3",
+                    "lessonName": "Concept Recognition: Recursive Algorithms",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "question": "Which of the following is a key feature of recursive algorithms?",
+                        "options": [
+                            {
+                                "id": "1",
+                                "name": "They always execute in constant time."
+                            },
+                            {
+                                "id": "2",
+                                "name": "They solve a problem by calling the same algorithm on smaller subproblems."
+                            },
+                            {
+                                "id": "3",
+                                "name": "They cannot use loops."
+                            },
+                            {
+                                "id": "4",
+                                "name": "They only work with linear data structures."
+                            }
+                        ],
+                        "correctAnswers": "2"
+                    },
+                    "prevUrl": "part_0_question-2",
+                    "nextUrl": "part_0_code-task-4"
+                },
+                {
+                    "lessonType": "Code",
+                    "lssonLink": "part_0_code-task-4",
+                    "lessonName": "Simple Coding Task: Implement Base Case",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "text": "Implement the base case for a recursive merge sort algorithm that checks whether the input list length is 1 or less.",
+                        "code": "def base_case(input_list):\n     # Implement base case here\n     pass"
+                    },
+                    "prevUrl": "part_0_question-3",
+                    "nextUrl": "part_0_code-task-5"
+                },
+                {
+                    "lessonType": "Code",
+                    "lssonLink": "part_0_code-task-5",
+                    "lessonName": "Debugging Task: Fix the Merge Function",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "text": "The merge function below has a bug causing it to crash when removing elements from the left or right list. Identify and fix this issue.",
+                        "code": "def merge(left_list, right_list):\n    result = list()\n    while len(left_list) > 0 and len(right_list) > 0:\n        left_item = left_list[0]\n        right_item = right_list[0]\n        if left_item < right_item:\n            result.append(left_item)\n            left_list.remove(left_item)  # This line causes issues\n        else:\n            result.append(right_item)\n            right_list.remove(right_item)  # This line causes issues\n    result.extend(left_list)\n    result.extend(right_list)\n    return result"
+                    },
+                    "prevUrl": "part_0_code-task-4",
+                    "nextUrl": "part_0_code-task-6"
+                },
+                {
+                    "lessonType": "Code",
+                    "lssonLink": "part_0_code-task-6",
+                    "lessonName": "Complex Coding Task: Implement Merge Sort",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "text": "Using the divide and conquer strategy, implement the merge sort algorithm for a list of strings.",
+                        "code": "def merge_sort(input_list):\n    # Your implementation here\n    pass"
+                    },
+                    "prevUrl": "part_0_code-task-5",
+                    "nextUrl": "part_0_question-7"
+                },
+                {
+                    "lessonType": "SingleQuestion",
+                    "lssonLink": "part_0_question-7",
+                    "lessonName": "Explanation Task: Mutable vs Immutable",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "question": "Explain the difference in behavior when passing a mutable list and an immutable string to a function in Python. Use examples if necessary."
+                    },
+                    "prevUrl": "part_0_code-task-6",
+                    "nextUrl": ""
+                }
+            ]
+        }
+    ]
+}

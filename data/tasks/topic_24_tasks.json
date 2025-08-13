@@ -1,0 +1,35 @@
+[
+    {
+        "lessonType": "Code",
+        "lessonName": "Basic Graph Construction",
+        "points": 5,
+        "topic_id": 24,
+        "data": {
+            "text": "Write Python code to create an undirected graph using NetworkX with four nodes representing historical cities: Rome, Athens, Alexandria, and Byzantium. Add edges to represent ancient trade routes between Rome and Athens, Athens and Alexandria, and Alexandria and Byzantium.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Debugging Graph Attributes",
+        "points": 10,
+        "topic_id": 24,
+        "data": {
+            "text": "The following code snippet aims to create an undirected graph representing a network of libraries and add metadata to nodes and edges, but it contains errors. Identify and fix the issues in the code.",
+            "code": "from networkx import Graph\n\n# Create graph\ng = Graph()\n\n# Add nodes with metadata\ng.add_node(1, name='British Library')\ng.add_node(2, name='Library of Congress')\ng.add_node(3, name='Biblioth\u00e8que nationale de France')\n\n# Add edges with metadata\ng.add_edge(1, 2, established=1990)\ng.add_edge(2, 3, established=1985)\ng.add_edge(1, 3, established=2000)\n\n# Print nodes and edges with metadata\nprint(g.nodes(data=True))\nprint(g.edges(data=True))"
+        },
+        "is_active": false
+    },
+    {
+        "lessonType": "Code",
+        "lessonName": "Complex Graph Analysis with Eulerian Paths",
+        "points": 15,
+        "topic_id": 24,
+        "data": {
+            "text": "Create a graph representing five ancient wonders of the world as nodes: Great Pyramid of Giza, Hanging Gardens of Babylon, Statue of Zeus at Olympia, Temple of Artemis, and Lighthouse of Alexandria. Connect them with edges to simulate ancient trade routes. Then, write a Python function to determine if an Eulerian path or circuit exists in the graph.",
+            "code": "# Your code is here..."
+        },
+        "is_active": false
+    }
+]

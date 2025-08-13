@@ -1,0 +1,164 @@
+{
+    "lesson": [
+        {
+            "id": 0,
+            "title": "Greedy algorithms",
+            "isShow": true,
+            "summary": {
+                "background": "Students have experience with ordered structures and basic Python programming.",
+                "objectives": "Greedy algorithms make the best possible choice at each step, aiming for an optimal solution, but they only work effectively for problems that exhibit the greedy choice property and optimal substructure. They are useful in various applications like minimizing the number of coins for change, scheduling non-overlapping activities, or wrapping lines of text to fit within a given width. Evelyn Berezin, known for inventing the first word processor, exemplifies the impact of computational solutions like these in practical tasks.",
+                "content": "topic_11.md",
+                "concepts": "Greedy algorithms, Greedy choice property, Optimal substructure, Coin change problem, Activity selection problem, Word wrap problem"
+            },
+            "listItem": [
+                {
+                    "lssonLink": "summary-greedy",
+                    "lessonName": "Summary",
+                    "lessonType": "Summary",
+                    "lable": true,
+                    "time": 0,
+                    "unread": true,
+                    "isCircle": true,
+                    "iconFile": "file-text",
+                    "data": {
+                        "description": "Greedy algorithms make the best possible choice at each step, aiming for an optimal solution, but they only work effectively for problems that exhibit the greedy choice property and optimal substructure. They are useful in various applications like minimizing the number of coins for change, scheduling non-overlapping activities, or wrapping lines of text to fit within a given width. Evelyn Berezin, known for inventing the first word processor, exemplifies the impact of computational solutions like these in practical tasks.",
+                        "items": {
+                            "Greedy Algorithms": "Choose the best option at each step, ensuring an optimal solution for specific types of problems.",
+                            "Evelyn Berezin": "Pioneering physicist who invented the first word processor, leading to the development of modern word-processing software.",
+                            "Line Wrap Problem": "Uses a greedy approach to break text into lines that fit the available page width."
+                        },
+                        "textbooks": [
+                            {
+                                "chapter": "Greedy algorithms // Computational Thinking and Programming",
+                                "link": "https://comp-think.github.io/book/14.pdf"
+                            }
+                        ]
+                    },
+                    "nextUrl": "part_0_question-1",
+                    "prevUrl": ""
+                },
+                {
+                    "lessonType": "MultipleSelectQuiz",
+                    "lssonLink": "part_0_question-1",
+                    "lessonName": "Understanding Check 1",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "question": "Who created the first word processor?",
+                        "options": [
+                            {
+                                "id": "1",
+                                "name": "A) Steve Jobs"
+                            },
+                            {
+                                "id": "2",
+                                "name": "B) Evelyn Berezin"
+                            },
+                            {
+                                "id": "3",
+                                "name": "C) Bill Gates"
+                            },
+                            {
+                                "id": "4",
+                                "name": "D) Charles Babbage"
+                            }
+                        ],
+                        "correctAnswers": "2"
+                    },
+                    "prevUrl": "summary-greedy",
+                    "nextUrl": "part_0_question-2"
+                },
+                {
+                    "lessonType": "TrueFalse",
+                    "lssonLink": "part_0_question-2",
+                    "lessonName": "Understanding Check 2",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "question": "Greedy algorithms always provide the optimal solution for every problem.",
+                        "correctAnswers": "True"
+                    },
+                    "prevUrl": "part_0_question-1",
+                    "nextUrl": "part_0_question-3"
+                },
+                {
+                    "lessonType": "SingleQuestion",
+                    "lssonLink": "part_0_question-3",
+                    "lessonName": "Concept Recognition 1",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "question": "List two characteristics required for a problem to be suitable for a greedy algorithm approach."
+                    },
+                    "prevUrl": "part_0_question-2",
+                    "nextUrl": "part_0_code-task-4"
+                },
+                {
+                    "lessonType": "Code",
+                    "lssonLink": "part_0_code-task-4",
+                    "lessonName": "Simple Coding Task 1",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "text": "Implement a function using a greedy algorithm to determine the minimum number of coins needed for making a change. Assume coin denominations are 1, 5, 10, and 25 cents.",
+                        "code": "def min_coins(change):\n    coins = [25, 10, 5, 1]\n    # Your code to implement the greedy algorithm\n    pass"
+                    },
+                    "prevUrl": "part_0_question-3",
+                    "nextUrl": "part_0_code-task-5"
+                },
+                {
+                    "lessonType": "Code",
+                    "lssonLink": "part_0_code-task-5",
+                    "lessonName": "Debugging Task 1",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "text": "Identify and fix the bugs in the following line-wrap Python function.",
+                        "code": "def line_wrap(text, line_width):\n    result = list()\n    space_left = line_width\n    line = list()\n\n    for word in text.split(\" \"):\n        word_len = len(word)\n        if word_len + 1 > space_left:\n            result.append(\" \".join(line))\n            line = list()\n           line.append(word)\n            space_left = line_width - word_len\n        else:\n            line.append(word)\n            space_left = space_left - (word_len + 1)\n\n    result.append(\" \".join(line))\n    return \"\\n\".join(result)"
+                    },
+                    "prevUrl": "part_0_code-task-4",
+                    "nextUrl": "part_0_code-task-6"
+                },
+                {
+                    "lessonType": "Code",
+                    "lssonLink": "part_0_code-task-6",
+                    "lessonName": "Complex Coding Task 1",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "text": "Develop the function def select_activities(set_of_activities) using a greedy approach. It takes a set of activities defined by tuples of (start, finish) and returns the list of the maximum number of non-overlapping activities one can address.",
+                        "code": "def select_activities(set_of_activities):\n    # Your code implementing the greedy algorithm for activity selection\n    pass"
+                    },
+                    "prevUrl": "part_0_code-task-5",
+                    "nextUrl": "part_0_question-7"
+                },
+                {
+                    "lessonType": "SingleQuestion",
+                    "lssonLink": "part_0_question-7",
+                    "lessonName": "Explanation Task 1",
+                    "lable": true,
+                    "time": 5,
+                    "unread": true,
+                    "isCircle": true,
+                    "data": {
+                        "question": "In your own words, explain why greedy algorithms might not always find the optimal solution to a problem."
+                    },
+                    "prevUrl": "part_0_code-task-6",
+                    "nextUrl": ""
+                }
+            ]
+        }
+    ]
+}

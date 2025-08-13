@@ -1,0 +1,201 @@
+{
+  "lesson": [
+      {
+          "id": 0,
+          "title": "Recursion",
+          "isShow": true,
+          "summary": {
+              "background": "Students have experience with ordered structures and basic Python programming.",
+              "objectives": "Recursion is a key concept in computer science and computational thinking. It involves defining a function in terms of itself. Recursion is used when a problem can be broken down into smaller instances of the same problem, making it a useful alternative to iteration. Recursive algorithms have a base case (for termination) and a recursive step (which makes a call to the same function with modified input). While powerful, recursion can lead to infinite loops if not managed properly.",
+              "content": "topic_5_recursion.md",
+              "concepts": "Recursion, Base Case, Recursive Step, Infinite Loop, Stack Overflow, Factorial, Fibonacci Sequence, Towers of Hanoi"
+          },
+          "listItem": [
+              {
+                  "lssonLink": "summary-recursion",
+                  "lessonName": "Summary",
+                  "lessonType": "Summary",
+                  "lable": true,
+                  "time": 0,
+                  "unread": true,
+                  "isCircle": true,
+                  "iconFile": "file-text",
+                  "data": {
+                      "description": "",
+                      "items": {
+                          "Recursion": "A function or process that calls itself to solve smaller instances of the same problem.",
+                          "Base Case": "The stopping condition in a recursive function that prevents infinite recursion.",
+                          "Recursive Step": "The part of the recursive function that calls itself with modified input.",
+                          "Self-Reference": "A concept where something refers to itself, often leading to recursion.",
+                          "Recursive Algorithm": "An algorithm that solves a problem by reducing it to smaller, similar subproblems.",
+                          "Paradoxes": "Logical contradictions that can arise from self-reference, highlighting recursion\u2019s complexity."
+                      },
+                      "textbooks": [
+                          {
+                              "chapter": "Recursion // Computational Thinking and Programming",
+                              "link": "https://comp-think.github.io/book/08.pdf"
+                          }
+                      ]
+                  },
+                  "nextUrl": "part_0_question-1",
+                  "prevUrl": ""
+              },
+              {
+                  "lessonType": "MultipleSelectQuiz",
+                  "lssonLink": "part_0_question-1",
+                  "lessonName": "Understanding Check 1",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "question": "Which of the following correctly defines recursion?",
+                      "options": [
+                          {
+                              "id": "1",
+                              "name": "A method where the solution to a problem depends on smaller instances of the same problem"
+                          },
+                          {
+                              "id": "2",
+                              "name": "A method of iterating over a sequence, like a list or tuple"
+                          },
+                          {
+                              "id": "3",
+                              "name": "A method to sort elements in ascending order"
+                          },
+                          {
+                              "id": "4",
+                              "name": "A method to create random numbers"
+                          }
+                      ],
+                      "correctAnswers": "1"
+                  },
+                  "prevUrl": "summary-recursion",
+                  "nextUrl": "part_0_question-2"
+              },
+              {
+                  "lessonType": "TrueFalse",
+                  "lssonLink": "part_0_question-2",
+                  "lessonName": "Understanding Check 2",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "question": "Recursion can only be used in mathematical problems, not in linguistic or artistic contexts.",
+                      "correctAnswers": "True"
+                  },
+                  "prevUrl": "part_0_question-1",
+                  "nextUrl": "part_0_question-3"
+              },
+              {
+                  "lessonType": "MultipleSelectQuiz",
+                  "lssonLink": "part_0_question-3",
+                  "lessonName": "Concept Recognition 1",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "question": "What is a base case in recursion?",
+                      "options": [
+                          {
+                              "id": "1",
+                              "name": "The step that adds to the complexity of a function"
+                          },
+                          {
+                              "id": "2",
+                              "name": "A non-recursive step that defines a stopping condition for the recursive function"
+                          },
+                          {
+                              "id": "3",
+                              "name": "A condition that ensures recursion never stops"
+                          },
+                          {
+                              "id": "4",
+                              "name": "The initial call to a recursive function"
+                          }
+                      ],
+                      "correctAnswers": "2"
+                  },
+                  "prevUrl": "part_0_question-2",
+                  "nextUrl": "part_0_question-4"
+              },
+              {
+                  "lessonType": "TrueFalse",
+                  "lssonLink": "part_0_question-4",
+                  "lessonName": "Concept Recognition 2",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "question": "A function without a base case will eventually stop executing.",
+                      "correctAnswers": "True"
+                  },
+                  "prevUrl": "part_0_question-3",
+                  "nextUrl": "part_0_code-task-5"
+              },
+              {
+                  "lessonType": "Code",
+                  "lssonLink": "part_0_code-task-5",
+                  "lessonName": "Simple Coding Task 1",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "text": "Write a simple recursive Python function to calculate the factorial of a given positive integer n.",
+                      "code": "def factorial(n):\n    # Base case\n    if n == 0:\n        return 1\n    # Recursive step\n    else:\n        return n * factorial(n - 1)"
+                  },
+                  "prevUrl": "part_0_question-4",
+                  "nextUrl": "part_0_code-task-6"
+              },
+              {
+                  "lessonType": "Code",
+                  "lssonLink": "part_0_code-task-6",
+                  "lessonName": "Debugging Task 1",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "text": "The following code is meant to compute the nth Fibonacci number, but it contains errors. Fix the code.",
+                      "code": "def fibonacci(n):\n    if n <= 0:\n        return 1  # Error here: should return 0 instead\n    elif n == 1:\n        return 1\n    else:\n        return fibonacci(n-1) + fibonacci(n-3)  # Error here: should be n-2 instead of n-3"
+                  },
+                  "prevUrl": "part_0_code-task-5",
+                  "nextUrl": "part_0_code-task-7"
+              },
+              {
+                  "lessonType": "Code",
+                  "lssonLink": "part_0_code-task-7",
+                  "lessonName": "Complex Coding Task 1",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "text": "Implement a recursive Python function to solve the Tower of Hanoi problem for n disks. Describe the function and the rules briefly.",
+                      "code": "def tower_of_hanoi(n, source_peg, destination_peg, auxiliary_peg):\n    if n == 1:\n        print(f\"Move disk 1 from {source_peg} to {destination_peg}\")\n        return\n    tower_of_hanoi(n - 1, source_peg, auxiliary_peg, destination_peg)\n    print(f\"Move disk {n} from {source_peg} to {destination_peg}\")\n    tower_of_hanoi(n - 1, auxiliary_peg, destination_peg, source_peg)\n\n# Example call\ntower_of_hanoi(3, 'A', 'C', 'B')"
+                  },
+                  "prevUrl": "part_0_code-task-6",
+                  "nextUrl": "part_0_question-8"
+              },
+              {
+                  "lessonType": "SingleQuestion",
+                  "lssonLink": "part_0_question-8",
+                  "lessonName": "Explanation Task",
+                  "lable": true,
+                  "time": 5,
+                  "unread": true,
+                  "isCircle": true,
+                  "data": {
+                      "question": "In your own words, explain what would happen if the base case is omitted in a recursive function."
+                  },
+                  "prevUrl": "part_0_code-task-7",
+                  "nextUrl": ""
+              }
+          ]
+      }
+  ]
+}

@@ -1,0 +1,1129 @@
+{
+    "lesson": [
+      {
+        "id": 0,
+        "title": "Understanding Data Types",
+        "isShow": false,
+        "summary": {
+                "background": "Students have a theoretical foundation in algorithms and computability.",
+                "objectives": "You will be introduced to programming languages with a focus on Python. You'll learn about fundamental concepts such as data types (numbers, booleans, strings), variables, naming conventions, reassignment, Boolean logic, conditional statements, and defining functions with parameters and return values.",
+                "content": "topic_1_understanding_data_types.md"
+              },
+        "listItem": [
+          {
+            "lssonLink": "summary-data-types",
+            "lessonName": "Summary",
+            "lessonType": "Summary",
+            "lable": true,
+            "time": 0,
+            "unread": true,
+            "isCircle": true,
+            "iconFile": "file-text",
+            "data": {
+              "description": "This lesson introduces key data types in Python, explaining their significance in programming and how they relate to real-world data. The main Python data types covered are:",
+              "items": {
+                "Integers": "Whole numbers, positive or negative.",
+                "Floats": "Numbers with decimal points.",
+                "Booleans": "Represent True or False values.",
+                "Strings": "Sequences of characters enclosed in quotes."
+              },
+              "textbooks": [
+                {
+                  "chapter": "Understanding Data Types in Python 3 (Introduction, Numbers, Floating-Point Numbers, Booleans, Strings) // How To Code in Python",
+                  "link": "https://www.digitalocean.com/community/tutorials/understanding-data-types-in-python-3"
+                },
+                {
+                  "chapter": "Programming languages // Computational Thinking and Programming",
+                  "link": "https://comp-think.github.io/book/04.pdf"
+                }
+              ]
+            }, 
+            "nextUrl": "question-1",
+            "prevUrl": ""
+          },
+          {
+            "lssonLink": "question-1",
+            "lessonName": "Integer Variables",
+            "lessonType": "MultipleSelectQuiz",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "question": "Which of the following best describes an integer in Python?",
+              "options": [
+                {
+                  "id": "1",
+                  "name": "A whole number without a decimal point."
+                },
+                {
+                  "id": "2",
+                  "name": "A number with a decimal point."
+                },
+                {
+                  "id": "3",
+                  "name": "A sequence of characters enclosed in quotes."
+                },
+                {
+                  "id": "4",
+                  "name": "A true or false value."
+                }
+              ],
+              "correctAnswers": "1"
+            },
+            "nextUrl": "question-2",
+            "prevUrl": "summary-data-types"
+          },
+          {
+            "lssonLink": "question-2",
+            "lessonName": "String Variables",
+            "lessonType": "TrueFalse",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "question": "Strings in Python can contain numbers and spaces enclosed in quotes.",
+              "correctAnswers": "True"
+            },
+            "nextUrl": "question-3",
+            "prevUrl": "question-1"
+          },
+          {
+            "lssonLink": "question-3",
+            "lessonName": "Boolean Variables",
+            "lessonType": "MultipleSelectQuiz",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "question": "What is the Boolean value of the expression (5 > 3)?",
+              "options": [
+                {
+                  "id": "1",
+                  "name": "True"
+                },
+                {
+                  "id": "2",
+                  "name": "False"
+                },
+                {
+                  "id": "3",
+                  "name": "5"
+                },
+                {
+                  "id": "4",
+                  "name": "true"
+                }
+              ],
+              "correctAnswers": "1"
+            },
+            "nextUrl": "code-task-1",
+            "prevUrl": "question-2"
+          },
+          {
+            "lssonLink": "code-task-1",
+            "lessonName": "Assigning Variables",
+            "lessonType": "Code",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "text": "Create a simple Python program that declares two integer variables, assigns values to them, and prints their sum. Additionally, declare a float variable, assign it a value, and print the result of subtracting the float from the sum of your integers.",
+              "code": "# Your code is here..."
+            },
+            "nextUrl": "code-task-2",
+            "prevUrl": "question-3"
+          },
+          {
+            "lssonLink": "code-task-2",
+            "lessonName": "Assigning Boolean Variables",
+            "lessonType": "Code",
+            "lable": true,
+            "time": 10,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "text": "Task 2: Write a Python program where you declare two Boolean variables using relational operations (e.g., 10 > 5 and 3 == 3). Print the result of a logical operation combining these Booleans using 'and' or 'or'.",
+              "code": "# Your code is here..."
+            },
+            "nextUrl": "code-task-5",
+            "prevUrl": "code-task-1"
+          },
+          {
+            "lessonType": "Code",
+            "lssonLink": "code-task-5",
+            "lessonName": "Fixing Bug",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+                "text": "Fix the following Python code to correctly multiply two floating-point numbers 'a' and 'b' and print the result.",
+                "code": "# Correct the code snippet\n\na = 3.0\nb = 4.0\nprint(a * b "
+            },
+            "nextUrl": "code-task-6",
+            "prevUrl": "code-task-4"
+        },
+        {
+          "lessonType": "Code",
+          "lssonLink": "code-task-6",
+          "lessonName": "Coding Exercise",
+          "lable": true,
+          "time": 5,
+          "unread": true,
+          "isCircle": true,
+          "data": {
+              "text": "Create a Python script that declares a string variable with your name and a separate integer variable with your age. Combine these values into a sentence and print it. Example output: 'My name is John and I am 30 years old.'",
+              "code": "# Declare and combine variables\n# Replace the following line with your code\n\n"
+          },
+          "nextUrl": "code-task-7",
+          "prevUrl": "code-task-5"
+      },
+          {
+            "lssonLink": "code-task-7",
+            "lessonName": "Operating Integers",
+            "lessonType": "Code",
+            "lable": true,
+            "time": 2,
+            "unread": false,
+            "isCircle": true,
+            "data": {
+              "text": "Create a Python script that defines two integer variables to represent the publication year of two different historical texts, such as the first edition of 'Pride and Prejudice' and 'Moby Dick'. Calculate and print the difference in years between the two publications.",
+              "code": "# Define publication years of two texts as integers \npublication_year_pride_and_prejudice = 1813 \npublication_year_moby_dick = 1851 \n\n# Calculate the difference in years \nyear_difference = publication_year_moby_dick - publication_year_pride_and_prejudice \n\n# Print the difference in years\nprint(f'The difference in years between the publications is: {year_difference}')"
+            },
+            "nextUrl":"code-task-8",
+            "prevUrl": "code-task-6"
+          },
+          {
+            "lssonLink": "code-task-8",
+            "lessonName": "Concatenating Strings",
+            "lessonType": "Code",
+            "lable": true,
+            "time": 5,
+            "unread": false,
+            "isCircle": true,
+            "data": {
+              "text": "Task 3: Create a Python script that declares two string variables, assigns them values, and concatenates them with an additional message to form a complete sentence. Print the final concatenated string.",
+              "code":"# Your code is here..."
+            },
+            "nextUrl": "code-task-9",
+            "prevUrl": "code-task-7"
+          },
+          {
+            "lssonLink": "code-task-9",
+            "lessonName": "Combining Integers",
+            "lessonType": "Code",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "text": "Write a Python program that declares two integer variables representing the number of books on two different shelves. Perform an addition to find the total number of books and print the result.",
+              "code": "# Declare integer variables\n# Example: shelf1 = 5\n# Example: shelf2 = 8\n\n# Calculate the total number of books\n\n# Print the result"
+            },
+            "nextUrl": "code-task-10",
+            "prevUrl": "code-task-8"
+          },
+          {
+            "lssonLink": "code-task-10",
+            "lessonName": "Using Booleans",
+            "lessonType": "Code",
+            "lable": true,
+            "time": 15,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "text": "Write a Python program to determine if a given temperature in degrees (float) is below freezing point. Assign a float value to the variable representing temperature and use a Boolean expression to check if it's below 0. Print the result as a Boolean value.",
+              "code": "# Assign a float value to the variable 'temperature'\n# Example: temperature = -5.0\n\n# Use a Boolean expression to check if the temperature is below freezing\n\n# Print the Boolean result"
+            },
+            "nextUrl": "code-task-11",
+            "prevUrl": "code-task-9"
+          },
+          {
+            "lssonLink": "code-task-11",
+            "lessonName": "Printing Strings",
+            "lessonType": "Code",
+            "lable": true,
+            "time": 10,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "text": "Create a Python program that defines two strings representing the titles of two poems. Concatenate the strings with a space in between to form a single string, then print the combined title.",
+              "code": "# Assign the titles to string variables\n# Example: poem1 = \"The Road Not Taken\"\n# Example: poem2 = \"Stopping by Woods on a Snowy Evening\"\n\n# Concatenate the strings with a space in between\n\n# Print the combined title"
+            },
+            "nextUrl": "summary-variables",
+            "prevUrl": "code-task-10"
+          }
+        ]
+      },
+      {
+        "id": 1,
+        "title": "How To Use Variables",
+        "isShow": false,
+        "listItem": [
+          {
+            "lssonLink": "summary-variables",
+            "lessonName": "Summary",
+            "lessonType": "Summary",
+            "lable": true,
+            "time": 0,
+            "unread": true,
+            "isCircle": false,
+            "iconFile": "file-text",
+            "data": {
+              "description": "This lesson introduces key data types in Python, explaining their significance in programming and how they relate to real-world data.",
+              "textbooks": [
+                {
+                  "chapter": "How To Use Variables in Python 3 (introductory paragraphs and sections Understanding Variables, Naming Variables: Rules and Style, Reassigning Variables, Multiple Assignment) // How To Code in Python",
+                  "link": "https://www.digitalocean.com/community/tutorials/how-to-use-variables-in-python-3"
+                }
+              ]
+            },
+            "nextUrl": "variables-question-1",
+            "prevUrl": "code-task-11"
+          },
+          {
+            "lessonType": "MultipleSelectQuiz",
+            "lssonLink": "variables-question-1",
+            "lessonName": "Quiz Question",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+                "question": "What is the purpose of a variable in Python?",
+                "options": [
+                    {
+                        "id": "1",
+                        "name": "A) To perform arithmetic operations"
+                    },
+                    {
+                        "id": "2",
+                        "name": "B) To store and reference a value in memory"
+                    },
+                    {
+                        "id": "3",
+                        "name": "C) To print text to the console"
+                    },
+                    {
+                        "id": "4",
+                        "name": "D) To create a new function"
+                    }
+                ],
+                "correctAnswers": "2"
+            },
+            "nextUrl": "variables-question-3",
+            "prevUrl": "summary-variables"
+        }, 
+        {
+            "lessonType": "MultipleSelectQuiz",
+            "lssonLink": "variables-question-3",
+            "lessonName": "Quiz Question",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+                "question": "What is the correct syntax for assigning multiple values to multiple variables in Python?",
+                "options": [
+                    {
+                        "id": "1",
+                        "name": "A) x = y = z = 0"
+                    },
+                    {
+                        "id": "2",
+                        "name": "B) x, y, z = 0"
+                    },
+                    {
+                        "id": "3",
+                        "name": "C) x, y, z == 0"
+                    },
+                    {
+                        "id": "4",
+                        "name": "D) x, y, z = 0, 1, 2"
+                    }
+                ],
+                "correctAnswers": "4"
+            },
+            "nextUrl": "variables-code-task-4",
+            "prevUrl": "variables-question-1"
+        },
+        {
+            "lessonType": "Code",
+            "lssonLink": "variables-code-task-4",
+            "lessonName": "Coding Exercise",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+                "text": "Write a simple Python code to assign the string 'hello' to a variable and then print it.",
+                "code": "# Your code here"
+            },
+            "nextUrl": "variables-code-task-5",
+            "prevUrl": "variables-question-3"
+        },
+        {
+            "lessonType": "Code",
+            "lssonLink": "variables-code-task-5",
+            "lessonName": "Coding Exercise",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+                "text": "The code below has a mistake. Identify and fix the bug related to variable assignment.\n\n```python\n1myVar = 27\n```\n",
+                "code": "1myVar = 27"
+            },
+            "nextUrl": "variables-code-task-6",
+            "prevUrl": "variables-code-task-4"
+        },
+        {
+          "lessonType": "Code",
+          "lssonLink": "variables-code-task-6",
+          "lessonName": "Reassigning Variables",
+          "lable": true,
+          "time": 5,
+          "unread": true,
+          "isCircle": true,
+          "data": {
+            "text": "Reassign the variable 'weather' from 'sunny' to 'cloudy', and then print its value.",
+            "code": "weather = \"sunny\"\n# Add code to reassign and print\n"
+          },
+          "nextUrl": "variables-code-task-7",
+          "prevUrl": "variables-code-task-5"
+        },
+        {
+            "lessonType": "SingleQuestion",
+            "lssonLink": "variables-question-7",
+            "lessonName": "Quiz Question",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+                "question": "Explain why it is beneficial to use descriptive variable names in a Python program."
+            },
+            "nextUrl": "summary-boolean-logic",
+            "prevUrl": "variables-code-task-6"
+        }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Understanding Boolean Logic",
+        "isShow": false,
+        "listItem": [
+          {
+            "lssonLink": "summary-boolean-logic",
+            "lessonName": "Summary",
+            "lessonType": "Summary",
+            "lable": true,
+            "time": 0,
+            "unread": true,
+            "isCircle": false,
+            "iconFile": "file-text",
+            "data": {
+              "description": "This lesson introduces key data types in Python, explaining their significance in programming and how they relate to real-world data.",
+              "textbooks": [
+                {
+                  "chapter": "Understanding Boolean Logic in Python 3 // How To Code in Python",
+                  "link": "https://www.digitalocean.com/community/tutorials/understanding-boolean-logic-in-python-3"
+                }
+              ]
+            },
+            "nextUrl": "boolean-question-1",
+            "prevUrl": "variables-question-7"
+          },
+          {
+            "lessonType": "MultipleSelectQuiz",
+            "lssonLink": "boolean-question-1",
+            "lessonName": "Boolean Basics",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "question": "What are the two possible values of the Boolean data type in Python?",
+              "options": [
+                {
+                  "id": "1",
+                  "name": "True and False"
+                },
+                {
+                  "id": "2",
+                  "name": "1 and 0"
+                },
+                {
+                  "id": "3",
+                  "name": "Yes and No"
+                },
+                {
+                  "id": "4",
+                  "name": "On and Off"
+                }
+              ],
+              "correctAnswers": "1"
+            },
+            "nextUrl": "boolean-question-2",
+            "prevUrl": "summary-boolean-logic"
+          },
+          {
+            "lessonType": "TrueFalse",
+            "lssonLink": "boolean-question-2",
+            "lessonName": "Comparison Operator Usage",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "question": "The expression '3 != 4' evaluates to True in Python.",
+              "correctAnswers": "True"
+            },
+            "nextUrl": "boolean-question-3",
+            "prevUrl": "boolean-question-1"
+          },
+          {
+            "lessonType": "MultipleSelectQuiz",
+            "lssonLink": "boolean-question-3",
+            "lessonName": "Logical Operators",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "question": "Which of the following logical operators returns True only when both expressions are True?",
+              "options": [
+                {
+                  "id": "1",
+                  "name": "or"
+                },
+                {
+                  "id": "2",
+                  "name": "and"
+                },
+                {
+                  "id": "3",
+                  "name": "not"
+                },
+                {
+                  "id": "4",
+                  "name": "xor"
+                }
+              ],
+              "correctAnswers": "2"
+            },
+            "nextUrl": "boolean-code-task-4",
+            "prevUrl": "boolean-question-2"
+          },
+          {
+            "lessonType": "Code",
+            "lssonLink": "boolean-code-task-4",
+            "lessonName": "Simple Comparison",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "text": "Write Python code to check if the variable 'temperature' is greater than 30 and print 'It's a hot day' or 'It's a cool day' based on the result.",
+              "code": "# Your code is here..."
+            },
+            "nextUrl": "boolean-code-task-5",
+            "prevUrl": "boolean-question-3"
+          },
+          {
+            "lessonType": "Code",
+            "lssonLink": "boolean-code-task-5",
+            "lessonName": "Debugging Boolean Logic",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "text": "Identify and fix the error in the conditional statement below so that it correctly prints 'Valid age' when the variable age is between 18 and 65 inclusive.",
+              "code": "age = 20\nif age > 18 and age < 65:\n    print(\"Valid age\")\nelse:\n    print(\"Invalid age\")"
+            },
+            "nextUrl": "boolean-code-task-6",
+            "prevUrl": "boolean-code-task-4"
+          },
+          {
+            "lessonType": "Code",
+            "lssonLink": "boolean-code-task-6",
+            "lessonName": "Complex Conditional Task",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "text": "Write a Python program that determines the category of a person based on their age (child, teenager, adult, senior), where each category is defined as: child < 13, teenager >= 13 and < 20, adult >= 20 and < 60, senior >= 60. Print the category.",
+              "code": "# Your code is here..."
+            },
+            "nextUrl": "boolean-question-7",
+            "prevUrl": "boolean-code-task-5"
+          },
+          {
+            "lessonType": "SingleQuestion",
+            "lssonLink": "boolean-question-7",
+            "lessonName": "Explain Boolean Evaluation",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "question": "In your own words, explain how the 'not' operator affects a Boolean expression."
+            },
+            "nextUrl": "summary-conditionals",
+            "prevUrl": "boolean-code-task-6"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Conditional Statements",
+        "isShow": false,
+        "listItem": [
+          {
+            "lssonLink": "summary-conditionals",
+            "lessonName": "Summary",
+            "lessonType": "Summary",
+            "lable": true,
+            "time": 0,
+            "unread": true,
+            "isCircle": false,
+            "iconFile": "file-text",
+            "data": {
+              "description": "This lesson introduces key data types in Python, explaining their significance in programming and how they relate to real-world data.",
+              "textbooks": [
+                {
+                  "chapter": "How To Write Conditional Statements in Python 3 // How To Code in Python",
+                  "link": "https://www.digitalocean.com/community/tutorials/how-to-write-conditional-statements-in-python-3-2"
+                }
+              ]
+            },
+            "nextUrl": "conditionals-question-1",
+            "prevUrl": "boolean-question-7"
+          },
+          {
+            "lessonType": "MultipleSelectQuiz",
+            "lssonLink": "conditionals-question-1",
+            "lessonName": "Understanding Check - Conditional Statements",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "question": "What is the primary purpose of a conditional statement in programming?",
+              "options": [
+                {
+                  "id": "1",
+                  "name": "To perform arithmetic operations"
+                },
+                {
+                  "id": "2",
+                  "name": "To execute code based on a condition"
+                },
+                {
+                  "id": "3",
+                  "name": "To generate random numbers"
+                },
+                {
+                  "id": "4",
+                  "name": "To store data in variables"
+                }
+              ],
+              "correctAnswers": "2"
+            },
+            "nextUrl": "conditionals-question-2",
+            "prevUrl": "summary-conditionals"
+          },
+          {
+            "lessonType": "TrueFalse",
+            "lssonLink": "conditionals-question-2",
+            "lessonName": "Understanding Check - If Statement",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "question": "An if statement always needs an else statement to function correctly.",
+              "correctAnswers": "False"
+            },
+            "nextUrl": "conditionals-question-3",
+            "prevUrl": "conditionals-question-1"
+          },
+          {
+            "lessonType": "MultipleSelectQuiz",
+            "lssonLink": "conditionals-question-3",
+            "lessonName": "Concept Recognition - Else Statement",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "question": "What will be printed if the following code is executed with grade = 55?",
+              "code": "grade = 55\nif grade >= 65:\n    print('Passing grade')\nelse:\n    print('Failing grade')",
+              "options": [
+                {
+                  "id": "1",
+                  "name": "Passing grade"
+                },
+                {
+                  "id": "2",
+                  "name": "Invalid grade"
+                },
+                {
+                  "id": "3",
+                  "name": "Failing grade"
+                },
+                {
+                  "id": "4",
+                  "name": "None of the above"
+                }
+              ],
+              "correctAnswers": "3"
+            },
+            "nextUrl": "conditionals-question-4",
+            "prevUrl": "conditionals-question-2"
+          },
+          {
+            "lessonType": "MultipleSelectQuiz",
+            "lssonLink": "conditionals-question-4",
+            "lessonName": "Concept Recognition - Elif Statement",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "question": "In this code, which grade will result in output 'D grade'?",
+              "code": "if grade >= 90:\n    print('A grade')\nelif grade >= 80:\n    print('B grade')\nelif grade >= 70:\n    print('C grade')\nelif grade >= 65:\n    print('D grade')\nelse:\n    print('Failing grade')",
+              "options": [
+                {
+                  "id": "1",
+                  "name": "60"
+                },
+                {
+                  "id": "2",
+                  "name": "70"
+                },
+                {
+                  "id": "3",
+                  "name": "78"
+                },
+                {
+                  "id": "4",
+                  "name": "66"
+                }
+              ],
+              "correctAnswers": "4"
+            },
+            "nextUrl": "conditionals-code-task-5",
+            "prevUrl": "conditionals-question-3"
+          },
+          {
+            "lessonType": "Code",
+            "lssonLink": "conditionals-code-task-5",
+            "lessonName": "Simple Coding Task - If Statement",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "text": "Write an if statement that prints 'Success' when the variable result is greater than 50.",
+              "code": "result = 75\n# Add your if statement below"
+            },
+            "nextUrl": "conditionals-code-task-6",
+            "prevUrl": "conditionals-question-4"
+          },
+          {
+            "lessonType": "Code",
+            "lssonLink": "conditionals-code-task-6",
+            "lessonName": "Debugging Task - Else Statement",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "text": "Fix the mistake in the following code so it prints 'Failing grade' when grade is less than 65.",
+              "code": "grade = 60\nif grade < 65:\n    print(\"Passing grade\")\nelse:\n    print(\"Failing grade\")"
+            },
+            "nextUrl": "conditionals-code-task-7",
+            "prevUrl": "conditionals-code-task-5"
+          },
+          {
+            "lessonType": "Code",
+            "lssonLink": "conditionals-code-task-7",
+            "lessonName": "Complex Coding Task - Nested Conditionals",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "text": "Write a nested if statement for variable 'age' that prints 'Child' for ages 0-12, 'Teenager' for 13-19, 'Adult' for 20-64, and 'Senior' for 65 and above.",
+              "code": "age = 45\n# Write your nested if statement below"
+            },
+            "nextUrl": "conditionals-question-8",
+            "prevUrl": "conditionals-code-task-6"
+          },
+          {
+            "lessonType": "SingleQuestion",
+            "lssonLink": "conditionals-question-8",
+            "lessonName": "Explanation Task - Explain If-Elif-Else",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "question": "Explain in your own words how if-elif-else statements help control the flow of a Python program. Provide an example based on a real-world scenario."
+            },
+            "nextUrl": "summary-functions",
+            "prevUrl": "conditionals-code-task-7"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "How To Define Functions",
+        "isShow": false,
+        "listItem": [
+          {
+            "lssonLink": "summary-functions",
+            "lessonName": "Summary",
+            "lessonType": "Summary",
+            "lable": true,
+            "time": 0,
+            "unread": true,
+            "isCircle": false,
+            "iconFile": "file-text",
+            "data": {
+              "description": "This lesson introduces key data types in Python, explaining their significance in programming and how they relate to real-world data.",
+              "textbooks": [
+                {
+                  "chapter": "How To Define Functions in Python 3 (introductory paragraphs and sections Defining a Function, Working with Parameters, Returning a Value) // How To Code in Python",
+                  "link": "https://www.digitalocean.com/community/tutorials/how-to-define-functions-in-python-3"
+                }
+              ]
+            },
+            "nextUrl": "functions-question-1",
+            "prevUrl": "conditionals-question-8"
+          },
+          {
+            "lessonType": "MultipleSelectQuiz",
+            "lssonLink": "functions-question-1",
+            "lessonName": "Understanding Check - Function Definition",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "question": "Which keyword is used to define a function in Python?",
+              "options": [
+                {
+                  "id": "1",
+                  "name": "def"
+                },
+                {
+                  "id": "2",
+                  "name": "define"
+                },
+                {
+                  "id": "3",
+                  "name": "function"
+                },
+                {
+                  "id": "4",
+                  "name": "func"
+                }
+              ],
+              "correctAnswers": "1"
+            },
+            "nextUrl": "functions-question-2",
+            "prevUrl": "summary-functions"
+          },
+          {
+            "lessonType": "MultipleSelectQuiz",
+            "lssonLink": "functions-question-2",
+            "lessonName": "Understanding Check - Parameters and Arguments",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "question": "What is the correct way to call the function defined as def add_numbers(x, y):?",
+              "options": [
+                {
+                  "id": "1",
+                  "name": "add_numbers(2, 3)"
+                },
+                {
+                  "id": "2",
+                  "name": "add_numbers(x=2, y=3)"
+                },
+                {
+                  "id": "3",
+                  "name": "add_numbers(2; 3)"
+                },
+                {
+                  "id": "4",
+                  "name": "add_numbers: 2, 3"
+                }
+              ],
+              "correctAnswers": "1"
+            },
+            "nextUrl": "functions-question-3",
+            "prevUrl": "functions-question-1"
+          },
+          {
+            "lessonType": "TrueFalse",
+            "lssonLink": "functions-question-3",
+            "lessonName": "Understanding Check - Return Statement",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "question": "The return statement immediately exits a function and optionally provides a value back to where the function was called.",
+              "correctAnswers": "True"
+            },
+            "nextUrl": "functions-code-task-4",
+            "prevUrl": "functions-question-2"
+          },
+          {
+            "lessonType": "Code",
+            "lssonLink": "functions-code-task-4",
+            "lessonName": "Simple Coding Task - Defining a Function",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "text": "Write a simple function that takes two numbers as parameters and returns their product.",
+              "code": "def multiply_numbers(a, b):\n    # Write your code here\n    "
+            },
+            "nextUrl": "functions-code-task-5",
+            "prevUrl": "functions-question-3"
+          },
+          {
+            "lessonType": "Code",
+            "lssonLink": "functions-code-task-5",
+            "lessonName": "Debugging Task - Keyword Arguments",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "text": "Fix the bug in the code by using the correct keyword arguments to call the function.",
+              "code": "def display_info(name, age):\n    print('Name:', name)\n    print('Age:', age)\n\ndisplay_info(25, name='Alice')"
+            },
+            "nextUrl": "functions-code-task-6",
+            "prevUrl": "functions-code-task-4"
+          },
+          {
+            "lessonType": "Code",
+            "lssonLink": "functions-code-task-6",
+            "lessonName": "Complex Coding Task - Default Arguments",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "text": "Create a function named greet that takes a name and a greeting message. If no greeting message is provided, it should default to 'Hello'. Return a string combining the greeting and the name.",
+              "code": "def greet(name, message='Hello'):\n    # Write your code here\n    "
+            },
+            "nextUrl": "functions-question-7",
+            "prevUrl": "functions-code-task-5"
+          },
+          {
+            "lessonType": "SingleQuestion",
+            "lssonLink": "functions-question-7",
+            "lessonName": "Explanation Task - Function Definition",
+            "lable": true,
+            "time": 5,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "question": "In your own words, explain why using functions can be beneficial in programming."
+            },
+            "nextUrl": "summary-recursion",
+            "prevUrl": "functions-code-task-6"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Practice",
+        "isShow": true,
+        "listItem": [
+          {
+            "lssonLink": "lesson-intro",
+            "lessonName": "Introduction",
+            "lessonType": "Intro",
+            "iconFile": "file-text",
+            "lable": false,
+            "time": 0,
+            "unread": false,
+            "isCircle": true,
+            "data": {
+              "text": "Recursion is a fundamental concept in computer science that involves solving a problem by breaking it down into smaller, simpler subproblems. In this course, you'll learn about the basics of recursion, how it works, and how to implement recursive functions in Python.",
+              "image": "https://www.example.com/image.jpg"
+            }
+          },
+          {
+            "lssonLink": "lesson-test",
+            "lessonName": "Code Editor First",
+            "lessonType": "Code",
+            "lable": true,
+            "time": 2,
+            "unread": false,
+            "isCircle": true,
+            "data": {
+              "text": "Using the book counting analogy for the factorial function:\n- Big Task: Find the factorial of a number, say 5 (which means 5 * 4 * 3 * 2 * 1).\n- Break It Down: To find 5!, find 4! first (which is 4 * 3 * 2 * 1), then multiply that by 5.\n- Stopping Point: If we reach 1, we know the factorial of 1 is just 1, so we don't need to break it down further.",
+              "code": "def factorial(n):\n   # Base case: if n is 0, the factorial is 1\n    if n == 0:\n        return 1\n   # Recursive case: n! = n * (n-1)!\n    else:\n        return n * factorial(n-1)\n\n# Example usage\nprint(factorial(5))  # Output: 120",
+              "output_default": "#Here will be the output of your code",
+              "successMessage": "Great job! You've successfully implemented the factorial function using recursion."
+            }
+          },
+          {
+            "lssonLink": "lesson-code",
+            "lessonName": "Code Editor Second",
+            "lessonType": "Code",
+            "iconFile": true,
+            "lable": false,
+            "time": 30,
+            "unread": false,
+            "isCircle": true,
+            "data": {
+              "text": "Using the book counting analogy for the factorial function:\n- Big Task: Find the factorial of a number, say 5 (which means 5 * 4 * 3 * 2 * 1).\n- Break It Down: To find 5!, find 4! first (which is 4 * 3 * 2 * 1), then multiply that by 5.\n- Stopping Point: If we reach 1, we know the factorial of 1 is just 1, so we don't need to break it down further.",
+              "code": "def factorial(n):\n   # Base case: if n is 0, the factorial is 1\n    if n == 0:\n        return 1\n   # Recursive case: n! = n * (n-1)!\n    else:\n        return n * factorial(n-1)\n\n# Example usage\nprint(factorial(5))  # Output: 120",
+              "output_default": "#Here will be the output of your code",
+              "successMessage": "Great job! You've successfully implemented the factorial function using recursion."
+            }
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Theory Quiz",
+        "isShow": true,
+        "listItem": [
+          {
+            "lssonLink": "recursion-quiz",
+            "lessonName": "Recursion Quiz",
+            "lessonType": "MultipleSelectQuiz",
+            "iconFile": true,
+            "lable": true,
+            "time": 10,
+            "unread": false,
+            "isCircle": true,
+            "data": {
+              "question": "Which of the following best represents the concept of recursion?",
+              "options": [
+                {
+                  "id": "1",
+                  "name": "Matryoshka dolls (Russian nesting dolls) opening one after another."
+                },
+                {
+                  "id": "2",
+                  "name": "Cleaning a house room by room."
+                },
+                {
+                  "id": "3",
+                  "name": "A mirror reflecting another mirror."
+                },
+                {
+                  "id": "4",
+                  "name": "The process of making a sandwich."
+                },
+                {
+                  "id": "5",
+                  "name": "A family tree tracing back generations."
+                },
+                {
+                  "id": "6",
+                  "name": "Water flowing down a river."
+                },
+                {
+                  "id": "7",
+                  "name": "The structure of a fractal, where each part is a smaller copy of the whole."
+                },
+                {
+                  "id": "8",
+                  "name": "A countdown timer that subtracts one second until reaching zero."
+                }
+              ],
+              "correctAnswers": "1, 5, 7, 8",
+              "successMessage": "Great job! You've correctly identified the examples that best represent the concept of recursion."
+            }
+          },
+          {
+            "lssonLink": "code-example",
+            "lessonName": "Code Example",
+            "lessonType": "Code",
+            "iconFile": true,
+            "lable": true,
+            "time": 5,
+            "unread": false,
+            "isCircle": true,
+            "data": {
+              "text": "Using the book counting analogy for the factorial function:\n- Big Task: Find the factorial of a number, say 5 (which means 5 * 4 * 3 * 2 * 1).\n- Break It Down: To find 5!, find 4! first (which is 4 * 3 * 2 * 1), then multiply that by 5.\n- Stopping Point: If we reach 1, we know the factorial of 1 is just 1, so we don't need to break it down further.",
+              "code": "def factorial(n):\n   # Base case: if n is 0, the factorial is 1\n    if n == 0:\n        return 1\n   # Recursive case: n! = n * (n-1)!\n    else:\n        return n * factorial(n-1)\n\n# Example usage\nprint(factorial(5))  # Output: 120",
+              "output_default": "#Here will be the output of your code",
+              "successMessage": "Great job! You've successfully implemented the factorial function using recursion."
+            }
+          },
+          {
+            "lssonLink": "find-the-bug",
+            "lessonName": "Find a Bug",
+            "lessonType": "Code",
+            "iconFile": true,
+            "lable": true,
+            "time": 5,
+            "unread": false,
+            "isCircle": true,
+            "data": {
+              "text": "In the provided Python function factorial, there's a small but crucial mistake that affects its functionality. Your task is to review the code carefully, identify the mistake, and correct it.",
+              "code": "def factorial(n):\n   # Base case: if n is 0, the factorial is 1\n    if n == 0:\n        return 1\n   # Recursive case: n! = n * (n-1)!\n    else:\n        return n * factorial(n-1)\n\n# Example usage\nprint(factorial(5))  # Output: 120",
+              "output_default": "#Here will be the output of your code",
+              "successMessage": "Great job! You've successfully identified and corrected the mistake in the factorial function.",
+              "additional_question": "Explain what was the mistake in the code and how did you fix it?",
+              "placeholder": "Write your answer here..."
+            }
+          },
+          {
+            "lssonLink": "code-exercise",
+            "lessonName": "Basic Task",
+            "lessonType": "Code",
+            "iconFile": true,
+            "lable": true,
+            "time": 10,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "text": "Implement a Python function named fibonacci that calculates the nth number in the Fibonacci sequence using recursion. \nThe Fibonacci sequence is a series of numbers where each number is the sum of the two preceding ones, usually starting with 0 and 1:\n0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, ...",
+              "code": "def fibonacci(n):\n#Write your code here",
+              "successMessage": "Great job! You've successfully implemented the fibonacci function using recursion."
+            }
+          },
+          {
+            "lssonLink": "implementation",
+            "lessonName": "Implementation",
+            "lessonType": "Code",
+            "iconFile": true,
+            "lable": true,
+            "time": 10,
+            "unread": true,
+            "isCircle": true,
+            "data": {
+              "text": "Implement a Python function named reverse_string that uses recursion to reverse a given string.\nTest the function with various strings, including edge cases like an empty string or a string with only one character.",
+              "code": "def reverse_string(s):\n#Write your code here",
+              "output_default": "#Here will be the output of your code",
+              "successMessage": "Great job! You've successfully implemented the reverse_string function using recursion.",
+              "hint": "Function Signature: Define the function as def reverse_string(s):, where s is the string to be reversed.\nBase Case: If the string is empty or consists of a single character, it is its own reverse.\nRecursive Step: For a string of length n, the reversed string can be constructed by appending the first character to the reverse of the substring that excludes this character."
+            }
+          }
+        ]
+      }
+    ]
+  }
