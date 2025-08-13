@@ -82,18 +82,7 @@ class UserRegistrationSchema(BaseModel):
         return v
 
 
-class SessionRecordingSchema(BaseModel):
-    """Schema for session recording data"""
-
-    user_id: str = Field(..., description="User identifier")
-    events: List[Dict] = Field(..., max_items=10000, description="Session events")
-    session_duration: Optional[int] = Field(None, gt=0, description="Session duration in seconds")
-
-    @validator("events")
-    def validate_events(cls, v):
-        if len(v) > 10000:
-            raise ValueError("Too many events in session (max 10000)")
-        return v
+# Session schemas removed: session recording feature deprecated
 
 
 class TaskAttemptSchema(BaseModel):

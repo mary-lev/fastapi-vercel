@@ -4,26 +4,14 @@ Handles the hierarchical course structure: courses → lessons → topics → ta
 """
 
 from datetime import datetime
-from fastapi import APIRouter, HTTPException, Query, Depends, Path
+from fastapi import APIRouter, HTTPException, Depends, Path
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import func
 from typing import List, Optional
 from pydantic import BaseModel
 
-from models import (
-    Course,
-    Lesson,
-    Topic,
-    Task,
-    Summary,
-    TaskSolution,
-    User,
-    CodeTask,
-    MultipleSelectQuiz,
-    TrueFalseQuiz,
-    SingleQuestionTask,
-)
+from models import Course, Lesson, Topic, Task, Summary
 from db import get_db
 from utils.logging_config import logger
 from schemas.validation import TaskUpdateSchema
@@ -649,10 +637,6 @@ async def update_task(
 
     except HTTPException:
         raise
-    except IntegrityError as e:
-        db.rollback()
-        logger.error(f"Database integrity error in update_task: {e}")
-        raise HTTPException(status_code=409, detail="Task update conflict")
     except SQLAlchemyError as e:
         db.rollback()
         logger.error(f"Database error in update_task: {e}")

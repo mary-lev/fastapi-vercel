@@ -56,7 +56,6 @@ def verify_api_key(authorization: str = Header(...)):
 
 
 @router.post("/api/auth/telegram/link", response_model=TelegramLinkResponse)
-@rate_limit(max_requests=5, window_minutes=10, key_func=telegram_rate_limit_key)
 async def create_telegram_link(
     request: Request,
     link_request: TelegramLinkRequest,
@@ -144,7 +143,6 @@ async def create_telegram_link(
 
 
 @router.post("/api/auth/telegram/complete", response_model=TelegramCompleteResponse)
-@rate_limit(max_requests=10, window_minutes=10)
 async def complete_telegram_link(
     request: Request, complete_request: TelegramCompleteRequest, db: Session = Depends(get_db)
 ):

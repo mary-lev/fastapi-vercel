@@ -1,7 +1,7 @@
 """Rate limiting utilities for API protection"""
 
 from datetime import datetime, timedelta
-from typing import Dict, Optional
+from typing import Dict
 from fastapi import HTTPException, Request, status
 from functools import wraps
 import asyncio

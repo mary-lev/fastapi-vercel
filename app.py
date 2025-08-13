@@ -14,7 +14,7 @@ import uuid
 import json
 
 # Import consolidated v1 routers ONLY
-from routes import learning, student, professor, auth, users
+from routes import learning, student, professor, auth, users, telegram_auth
 from config import settings
 
 # Configure logging
@@ -115,6 +115,7 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
         content={
             "success": False,
             "error": exc.detail,
+            "detail": exc.detail,
             "status_code": exc.status_code,
             "request_id": getattr(request.state, "request_id", None),
         },
@@ -166,6 +167,10 @@ app.include_router(
     users.router,
     tags=["👥 Users"],
 )
+
+# Legacy-compatible endpoints used in tests
+# app.include_router(solution.router, tags=["Solutions (legacy compat)"])
+app.include_router(telegram_auth.router, tags=["Telegram Auth"])
 
 
 # Root endpoint

@@ -131,27 +131,23 @@ async def create_telegram_link(
                 logger.info(f"Updated username for existing user {existing_user.id} to: {telegram_username}")
 
             # Update first name if it's empty, test data, or auto-generated
-            should_update_first_name = (
-                first_name and (
-                    not existing_user.first_name or  # Empty
-                    existing_user.first_name.startswith("telegram_user_") or  # Auto-generated
-                    existing_user.first_name in ["Updated", "Anonymous"]  # Test/default data
-                )
+            should_update_first_name = first_name and (
+                not existing_user.first_name  # Empty
+                or existing_user.first_name.startswith("telegram_user_")  # Auto-generated
+                or existing_user.first_name in ["Updated", "Anonymous"]  # Test/default data
             )
-            
+
             if should_update_first_name:
                 existing_user.first_name = first_name
                 logger.info(f"Updated first_name for existing user {existing_user.id} to: {first_name}")
-                
-            # Update last name if it's empty, test data, or auto-generated  
-            should_update_last_name = (
-                last_name and (
-                    not existing_user.last_name or  # Empty
-                    existing_user.last_name.startswith("telegram_user_") or  # Auto-generated
-                    existing_user.last_name in ["Name", "Anonymous"]  # Test/default data
-                )
+
+            # Update last name if it's empty, test data, or auto-generated
+            should_update_last_name = last_name and (
+                not existing_user.last_name  # Empty
+                or existing_user.last_name.startswith("telegram_user_")  # Auto-generated
+                or existing_user.last_name in ["Name", "Anonymous"]  # Test/default data
             )
-            
+
             if should_update_last_name:
                 existing_user.last_name = last_name
                 logger.info(f"Updated last_name for existing user {existing_user.id} to: {last_name}")
@@ -347,8 +343,6 @@ async def get_telegram_link_status(
     except Exception as e:
         logger.error(f"Error checking Telegram link status: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
-
-
 
 
 @router.post("/sessions/refresh", summary="Refresh session token")

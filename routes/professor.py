@@ -5,10 +5,10 @@ Handles analytics, administrative functions, and course management for professor
 
 from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Depends, Query
-from sqlalchemy import func, case, and_, distinct
+from sqlalchemy import func, case, and_
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from typing import Dict, List, Optional
+from sqlalchemy.exc import SQLAlchemyError
+from typing import List, Optional
 from pydantic import BaseModel
 
 from models import User, Task, TaskAttempt, TaskSolution, Course, Topic, Lesson, StudentFormSubmission
