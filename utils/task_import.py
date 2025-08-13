@@ -1,28 +1,17 @@
 import os
 import re
-import json
 from enum import Enum
-from typing import List, Optional, Union, Literal
+from typing import List, Optional
 from pydantic import BaseModel, Field
-from pydantic.class_validators import root_validator
 from sqlalchemy.exc import SQLAlchemyError
-
-from openai import OpenAI
-
 from db import SessionLocal  # Keep for backwards compatibility in utility files
 
 from models import Lesson, Topic
 from models import TrueFalseQuiz, MultipleSelectQuiz, CodeTask, SingleQuestionTask, Tag
-from models import Task as TaskReady
 
 
 from dotenv import load_dotenv
-
 load_dotenv()
-
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
-client = OpenAI(api_key=OPENAI_API_KEY)
 
 
 class TaskType(str, Enum):
@@ -265,5 +254,6 @@ def import_tasks(current_topic: int, db=None):
     # return list_items
 
 
-current_topic = 31
-import_tasks(current_topic)
+if __name__ == "__main__":
+    current_topic = 31
+    import_tasks(current_topic)
