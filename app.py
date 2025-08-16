@@ -18,9 +18,15 @@ from routes import learning, student, professor, auth, users, telegram_auth, aut
 from config import settings
 from utils.auth_middleware import add_auth_context_to_request
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Configure structured logging
+from utils.structured_logging import (
+    configure_logging, get_logger, log_request_middleware,
+    set_correlation_id, LogCategory
+)
+
+# Configure structured logging system
+configure_logging(level="INFO", json_output=True)
+logger = get_logger("app")
 
 # Import enhanced OpenAPI configuration
 from schemas.openapi_models import OpenAPIMetadata, OpenAPITags, SECURITY_SCHEMES
@@ -57,6 +63,12 @@ app.add_middleware(
 )
 
 
+# Structured logging middleware - adds correlation IDs and logs all requests
+@app.middleware("http")
+async def structured_logging_middleware(request: Request, call_next):
+    """Add correlation IDs and structured logging to all requests"""
+    return await log_request_middleware(request, call_next)
+
 # Authentication middleware - adds auth context to all requests
 @app.middleware("http")
 async def auth_middleware(request: Request, call_next):
@@ -67,12 +79,23 @@ async def auth_middleware(request: Request, call_next):
 # Global exception handlers
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    """Handle validation errors with proper structure"""
+    """Handle validation errors with proper structure and logging"""
     errors = []
     for error in exc.errors():
         errors.append(
             {"field": ".".join(str(loc) for loc in error["loc"]), "message": error["msg"], "code": error["type"]}
         )
+    
+    # Log validation error with structured logging
+    logger.warning(
+        "Validation error",
+        category=LogCategory.ERROR,
+        request_method=request.method,
+        request_path=request.url.path,
+        error_type="ValidationError",
+        error_message=f"{len(errors)} validation errors",
+        extra={"errors": errors}
+    )
 
     return JSONResponse(
         status_code=422,
@@ -82,13 +105,35 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "detail": errors,
             "status_code": 422,
             "request_id": getattr(request.state, "request_id", None),
+            "correlation_id": getattr(request.state, "correlation_id", None),
         },
     )
 
 
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
-    """Handle HTTP exceptions with proper structure"""
+    """Handle HTTP exceptions with proper structure and logging"""
+    
+    # Log HTTP exception with appropriate level
+    if exc.status_code >= 500:
+        logger.error(
+            f"HTTP {exc.status_code} error",
+            category=LogCategory.ERROR,
+            request_method=request.method,
+            request_path=request.url.path,
+            response_status=exc.status_code,
+            error_message=exc.detail
+        )
+    elif exc.status_code >= 400:
+        logger.warning(
+            f"HTTP {exc.status_code} client error",
+            category=LogCategory.ERROR,
+            request_method=request.method,
+            request_path=request.url.path,
+            response_status=exc.status_code,
+            error_message=exc.detail
+        )
+    
     return JSONResponse(
         status_code=exc.status_code,
         content={
@@ -97,14 +142,25 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
             "detail": exc.detail,
             "status_code": exc.status_code,
             "request_id": getattr(request.state, "request_id", None),
+            "correlation_id": getattr(request.state, "correlation_id", None),
         },
     )
 
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
-    """Handle unexpected exceptions"""
-    logger.error(f"Unexpected error: {exc}", exc_info=True)
+    """Handle unexpected exceptions with structured logging"""
+    
+    # Log unexpected error with full context
+    logger.critical(
+        "Unexpected server error",
+        category=LogCategory.ERROR,
+        exception=exc,
+        request_method=request.method,
+        request_path=request.url.path,
+        user_id=getattr(request.state, "user_id", None)
+    )
+    
     return JSONResponse(
         status_code=500,
         content={
@@ -113,6 +169,7 @@ async def general_exception_handler(request: Request, exc: Exception):
             "detail": "An unexpected error occurred. Please try again later.",
             "status_code": 500,
             "request_id": getattr(request.state, "request_id", None),
+            "correlation_id": getattr(request.state, "correlation_id", None),
         },
     )
 

@@ -23,7 +23,7 @@ from models import (
     CourseEnrollment,
 )
 from db import get_db
-from utils.logging_config import logger
+from utils.structured_logging import get_logger, LogCategory, log_execution, log_security_event
 from utils.checker import run_code
 from utils.evaluator import evaluate_code_submission, evaluate_text_submission
 from utils.auth_dependencies import resolve_user_flexible, require_api_key, get_user_by_id
@@ -35,6 +35,9 @@ from schemas.security import SecureCompileRequest, SecureCodeSubmitRequest, Secu
 db = None  # tests may set routes.student.db to a Session-like object
 
 router = APIRouter()
+
+# Create logger for this module
+logger = get_logger("routes.student")
 
 
 # Helper function to resolve user ID (supports both integer and string/UUID formats)
@@ -867,49 +870,104 @@ async def compile_code(
     - **Security Checks**: Validation results
     """
     try:
-        logger.info(f"Compile request received for user {user_id}")
+        # Log incoming code compilation request
+        logger.info(
+            f"Code compilation request for user {user_id}",
+            category=LogCategory.CODE_EXECUTION,
+            user_id=str(user_id),
+            code_length=len(request.code),
+            language=request.language
+        )
 
         # Verify user exists (for auth/tracking purposes)
         user = resolve_user(user_id, db)
-        logger.info(f"User resolved: {user.id}")
+        logger.debug(
+            f"User resolved successfully",
+            category=LogCategory.AUTHENTICATION,
+            user_id=str(user.id),
+            username=user.username
+        )
         
         # Check rate limits and security blocks
         check_code_execution_limits(str(user.id))
 
         if not request.code:
+            logger.warning(
+                "Empty code submission",
+                category=LogCategory.CODE_EXECUTION,
+                user_id=str(user.id)
+            )
             raise HTTPException(status_code=400, detail="No code provided")
             
-        # Additional security validation (Pydantic validators handle most of this,
-        # but we can add runtime checks here)
+        # Additional security validation
         is_valid, error_message = validate_code_request(request.code, request.language)
         if not is_valid:
-            # Record security violation and log it
+            # Record security violation
             record_security_violation_for_user(str(user.id))
-            log_security_violation(str(user.id), type('SecurityViolation', (), {
-                'severity': 'high', 'category': 'code_validation', 'message': error_message
-            })(), request.code)
+            
+            # Log security event with structured logging
+            log_security_event(
+                event_type="code_injection_attempt",
+                message=f"Dangerous code pattern detected: {error_message}",
+                user_id=str(user.id),
+                severity="high",
+                details={
+                    "code_snippet": request.code[:100],
+                    "violation": error_message,
+                    "language": request.language
+                }
+            )
+            
             raise HTTPException(status_code=400, detail=f"Security validation failed: {error_message}")
 
-        logger.info(f"About to run code: {request.code[:50]}...")
+        # Log code execution start
+        import time
+        start_time = time.time()
+        logger.debug(
+            f"Starting code execution",
+            category=LogCategory.CODE_EXECUTION,
+            user_id=str(user.id),
+            code_preview=request.code[:50]
+        )
+        
         # Run the code and return the output
         result = run_code(request.code)
-        logger.info(f"Code execution completed: {result}")
+        
+        # Calculate execution time
+        execution_time = (time.time() - start_time) * 1000
+        
+        # Log code execution result
+        logger.info(
+            f"Code execution completed",
+            category=LogCategory.CODE_EXECUTION,
+            user_id=str(user.id),
+            success=result.get("success", False),
+            duration_ms=execution_time,
+            output_length=len(result.get("output", ""))
+        )
 
-        # Map the result to the expected format - always show output for user visibility
+        # Map the result to the expected format
         error_message = result.get("output", "") if not result.get("success") else ""
         output_message = result.get("output", "")
 
         return {
             "status": "success" if result.get("success") else "error",
-            "output": output_message,  # Always include output (error messages or results)
-            "error": error_message,  # Also include in error field for compatibility
-            "execution_time": 0,
+            "output": output_message,
+            "error": error_message,
+            "execution_time": execution_time / 1000,  # Convert to seconds
         }
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error compiling code: {e}")
+        # Log unexpected error with full context
+        logger.error(
+            f"Code compilation failed unexpectedly",
+            category=LogCategory.CODE_EXECUTION,
+            exception=e,
+            user_id=str(user_id) if 'user' in locals() else user_id,
+            code_length=len(request.code) if request else 0
+        )
         # Return 400 for user resolution failures to satisfy error-handling test
         if "User not found" in str(e):
             raise HTTPException(status_code=400, detail=str(e))
