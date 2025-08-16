@@ -160,3 +160,4 @@ alembic/versions/__pycache__
 archived/
 archived/routes/
 archived/routes/topics.py
+.ruff_cache

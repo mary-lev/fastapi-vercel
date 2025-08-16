@@ -5,7 +5,7 @@ Handles user-centric operations: progress tracking, submissions, solutions
 
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends, Path, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import func
 from typing import Optional, Dict, Any, Union
@@ -130,7 +130,13 @@ async def get_user_courses(
     try:
         user = resolve_user(user_id, db)
 
-        enrollments = db.query(CourseEnrollment).filter(CourseEnrollment.user_id == user.id).all()
+        # Use eager loading to prevent N+1 queries when accessing course data
+        enrollments = (
+            db.query(CourseEnrollment)
+            .options(joinedload(CourseEnrollment.course))
+            .filter(CourseEnrollment.user_id == user.id)
+            .all()
+        )
 
         courses = []
         for enrollment in enrollments:

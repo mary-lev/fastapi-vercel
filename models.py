@@ -1,9 +1,11 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, func, Enum, Boolean, JSON, BigInteger
-from sqlalchemy import Table, UniqueConstraint
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, func, Enum, Boolean, JSON, BigInteger, Text
+from sqlalchemy import Table, UniqueConstraint, Index
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import UUID
 import enum
 from datetime import datetime
+import uuid
 
 Base = declarative_base()
 
@@ -136,10 +138,16 @@ class TaskAttempt(Base):
     attempt_number = Column(Integer, nullable=False)
     submitted_at = Column(DateTime, default=func.now(), nullable=False)
     is_successful = Column(Boolean, default=False)
-    attempt_content = Column(String, nullable=True)
+    attempt_content = Column(Text, nullable=True)  # Changed to Text for longer content
 
     user = relationship("User", backref="task_attempts")
     related_task = relationship("Task", back_populates="attempts")
+
+    # Add composite index for common queries
+    __table_args__ = (
+        Index("idx_task_attempts_user_task", "user_id", "task_id"),
+        Index("idx_task_attempts_submitted_at", "submitted_at"),
+    )
 
 
 class TaskSolution(Base):
@@ -148,11 +156,17 @@ class TaskSolution(Base):
     id = Column(Integer, primary_key=True, index=True)
     task_id = Column(Integer, ForeignKey("tasks.id"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    solution_content = Column(String)
+    solution_content = Column(Text, nullable=False)  # Changed to Text and made not nullable
     completed_at = Column(DateTime, default=func.now(), nullable=False)
 
     user = relationship("User", backref="task_solutions")
     related_task = relationship("Task", back_populates="solutions")
+
+    # Add composite index for common queries
+    __table_args__ = (
+        Index("idx_task_solutions_user_task", "user_id", "task_id"),
+        Index("idx_task_solutions_completed_at", "completed_at"),
+    )
 
 
 # Existing Models for Courses, Lessons, etc.
@@ -226,13 +240,21 @@ class AIFeedback(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     task_id = Column(Integer, ForeignKey("tasks.id"), nullable=False)
-    task_attempt_id = Column(Integer, ForeignKey("task_attempts.id"), nullable=True)
+    task_attempt_id = Column(Integer, ForeignKey("task_attempts.id"), nullable=False)  # Made not nullable - feedback should always reference an attempt
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    feedback = Column(String, nullable=False)
+    feedback = Column(Text, nullable=False)  # Changed to Text for longer feedback content
     created_at = Column(DateTime, default=func.now(), nullable=False)
 
     user = relationship("User", backref="ai_feedbacks")
     related_task = relationship("Task", back_populates="ai_feedbacks")
+    task_attempt = relationship("TaskAttempt", backref="ai_feedback")
+
+    # Add indexes for common queries
+    __table_args__ = (
+        Index("idx_ai_feedback_user_task", "user_id", "task_id"),
+        Index("idx_ai_feedback_attempt", "task_attempt_id"),
+        Index("idx_ai_feedback_created_at", "created_at"),
+    )
 
 
 class ContactMessage(Base):

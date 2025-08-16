@@ -5,7 +5,7 @@ Handles the hierarchical course structure: courses → lessons → topics → ta
 
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends, Path
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import func
 from typing import List, Optional
@@ -99,7 +99,17 @@ async def get_courses(db: Session = Depends(get_db)):
 async def get_course(course_id: int = Path(..., description="Course ID"), db: Session = Depends(get_db)):
     """Get course details with full lesson/topic/task hierarchy"""
     try:
-        course = db.query(Course).filter(Course.id == course_id).first()
+        # Use eager loading to prevent N+1 queries
+        course = (
+            db.query(Course)
+            .options(
+                joinedload(Course.lessons)
+                .joinedload(Lesson.topics)
+                .joinedload(Topic.tasks)
+            )
+            .filter(Course.id == course_id)
+            .first()
+        )
         if not course:
             logger.warning(f"Course not found: {course_id}")
             raise HTTPException(status_code=404, detail="Course not found")

@@ -6,6 +6,7 @@ from models import User, UserStatus  # Assuming you have a User model defined
 from db import get_db
 from passlib.hash import bcrypt
 from utils.logging_config import logger
+from utils.error_handling import handle_database_error, validate_resource_exists, safe_database_operation, log_operation_success
 from schemas.validation import UserRegistrationSchema
 
 router = APIRouter()
@@ -59,34 +60,31 @@ router = APIRouter()
 
 @router.post("/users/register")
 def register_user(data: UserRegistrationSchema, db: Session = Depends(get_db)):
+    # Check if user already exists
     existing_user = db.query(User).filter(User.username == data.username).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Username already exists")
 
     hashed_password = bcrypt.hash(data.password)
+    
+    # Use centralized error handling for database operations
     try:
-        new_user = User(
-            internal_user_id=data.username,
-            username=data.username,
-            hashed_sub=hashed_password,
-            status=UserStatus.STUDENT,
-        )
-        db.add(new_user)
-        db.commit()
-        db.refresh(new_user)
+        with safe_database_operation(db, "user registration"):
+            new_user = User(
+                internal_user_id=data.username,
+                username=data.username,
+                hashed_sub=hashed_password,
+                status=UserStatus.STUDENT,
+            )
+            db.add(new_user)
+            db.commit()
+            db.refresh(new_user)
+            
+        log_operation_success("User registration", f"Username: {data.username}")
         return {"message": "User registered successfully", "user": new_user}
-    except IntegrityError as e:
-        db.rollback()
-        logger.error(f"Database integrity error in register_user: {e}")
-        raise HTTPException(status_code=409, detail="Username already exists")
-    except SQLAlchemyError as e:
-        db.rollback()
-        logger.error(f"Database error in register_user: {e}")
-        raise HTTPException(status_code=500, detail="Database operation failed")
+        
     except Exception as e:
-        db.rollback()
-        logger.error(f"Unexpected error in register_user: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        handle_database_error(e, "user registration")
 
 
 class LoginUser(BaseModel):
