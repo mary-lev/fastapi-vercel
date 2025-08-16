@@ -3,7 +3,7 @@
 from fastapi import APIRouter, HTTPException, Depends, status, Request
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 
@@ -58,7 +58,7 @@ class StudentFormRequest(BaseModel):
     # Question 13: Additional comments (optional)
     additional_comments: Optional[str] = Field(None, max_length=1000)
 
-    @validator("problem_solving_approach", "learning_preferences", "preferred_study_times")
+    @field_validator("problem_solving_approach", "learning_preferences", "preferred_study_times")
     def validate_non_empty_strings(cls, v):
         if not v:  # Allow empty arrays for now to debug
             raise ValueError("At least one item is required")
@@ -68,12 +68,12 @@ class StudentFormRequest(BaseModel):
             raise ValueError("At least one non-empty item is required")
         return filtered
 
-    @validator("other_language", pre=True)
+    @field_validator("other_language", mode="before")
     def validate_other_language(cls, v):
         # Convert empty string to None for optional field
         return None if v == "" else v
 
-    @validator("additional_comments", pre=True)
+    @field_validator("additional_comments", mode="before")
     def validate_additional_comments(cls, v):
         # Convert empty string to None for optional field
         return None if v == "" else v
