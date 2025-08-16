@@ -176,7 +176,13 @@ async def get_course_legacy_format(course_id: int, db: Session = Depends(get_db)
     Returns the same format as the original /api/courses/{course_id}
     """
     try:
-        course = db.query(Course).filter(Course.id == course_id).first()
+        # Use eager loading for the entire hierarchy to prevent N+1 queries
+        course = (
+            db.query(Course)
+            .options(joinedload(Course.lessons).joinedload(Lesson.topics))
+            .filter(Course.id == course_id)
+            .first()
+        )
         if not course:
             logger.warning(f"Course not found: {course_id}")
             raise HTTPException(status_code=404, detail="Course not found")
@@ -235,10 +241,12 @@ async def get_course_legacy_format(course_id: int, db: Session = Depends(get_db)
                                     "text": topic.title,
                                     "status": lesson.start_date <= datetime.now() if lesson.start_date else False,
                                 }
-                                for topic in lesson.topics
+                                # Topics are already eagerly loaded
+                                for topic in sorted(lesson.topics, key=lambda t: t.topic_order)
                             ],
                         }
-                        for lesson in course.lessons
+                        # Lessons are already eagerly loaded
+                        for lesson in sorted(course.lessons, key=lambda l: l.lesson_order)
                     ],
                 }
             ],
@@ -321,7 +329,13 @@ async def get_lesson(
 ):
     """Get lesson details with topics and tasks"""
     try:
-        lesson = db.query(Lesson).filter(Lesson.id == lesson_id, Lesson.course_id == course_id).first()
+        # Use eager loading to prevent N+1 queries when accessing topics and tasks
+        lesson = (
+            db.query(Lesson)
+            .options(joinedload(Lesson.topics).joinedload(Topic.tasks))
+            .filter(Lesson.id == lesson_id, Lesson.course_id == course_id)
+            .first()
+        )
 
         if not lesson:
             raise HTTPException(status_code=404, detail="Lesson not found")
@@ -336,7 +350,8 @@ async def get_lesson(
             "topics": [],
         }
 
-        for topic in lesson.topics:
+        # Topics and tasks are already eagerly loaded, so no additional queries
+        for topic in sorted(lesson.topics, key=lambda t: t.topic_order):
             topic_data = {
                 "id": topic.id,
                 "title": topic.title,
@@ -348,7 +363,8 @@ async def get_lesson(
                 "tasks": [],
             }
 
-            for task in topic.tasks.order_by(Task.order):
+            # Sort tasks in Python to avoid additional query
+            for task in sorted(topic.tasks, key=lambda t: t.order):
                 task_data = {
                     "id": task.id,
                     "task_name": task.task_name,
@@ -416,9 +432,10 @@ async def get_topic(
 ):
     """Get topic details with tasks"""
     try:
-        # Verify the full hierarchy
+        # Verify the full hierarchy with eager loading for tasks
         topic = (
             db.query(Topic)
+            .options(joinedload(Topic.tasks))
             .join(Lesson)
             .filter(Topic.id == topic_id, Topic.lesson_id == lesson_id, Lesson.course_id == course_id)
             .first()
@@ -438,7 +455,8 @@ async def get_topic(
             "tasks": [],
         }
 
-        for task in topic.tasks.order_by(Task.order):
+        # Tasks are already eagerly loaded, sort in Python
+        for task in sorted(topic.tasks, key=lambda t: t.order):
             task_data = {
                 "id": task.id,
                 "task_name": task.task_name,

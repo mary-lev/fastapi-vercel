@@ -280,7 +280,7 @@ async def get_user_lesson_progress(
             .count()
         )
 
-        # Get task-level progress
+        # Get task-level progress efficiently with a single query
         task_progress = (
             db.query(
                 Task.id,
@@ -295,6 +295,7 @@ async def get_user_lesson_progress(
             .outerjoin(TaskSolution, (TaskSolution.task_id == Task.id) & (TaskSolution.user_id == user_id))
             .filter(Topic.lesson_id == lesson_id)
             .group_by(Task.id, Task.task_name, Task.points, TaskSolution.id)
+            .order_by(Task.order)  # Add ordering to prevent sorting in Python
             .all()
         )
 
@@ -535,11 +536,18 @@ async def get_user_solutions(
         if course_id is not None:
             query = query.join(Task).join(Topic).join(Lesson).filter(Lesson.course_id == course_id)
 
-        solutions = query.order_by(TaskSolution.completed_at.desc()).limit(limit).all()
+        # Use eager loading to prevent N+1 queries when accessing task data
+        solutions = (
+            query.options(joinedload(TaskSolution.related_task))
+            .order_by(TaskSolution.completed_at.desc())
+            .limit(limit)
+            .all()
+        )
 
         result = []
         for solution in solutions:
-            task = db.query(Task).filter(Task.id == solution.task_id).first()
+            # Task is already eagerly loaded, no additional query needed
+            task = solution.related_task
 
             # Parse solution_content back to dict if it's JSON string
             import json
@@ -581,14 +589,19 @@ async def get_user_solution(
     try:
         user = resolve_user(user_id, db)
 
+        # Use eager loading to prevent additional task query
         solution = (
-            db.query(TaskSolution).filter(TaskSolution.id == solution_id, TaskSolution.user_id == user.id).first()
+            db.query(TaskSolution)
+            .options(joinedload(TaskSolution.related_task))
+            .filter(TaskSolution.id == solution_id, TaskSolution.user_id == user.id)
+            .first()
         )
 
         if not solution:
             raise HTTPException(status_code=404, detail="Solution not found")
 
-        task = db.query(Task).filter(Task.id == solution.task_id).first()
+        # Task is already eagerly loaded
+        task = solution.related_task
 
         # Parse solution_content back to dict if it's JSON string
         import json
