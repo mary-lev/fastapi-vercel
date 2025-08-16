@@ -16,6 +16,7 @@ from models import User, TelegramLinkToken
 from utils.jwt_utils import jwt_manager
 from utils.logging_config import logger
 from utils.rate_limiting import rate_limit, telegram_rate_limit_key
+from utils.auth_dependencies import require_api_key
 from config import settings
 
 router = APIRouter()
@@ -56,18 +57,8 @@ class SessionUpdateRequest(BaseModel):
     session_data: Optional[Dict[str, Any]] = None
 
 
-# Helper functions
-def verify_api_key(authorization: str = Header(...)):
-    """Verify the API key from Authorization header"""
-    if not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authorization header format")
-
-    api_key = authorization.replace("Bearer ", "")
-    if api_key != settings.BACKEND_API_KEY:
-        logger.warning(f"Invalid API key attempt: {api_key[:10]}...")
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API key")
-
-    return api_key
+# Helper functions - using centralized authentication
+# verify_api_key has been moved to utils/auth_unified.py
 
 
 # Standard authentication endpoints
@@ -90,7 +81,7 @@ async def create_telegram_link(
     request: Request,
     link_request: TelegramLinkRequest,
     db: Session = Depends(get_db),
-    api_key: str = Depends(verify_api_key),
+    api_key: str = Depends(require_api_key),
 ):
     """
     Create a secure link for Telegram account linking
@@ -323,7 +314,7 @@ async def complete_telegram_link(
 
 @router.get("/telegram/status/{telegram_user_id}", summary="Check Telegram link status")
 async def get_telegram_link_status(
-    telegram_user_id: int, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)
+    request: Request, telegram_user_id: int, db: Session = Depends(get_db), api_key: str = Depends(require_api_key)
 ):
     """
     Check if a Telegram user ID is already linked to an account

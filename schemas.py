@@ -29,7 +29,7 @@ class UserResponse(UserBase):
     id: int
     internal_user_id: str
     telegram_user_id: Optional[int] = None
-    
+
     class Config:
         from_attributes = True
 
@@ -55,7 +55,7 @@ class TaskResponse(TaskBase):
     topic_id: int
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -77,7 +77,7 @@ class TaskAttemptResponse(TaskAttemptBase):
     user_id: int
     task_id: int
     submitted_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -97,7 +97,7 @@ class TaskSolutionResponse(TaskSolutionBase):
     user_id: int
     task_id: int
     completed_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -119,7 +119,7 @@ class AIFeedbackResponse(AIFeedbackBase):
     task_attempt_id: int
     user_id: int
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -139,7 +139,7 @@ class CourseResponse(CourseBase):
     professor_id: int
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -162,7 +162,7 @@ class LessonResponse(LessonBase):
     course_id: int
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -186,7 +186,7 @@ class TopicResponse(TopicBase):
     lesson_id: int
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -208,7 +208,7 @@ class SummaryResponse(SummaryBase):
     id: int
     topic_id: int
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -216,7 +216,7 @@ class SummaryResponse(SummaryBase):
 # For backward compatibility
 class SummarySchema(SummaryResponse):
     topic_title: str  # Additional field for the topic title
-    
+
     class Config:
         from_attributes = True
 
@@ -245,7 +245,7 @@ class ContactMessageResponse(ContactMessageBase):
     processed_at: Optional[datetime] = None
     status: str
     user_id: Optional[int] = None
-    
+
     class Config:
         from_attributes = True
 
@@ -265,7 +265,7 @@ class CourseEnrollmentResponse(CourseEnrollmentBase):
     user_id: int
     course_id: int
     enrolled_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -281,6 +281,6 @@ class TagCreate(TagBase):
 
 class TagResponse(TagBase):
     id: int
-    
+
     class Config:
         from_attributes = True

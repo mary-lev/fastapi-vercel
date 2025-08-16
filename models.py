@@ -240,7 +240,9 @@ class AIFeedback(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     task_id = Column(Integer, ForeignKey("tasks.id"), nullable=False)
-    task_attempt_id = Column(Integer, ForeignKey("task_attempts.id"), nullable=False)  # Made not nullable - feedback should always reference an attempt
+    task_attempt_id = Column(
+        Integer, ForeignKey("task_attempts.id"), nullable=False
+    )  # Made not nullable - feedback should always reference an attempt
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     feedback = Column(Text, nullable=False)  # Changed to Text for longer feedback content
     created_at = Column(DateTime, default=func.now(), nullable=False)

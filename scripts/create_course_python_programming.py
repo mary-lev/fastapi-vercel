@@ -41,11 +41,7 @@ def promote_user_to_professor_if_needed(db) -> Optional[User]:
 
 
 def create_course(db, professor_id: int) -> Course:
-    existing = (
-        db.query(Course)
-        .filter(Course.title == COURSE_TITLE, Course.professor_id == professor_id)
-        .first()
-    )
+    existing = db.query(Course).filter(Course.title == COURSE_TITLE, Course.professor_id == professor_id).first()
     if existing:
         print(
             f"Course '{COURSE_TITLE}' already exists with id {existing.id} for professor {professor_id}. Skipping create."
@@ -64,9 +60,7 @@ def create_course(db, professor_id: int) -> Course:
             max_id = db.execute(text("SELECT COALESCE(MAX(id), 0) FROM courses")).scalar() or 0
             # Use pg_get_serial_sequence to be robust to non-default sequence names
             db.execute(
-                text(
-                    "SELECT setval(pg_get_serial_sequence('courses','id'), :newval)"
-                ),
+                text("SELECT setval(pg_get_serial_sequence('courses','id'), :newval)"),
                 {"newval": max_id},
             )
             db.commit()
@@ -102,5 +96,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-

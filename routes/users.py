@@ -6,7 +6,12 @@ from models import User, UserStatus  # Assuming you have a User model defined
 from db import get_db
 from passlib.hash import bcrypt
 from utils.logging_config import logger
-from utils.error_handling import handle_database_error, validate_resource_exists, safe_database_operation, log_operation_success
+from utils.error_handling import (
+    handle_database_error,
+    validate_resource_exists,
+    safe_database_operation,
+    log_operation_success,
+)
 from schemas.validation import UserRegistrationSchema
 
 router = APIRouter()
@@ -66,7 +71,7 @@ def register_user(data: UserRegistrationSchema, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Username already exists")
 
     hashed_password = bcrypt.hash(data.password)
-    
+
     # Use centralized error handling for database operations
     try:
         with safe_database_operation(db, "user registration"):
@@ -79,10 +84,10 @@ def register_user(data: UserRegistrationSchema, db: Session = Depends(get_db)):
             db.add(new_user)
             db.commit()
             db.refresh(new_user)
-            
+
         log_operation_success("User registration", f"Username: {data.username}")
         return {"message": "User registered successfully", "user": new_user}
-        
+
     except Exception as e:
         handle_database_error(e, "user registration")
 

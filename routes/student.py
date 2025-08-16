@@ -4,7 +4,7 @@ Handles user-centric operations: progress tracking, submissions, solutions
 """
 
 from datetime import datetime
-from fastapi import APIRouter, HTTPException, Depends, Path, Query
+from fastapi import APIRouter, HTTPException, Depends, Path, Query, Request
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import func
@@ -26,6 +26,7 @@ from db import get_db
 from utils.logging_config import logger
 from utils.checker import run_code
 from utils.evaluator import evaluate_code_submission, evaluate_text_submission
+from utils.auth_dependencies import resolve_user_flexible, require_api_key, get_user_by_id
 
 # Optional test patching hook for db session
 db = None  # tests may set routes.student.db to a Session-like object
@@ -43,17 +44,19 @@ def _db_session(db_param: Session) -> Session:
     return db_param
 
 
+# NOTE: resolve_user function has been moved to utils/auth_dependencies.py
+# as resolve_user_flexible() for centralized authentication management
+
+
+# Temporary compatibility function for gradual migration
 def resolve_user(user_id: Union[int, str], db: Session) -> User:
     """
-    Resolve user_id to actual User object. Supports both:
-    - Integer user ID (direct database ID)
-    - String user ID (internal_user_id UUID or username)
+    TEMPORARY: Legacy user resolution function for backward compatibility
+    This will be removed once all endpoints are migrated to the new auth system
     """
     if isinstance(user_id, int):
-        # Integer ID - use direct database lookup
         user = db.query(User).filter(User.id == user_id).first()
     else:
-        # String ID - try internal_user_id first, then username
         user = db.query(User).filter(User.internal_user_id == user_id).first()
         if not user:
             user = db.query(User).filter(User.username == user_id).first()
@@ -100,11 +103,13 @@ class TaskProgressResponse(BaseModel):
 # User profile and basic info
 @router.get("/{user_id}/profile", summary="Get user profile")
 async def get_user_profile(
-    user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"), db: Session = Depends(get_db)
+    request: Request,
+    user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"),
+    db: Session = Depends(get_db),
 ):
     """Get user profile information - supports both integer and string user IDs"""
     try:
-        user = resolve_user(user_id, db)
+        user = await get_user_by_id(user_id, request, db)
 
         return {
             "id": user.id,
@@ -124,11 +129,13 @@ async def get_user_profile(
 # Course enrollment and progress
 @router.get("/{user_id}/courses", summary="Get user's enrolled courses")
 async def get_user_courses(
-    user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"), db: Session = Depends(get_db)
+    request: Request,
+    user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"),
+    db: Session = Depends(get_db),
 ):
     """Get all courses the user is enrolled in - supports both integer and string user IDs"""
     try:
-        user = resolve_user(user_id, db)
+        user = await get_user_by_id(user_id, request, db)
 
         # Use eager loading to prevent N+1 queries when accessing course data
         enrollments = (
@@ -508,6 +515,7 @@ async def submit_task_solution(
 
 @router.get("/{user_id}/solutions", summary="Get user's solutions")
 async def get_user_solutions(
+    request: Request,
     user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"),
     task_id: Optional[int] = Query(None, description="Filter by task ID"),
     course_id: Optional[int] = Query(None, description="Filter by course ID"),
@@ -517,7 +525,7 @@ async def get_user_solutions(
     """Get user's task solutions - supports both integer and string user IDs"""
     try:
         db = _db_session(db)
-        user = resolve_user(user_id, db)
+        user = await get_user_by_id(user_id, request, db)
 
         query = db.query(TaskSolution).filter(TaskSolution.user_id == user.id)
 

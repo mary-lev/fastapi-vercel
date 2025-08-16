@@ -102,11 +102,7 @@ async def get_course(course_id: int = Path(..., description="Course ID"), db: Se
         # Use eager loading to prevent N+1 queries
         course = (
             db.query(Course)
-            .options(
-                joinedload(Course.lessons)
-                .joinedload(Lesson.topics)
-                .joinedload(Topic.tasks)
-            )
+            .options(joinedload(Course.lessons).joinedload(Lesson.topics).joinedload(Topic.tasks))
             .filter(Course.id == course_id)
             .first()
         )

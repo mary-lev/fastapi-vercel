@@ -14,8 +14,9 @@ import uuid
 import json
 
 # Import consolidated v1 routers ONLY
-from routes import learning, student, professor, auth, users, telegram_auth
+from routes import learning, student, professor, auth, users, telegram_auth, auth_demo
 from config import settings
+from utils.auth_middleware import add_auth_context_to_request
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -60,29 +61,11 @@ app.add_middleware(
 )
 
 
-# Middleware for request tracking
+# Authentication middleware - adds auth context to all requests
 @app.middleware("http")
-async def add_request_id(request: Request, call_next):
-    """Add unique request ID for tracking"""
-    request_id = str(uuid.uuid4())
-    request.state.request_id = request_id
-
-    # Process request and measure time
-    start_time = datetime.utcnow()
-    response = await call_next(request)
-    process_time = (datetime.utcnow() - start_time).total_seconds()
-
-    # Add headers to response
-    response.headers["X-Request-ID"] = request_id
-    response.headers["X-Process-Time"] = str(process_time)
-
-    # Log request details
-    logger.info(
-        f"Request {request_id}: {request.method} {request.url.path} "
-        f"completed in {process_time:.3f}s with status {response.status_code}"
-    )
-
-    return response
+async def auth_middleware(request: Request, call_next):
+    """Add authentication context and request tracking to all requests"""
+    return await add_auth_context_to_request(request, call_next)
 
 
 # Global exception handlers
@@ -171,6 +154,9 @@ app.include_router(
 # Legacy-compatible endpoints used in tests
 # app.include_router(solution.router, tags=["Solutions (legacy compat)"])
 app.include_router(telegram_auth.router, tags=["Telegram Auth"])
+
+# Authentication demonstration endpoints
+app.include_router(auth_demo.router, prefix="/api/v1", tags=["🔐 Auth Demo"])
 
 
 # Root endpoint

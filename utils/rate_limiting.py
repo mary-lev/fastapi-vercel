@@ -23,7 +23,7 @@ class InMemoryRateLimiter:
     def _cleanup_old_entries(self):
         """Remove old entries to prevent memory leaks"""
         now = datetime.utcnow()
-        
+
         # More frequent cleanup for better memory management
         if (now - self.last_cleanup).total_seconds() < self.cleanup_interval:
             return
@@ -37,7 +37,7 @@ class InMemoryRateLimiter:
             # Filter out old timestamps
             original_count = len(timestamps)
             recent_timestamps = [ts for ts in timestamps if ts > cutoff]
-            
+
             if recent_timestamps:
                 self.requests[key] = recent_timestamps
                 total_removed_timestamps += original_count - len(recent_timestamps)
@@ -50,10 +50,12 @@ class InMemoryRateLimiter:
             total_removed_keys += 1
 
         self.last_cleanup = now
-        
+
         # Log cleanup statistics for monitoring
         if total_removed_keys > 0 or total_removed_timestamps > 0:
-            print(f"Rate limiter cleanup: removed {total_removed_keys} keys and {total_removed_timestamps} old timestamps")
+            print(
+                f"Rate limiter cleanup: removed {total_removed_keys} keys and {total_removed_timestamps} old timestamps"
+            )
 
     def is_allowed(self, key: str, max_requests: int, window_minutes: int) -> bool:
         """
@@ -85,22 +87,22 @@ class InMemoryRateLimiter:
         # Record this request
         self.requests[key].append(now)
         return True
-    
+
     def force_cleanup(self):
         """Force immediate cleanup of old entries"""
         self.last_cleanup = datetime.utcnow() - timedelta(seconds=self.cleanup_interval + 1)
         self._cleanup_old_entries()
-    
+
     def get_stats(self) -> dict:
         """Get current rate limiter statistics for monitoring"""
         total_keys = len(self.requests)
         total_requests = sum(len(timestamps) for timestamps in self.requests.values())
-        
+
         return {
             "total_tracked_keys": total_keys,
             "total_tracked_requests": total_requests,
             "last_cleanup": self.last_cleanup.isoformat(),
-            "next_cleanup_in_seconds": self.cleanup_interval - (datetime.utcnow() - self.last_cleanup).total_seconds()
+            "next_cleanup_in_seconds": self.cleanup_interval - (datetime.utcnow() - self.last_cleanup).total_seconds(),
         }
 
 
