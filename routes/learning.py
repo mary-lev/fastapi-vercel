@@ -75,9 +75,54 @@ class CourseResponse(BaseModel):
 
 
 # Course level endpoints
-@router.get("/", summary="List all courses")
+@router.get(
+    "/", 
+    summary="List All Courses",
+    description="Retrieve a comprehensive list of all available courses with enrollment information",
+    response_description="List of courses with basic information and enrollment status",
+    responses={
+        200: {
+            "description": "Courses retrieved successfully",
+            "content": {
+                "application/json": {
+                    "example": [
+                        {
+                            "id": 1,
+                            "title": "Computational Thinking and Programming",
+                            "description": "Introduction to programming concepts using Python",
+                            "created_at": "2024-01-15T10:30:00Z",
+                            "professor_id": 1
+                        }
+                    ]
+                }
+            }
+        }
+    }
+)
 async def get_courses(db: Session = Depends(get_db)):
-    """Get all courses with basic information"""
+    """
+    ## List All Available Courses
+    
+    Retrieves a comprehensive list of all courses available in the educational platform.
+    
+    ### Returns:
+    - **Course ID**: Unique identifier for the course
+    - **Title**: Course name and subject area
+    - **Description**: Detailed course overview
+    - **Creation Date**: When the course was created
+    - **Professor ID**: Course instructor identifier
+    
+    ### Use Cases:
+    - Course catalog display
+    - Enrollment selection
+    - Course discovery
+    - Administrative overview
+    
+    ### Features:
+    - Performance optimized with efficient queries
+    - Includes all active courses
+    - Basic course metadata for quick overview
+    """
     try:
         courses = db.query(Course).all()
         return [

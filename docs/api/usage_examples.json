@@ -1,0 +1,213 @@
+{
+  "title": "\ud83d\udcda API Usage Examples",
+  "description": "Comprehensive examples for all major API endpoints",
+  "version": "1.0.0",
+  "authentication": {
+    "description": "All requests require authentication via JWT tokens or user identification",
+    "examples": {
+      "bearer_token": {
+        "header": "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "description": "JWT token authentication"
+      },
+      "user_id": {
+        "header": "X-User-ID: usr_abc123def456",
+        "description": "User identification for context"
+      }
+    }
+  },
+  "endpoints": {
+    "course_management": {
+      "list_courses": {
+        "method": "GET",
+        "url": "/api/v1/courses/",
+        "description": "Get all available courses",
+        "example_response": {
+          "success": true,
+          "courses": [
+            {
+              "id": 1,
+              "title": "Computational Thinking and Programming",
+              "description": "Introduction to programming concepts using Python",
+              "lesson_count": 12,
+              "created_at": "2024-01-15T10:30:00Z"
+            }
+          ],
+          "total": 1
+        }
+      },
+      "get_course_details": {
+        "method": "GET",
+        "url": "/api/v1/courses/{course_id}",
+        "description": "Get detailed course information with lessons",
+        "parameters": {
+          "course_id": 1
+        },
+        "example_response": {
+          "id": 1,
+          "title": "Computational Thinking and Programming",
+          "description": "Introduction to programming concepts using Python",
+          "lesson_count": 12,
+          "created_at": "2024-01-15T10:30:00Z"
+        }
+      }
+    },
+    "student_progress": {
+      "get_user_profile": {
+        "method": "GET",
+        "url": "/api/v1/students/{user_id}/profile",
+        "description": "Get student profile information",
+        "parameters": {
+          "user_id": "usr_abc123def456"
+        },
+        "example_response": {
+          "id": 1,
+          "internal_user_id": "usr_abc123def456",
+          "username": "student123",
+          "status": "student",
+          "telegram_user_id": null
+        }
+      },
+      "compile_code": {
+        "method": "POST",
+        "url": "/api/v1/students/{user_id}/compile",
+        "description": "Secure code compilation and execution",
+        "parameters": {
+          "user_id": "usr_abc123def456"
+        },
+        "request_body": {
+          "code": "print('Hello World')\nresult = 2 + 2\nprint(f'2 + 2 = {result}')",
+          "language": "python"
+        },
+        "example_response": {
+          "success": true,
+          "output": "Hello World\n2 + 2 = 4\n",
+          "execution_time": 0.125,
+          "memory_usage": "12.4 MB",
+          "error": null
+        }
+      },
+      "submit_solution": {
+        "method": "POST",
+        "url": "/api/v1/students/{user_id}/submit-code",
+        "description": "Submit code solution for evaluation",
+        "parameters": {
+          "user_id": "usr_abc123def456"
+        },
+        "request_body": {
+          "task_id": 1,
+          "user_id": "usr_abc123def456",
+          "solution_content": {
+            "code": "print('Hello, World!')",
+            "language": "python"
+          },
+          "is_correct": true
+        },
+        "example_response": {
+          "id": 1,
+          "task_id": 1,
+          "user_id": 1,
+          "solution_content": {
+            "code": "print('Hello, World!')",
+            "language": "python",
+            "output": "Hello, World!\n"
+          },
+          "is_correct": true,
+          "points_earned": 10,
+          "task_name": "Hello World Exercise",
+          "task_type": "code_task",
+          "created_at": "2024-01-15T14:30:00Z"
+        }
+      }
+    },
+    "authentication": {
+      "login": {
+        "method": "POST",
+        "url": "/api/v1/auth/login",
+        "description": "User authentication with username/password",
+        "request_body": {
+          "username": "student123",
+          "password": "secure_password"
+        },
+        "example_response": {
+          "success": true,
+          "message": "Login successful",
+          "user": {
+            "id": 1,
+            "internal_user_id": "usr_abc123def456",
+            "username": "student123",
+            "status": "student",
+            "telegram_user_id": null
+          },
+          "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        }
+      }
+    }
+  },
+  "error_handling": {
+    "description": "Standard error response format for all endpoints",
+    "error_types": {
+      "validation_error": {
+        "status_code": 422,
+        "example": {
+          "success": false,
+          "error": "Validation Error",
+          "detail": [
+            {
+              "field": "code",
+              "message": "Field required",
+              "code": "missing"
+            }
+          ],
+          "status_code": 422,
+          "request_id": "req_def456"
+        }
+      },
+      "security_violation": {
+        "status_code": 403,
+        "example": {
+          "success": false,
+          "error": "Security violation: Import of dangerous module 'os' is not allowed",
+          "detail": "Your code contains potentially dangerous operations that are not permitted",
+          "status_code": 403,
+          "request_id": "req_xyz789"
+        }
+      },
+      "rate_limit": {
+        "status_code": 429,
+        "example": {
+          "success": false,
+          "error": "Rate limit exceeded",
+          "detail": "Too many requests. Try again in 60 seconds.",
+          "status_code": 429,
+          "request_id": "req_abc123"
+        }
+      },
+      "not_found": {
+        "status_code": 404,
+        "example": {
+          "success": false,
+          "error": "Resource not found",
+          "detail": "The requested course was not found",
+          "status_code": 404,
+          "request_id": "req_ghi789"
+        }
+      }
+    }
+  },
+  "code_examples": {
+    "python_requests": {
+      "description": "Using Python requests library",
+      "examples": {
+        "list_courses": "\nimport requests\n\n# List all courses\nresponse = requests.get(\"https://api.example.com/api/v1/courses/\")\ncourses = response.json()\nprint(f\"Found {len(courses)} courses\")\n",
+        "compile_code": "\nimport requests\n\n# Compile and run code\nurl = \"https://api.example.com/api/v1/students/usr_abc123/compile\"\ndata = {\n    \"code\": \"print('Hello World')\",\n    \"language\": \"python\"\n}\nresponse = requests.post(url, json=data)\nresult = response.json()\nprint(f\"Output: {result['output']}\")\n"
+      }
+    },
+    "javascript_fetch": {
+      "description": "Using JavaScript fetch API",
+      "examples": {
+        "list_courses": "\n// List all courses\nfetch('/api/v1/courses/')\n  .then(response => response.json())\n  .then(courses => {\n    console.log(`Found ${courses.length} courses`);\n  });\n",
+        "compile_code": "\n// Compile and run code\nfetch('/api/v1/students/usr_abc123/compile', {\n  method: 'POST',\n  headers: {\n    'Content-Type': 'application/json',\n  },\n  body: JSON.stringify({\n    code: \"print('Hello World')\",\n    language: \"python\"\n  })\n})\n.then(response => response.json())\n.then(result => {\n  console.log('Output:', result.output);\n});\n"
+      }
+    }
+  }
+}

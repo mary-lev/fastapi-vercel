@@ -104,13 +104,52 @@ class TaskProgressResponse(BaseModel):
 
 
 # User profile and basic info
-@router.get("/{user_id}/profile", summary="Get user profile")
+@router.get(
+    "/{user_id}/profile", 
+    summary="Get Student Profile",
+    description="Retrieve detailed student profile information including enrollment status and basic metrics",
+    response_description="Student profile with enrollment and activity information",
+    responses={
+        200: {
+            "description": "Student profile retrieved successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": 1,
+                        "username": "student123",
+                        "internal_user_id": "usr_abc123def456",
+                        "status": "student",
+                        "telegram_user_id": 123456789
+                    }
+                }
+            }
+        }
+    }
+)
 async def get_user_profile(
     request: Request,
-    user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"),
+    user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)", example="usr_abc123def456"),
     db: Session = Depends(get_db),
 ):
-    """Get user profile information - supports both integer and string user IDs"""
+    """
+    ## Get Student Profile Information
+    
+    Retrieves comprehensive student profile data including:
+    - Basic user information (username, ID, status)
+    - Telegram integration status
+    - Account creation and activity details
+    
+    ### Supported User ID Formats:
+    - **Integer**: Database primary key (e.g., `1`, `42`)
+    - **String/UUID**: Internal user ID (e.g., `usr_abc123def456`)
+    - **Username**: User's display name (e.g., `student123`)
+    
+    ### Use Cases:
+    - Profile page display
+    - User verification
+    - Account status checking
+    - Integration status validation
+    """
     try:
         user = await get_user_by_id(user_id, request, db)
 
@@ -716,16 +755,116 @@ class TextSubmitRequest(BaseModel):
     task_id: int = Field(..., description="Task ID")
 
 
-@router.post("/{user_id}/compile", summary="Compile and run code")
+@router.post(
+    "/{user_id}/compile", 
+    summary="Secure Code Compilation",
+    description="Compile and execute Python code in a secure sandbox environment with comprehensive security analysis",
+    response_description="Code execution results with output, errors, and security validation",
+    responses={
+        200: {
+            "description": "Code compiled and executed successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "status": "success",
+                        "output": "Hello World\n2 + 2 = 4\n",
+                        "error": "",
+                        "execution_time": 0.125,
+                        "security_checks": {
+                            "dangerous_imports": False,
+                            "malicious_functions": False,
+                            "resource_limits": True
+                        }
+                    }
+                }
+            }
+        },
+        400: {
+            "description": "Code validation failed or syntax error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "status": "error",
+                        "output": "",
+                        "error": "Security validation failed: Import of dangerous module 'os' is not allowed",
+                        "execution_time": 0
+                    }
+                }
+            }
+        },
+        403: {
+            "description": "Security violation detected",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": False,
+                        "error": "Security violation: Use of dangerous function 'eval' is not allowed",
+                        "detail": "Your code contains potentially dangerous operations that are not permitted",
+                        "status_code": 403
+                    }
+                }
+            }
+        },
+        429: {
+            "description": "Rate limit exceeded",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": False,
+                        "error": "Rate limit exceeded",
+                        "detail": "Too many requests. Try again in 60 seconds.",
+                        "status_code": 429
+                    }
+                }
+            }
+        }
+    }
+)
 async def compile_code(
     request: SecureCompileRequest,
-    user_id: Union[int, str] = Path(..., description="User ID (for auth/tracking)"),
+    user_id: Union[int, str] = Path(..., description="User ID (for auth/tracking)", example="usr_abc123def456"),
     db: Session = Depends(get_db),
 ):
     """
-    Compile and run code, returning the output.
-    This endpoint is for testing code without submitting it as a solution.
-    Enhanced with security validation and rate limiting.
+    ## Secure Code Compilation & Execution
+    
+    Compiles and executes Python code in a secure sandbox environment with comprehensive security analysis.
+    This endpoint is designed for testing code without submitting it as a solution.
+    
+    ### Security Features:
+    - **AST-based Analysis**: Deep code inspection for dangerous patterns
+    - **Module Restrictions**: Only approved modules are allowed
+    - **Function Blocking**: Dangerous functions like `eval`, `exec`, `open` are blocked  
+    - **Rate Limiting**: 30 requests per 5 minutes with progressive penalties
+    - **Resource Limits**: Execution timeout and memory constraints
+    - **Input Validation**: Size limits and pattern detection
+    
+    ### Blocked Operations:
+    - System module imports (`os`, `subprocess`, `socket`, etc.)
+    - Dynamic code execution (`eval`, `exec`, `compile`)
+    - File system access (`open`, `file`)
+    - Network operations (`urllib`, `requests`)
+    - Process control (`multiprocessing`, `threading`)
+    
+    ### Allowed Features:
+    - Basic Python operations and syntax
+    - Mathematical operations and libraries (`math`, `random`)
+    - Data structures (`collections`, `itertools`)  
+    - Educational modules (`anytree` for tree exercises)
+    - String and formatting operations
+    
+    ### Use Cases:
+    - Interactive code testing during exercises
+    - Syntax validation before submission
+    - Educational Python exploration
+    - Algorithm development and testing
+    
+    ### Response Format:
+    Returns execution results with:
+    - **Status**: `success` or `error`
+    - **Output**: Program stdout or error messages
+    - **Execution Time**: Performance metrics
+    - **Security Checks**: Validation results
     """
     try:
         logger.info(f"Compile request received for user {user_id}")

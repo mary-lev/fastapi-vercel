@@ -1,0 +1,158 @@
+{
+  "title": "\ud83d\udd12 Security Implementation Guide",
+  "description": "Comprehensive guide to the multi-layered security system",
+  "version": "1.0.0",
+  "sections": {
+    "overview": {
+      "title": "Security Overview",
+      "description": "The Educational Platform API implements comprehensive security measures to protect against code injection attacks and ensure safe execution of student code.",
+      "key_features": [
+        "AST-based code analysis",
+        "Progressive rate limiting",
+        "Input sanitization and validation",
+        "Resource management and timeouts",
+        "User isolation and authentication"
+      ]
+    },
+    "code_security": {
+      "title": "Code Execution Security",
+      "description": "Multi-layered protection for Python code execution",
+      "layers": {
+        "ast_analysis": {
+          "description": "Abstract Syntax Tree analysis for code pattern detection",
+          "blocked_patterns": [
+            "Dangerous module imports (os, subprocess, socket, etc.)",
+            "Dynamic code execution (eval, exec, compile)",
+            "File system access (open, file operations)",
+            "Network operations (urllib, requests, http)",
+            "Process control (multiprocessing, threading)",
+            "Reflection abuse (__class__, __bases__, __globals__)"
+          ]
+        },
+        "function_blocking": {
+          "description": "Runtime function call blocking",
+          "blocked_functions": [
+            "eval",
+            "exec",
+            "compile",
+            "open",
+            "input",
+            "__import__",
+            "getattr",
+            "setattr",
+            "delattr",
+            "globals",
+            "locals",
+            "vars",
+            "dir",
+            "help"
+          ]
+        },
+        "module_restrictions": {
+          "description": "Module import restrictions",
+          "allowed_modules": [
+            "math",
+            "random",
+            "datetime",
+            "itertools",
+            "collections",
+            "string",
+            "re",
+            "json",
+            "statistics",
+            "decimal",
+            "fractions",
+            "anytree"
+          ],
+          "blocked_modules": [
+            "os",
+            "sys",
+            "subprocess",
+            "shutil",
+            "pickle",
+            "ctypes",
+            "threading",
+            "socket",
+            "urllib"
+          ]
+        }
+      }
+    },
+    "rate_limiting": {
+      "title": "Rate Limiting & Abuse Prevention",
+      "description": "Progressive penalties and user isolation",
+      "implementation": {
+        "base_limits": "30 requests per 5 minutes",
+        "progressive_penalties": [
+          "1st violation: 1 minute block",
+          "2nd violation: 5 minute block",
+          "3rd violation: 1 hour block",
+          "Severe violations: 24 hour block"
+        ],
+        "user_isolation": "Rate limits applied per user ID",
+        "security_violations": "Automatic penalty escalation for dangerous code"
+      }
+    },
+    "input_validation": {
+      "title": "Input Validation & Sanitization",
+      "description": "Multi-layer input protection",
+      "validation_types": {
+        "code_validation": {
+          "max_size": "10,000 characters",
+          "syntax_checking": "Python AST parsing",
+          "pattern_detection": "Regex-based malicious pattern detection"
+        },
+        "text_validation": {
+          "max_size": "5,000 characters",
+          "xss_protection": "HTML tag and script blocking",
+          "sql_injection": "SQL keyword and pattern detection"
+        }
+      }
+    }
+  },
+  "examples": {
+    "blocked_code_examples": [
+      {
+        "code": "import os; os.system('rm -rf /')",
+        "reason": "Dangerous module import and system call",
+        "violation": "critical"
+      },
+      {
+        "code": "exec('malicious code')",
+        "reason": "Dynamic code execution",
+        "violation": "critical"
+      },
+      {
+        "code": "open('/etc/passwd', 'r').read()",
+        "reason": "File system access attempt",
+        "violation": "critical"
+      }
+    ],
+    "allowed_code_examples": [
+      {
+        "code": "import math; print(math.sqrt(16))",
+        "reason": "Safe module usage",
+        "result": "4.0"
+      },
+      {
+        "code": "numbers = [1, 2, 3, 4, 5]; print(sum(numbers))",
+        "reason": "Basic Python operations",
+        "result": "15"
+      }
+    ]
+  },
+  "testing": {
+    "security_test_coverage": [
+      "50+ dangerous code patterns blocked",
+      "25+ XSS/SQL injection attempts prevented",
+      "Progressive rate limiting validation",
+      "User isolation verification",
+      "Resource limit enforcement"
+    ],
+    "test_commands": [
+      "python run_tests_simple.py",
+      "pytest tests/security/ -v",
+      "python -c \"from utils.security_validation import sanitize_code_input; print(sanitize_code_input('import os').is_safe)\""
+    ]
+  }
+}

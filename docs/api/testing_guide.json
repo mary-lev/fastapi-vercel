@@ -1,0 +1,109 @@
+{
+  "title": "\ud83e\uddea API Testing Guide",
+  "description": "Comprehensive guide for testing the Educational Platform API",
+  "version": "1.0.0",
+  "test_categories": {
+    "unit_tests": {
+      "description": "Individual component testing",
+      "coverage": [
+        "Security validation functions",
+        "Rate limiting logic",
+        "Input sanitization",
+        "Database models"
+      ],
+      "commands": [
+        "pytest tests/unit/ -v",
+        "python -m unittest tests.unit.test_security"
+      ]
+    },
+    "integration_tests": {
+      "description": "End-to-end workflow testing",
+      "coverage": [
+        "Complete code execution workflow",
+        "User authentication flow",
+        "Learning content navigation",
+        "Progress tracking"
+      ],
+      "commands": [
+        "pytest tests/integration/ -v",
+        "python tests/test_runner.py critical"
+      ]
+    },
+    "security_tests": {
+      "description": "Security vulnerability testing",
+      "coverage": [
+        "Code injection prevention",
+        "XSS and SQL injection protection",
+        "Rate limiting validation",
+        "Authentication security"
+      ],
+      "commands": [
+        "pytest tests/security/ -v",
+        "python run_tests_simple.py"
+      ]
+    }
+  },
+  "test_environments": {
+    "local_development": {
+      "setup": [
+        "Set NODE_ENV=test",
+        "Configure test database",
+        "Install test dependencies: pip install pytest pytest-cov httpx"
+      ],
+      "database": "SQLite in-memory for fast tests"
+    },
+    "ci_cd": {
+      "setup": [
+        "Automated testing on push",
+        "Security test validation",
+        "Coverage reporting"
+      ],
+      "commands": [
+        "python tests/test_runner.py all",
+        "pytest --cov=. --cov-report=html"
+      ]
+    }
+  },
+  "manual_testing": {
+    "endpoints": [
+      {
+        "name": "Health Check",
+        "method": "GET",
+        "url": "/health",
+        "expected": 200
+      },
+      {
+        "name": "Code Compilation",
+        "method": "POST",
+        "url": "/api/v1/students/test_user/compile",
+        "body": {
+          "code": "print('test')",
+          "language": "python"
+        },
+        "expected": 200
+      },
+      {
+        "name": "Security Violation",
+        "method": "POST",
+        "url": "/api/v1/students/test_user/compile",
+        "body": {
+          "code": "import os",
+          "language": "python"
+        },
+        "expected": 403
+      }
+    ]
+  },
+  "performance_testing": {
+    "metrics": [
+      "Response time < 2 seconds for course loading",
+      "Code compilation < 5 seconds",
+      "10+ concurrent users supported"
+    ],
+    "tools": [
+      "pytest-benchmark for performance testing",
+      "Load testing with concurrent requests",
+      "Memory usage monitoring"
+    ]
+  }
+}
