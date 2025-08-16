@@ -15,11 +15,26 @@ console_handler = logging.StreamHandler()
 console_handler.setLevel(log_level)
 logger.addHandler(console_handler)
 
-# Whitelist of allowed modules
-ALLOWED_MODULES = ["anytree", "math", "random", "datetime"]
+# Whitelist of allowed modules (enhanced security)
+ALLOWED_MODULES = [
+    "anytree", "math", "random", "datetime", "itertools", "collections",
+    "string", "re", "json", "statistics", "decimal", "fractions"
+]
 
-# List of dangerous functions
-DANGEROUS_FUNCTIONS = ["eval", "exec", "compile", "open", "input"]
+# List of dangerous functions (expanded)
+DANGEROUS_FUNCTIONS = [
+    "eval", "exec", "compile", "open", "input", "raw_input", "__import__",
+    "getattr", "setattr", "delattr", "hasattr", "globals", "locals", "vars",
+    "dir", "help", "exit", "quit", "reload", "breakpoint", "memoryview"
+]
+
+# Dangerous modules that should be blocked
+DANGEROUS_MODULES = {
+    "os", "sys", "subprocess", "shutil", "glob", "pickle", "marshal",
+    "ctypes", "threading", "multiprocessing", "socket", "urllib", 
+    "requests", "http", "ftplib", "smtplib", "tempfile", "webbrowser",
+    "platform", "pwd", "grp", "resource", "importlib", "runpy"
+}
 
 
 class CodeSanitizer(ast.NodeVisitor):
@@ -29,18 +44,40 @@ class CodeSanitizer(ast.NodeVisitor):
 
     def visit_Import(self, node):
         for alias in node.names:
-            if alias.name not in ALLOWED_MODULES:
+            if alias.name in DANGEROUS_MODULES:
+                self.errors.append(f"Import of dangerous module '{alias.name}' is forbidden")
+            elif alias.name not in ALLOWED_MODULES:
                 self.errors.append(f"Use of unapproved module: {alias.name}")
         self.generic_visit(node)
 
     def visit_ImportFrom(self, node):
-        if node.module not in ALLOWED_MODULES:
+        if node.module and node.module in DANGEROUS_MODULES:
+            self.errors.append(f"Import from dangerous module '{node.module}' is forbidden")
+        elif node.module and node.module not in ALLOWED_MODULES:
             self.errors.append(f"Use of unapproved module: {node.module}")
         self.generic_visit(node)
 
     def visit_Call(self, node):
-        if isinstance(node.func, ast.Name) and node.func.id in DANGEROUS_FUNCTIONS:
-            self.errors.append(f"Use of dangerous function: {node.func.id}")
+        func_name = None
+        if isinstance(node.func, ast.Name):
+            func_name = node.func.id
+        elif isinstance(node.func, ast.Attribute):
+            func_name = node.func.attr
+            
+        if func_name and func_name in DANGEROUS_FUNCTIONS:
+            self.errors.append(f"Use of dangerous function: {func_name}")
+            
+        # Additional security checks
+        if isinstance(node.func, ast.Attribute) and node.func.attr == "format":
+            self.errors.append("String formatting can be dangerous - potential code injection risk")
+            
+        self.generic_visit(node)
+        
+    def visit_Attribute(self, node):
+        # Check for dangerous attribute access
+        dangerous_attrs = {"__class__", "__bases__", "__subclasses__", "__globals__", "__dict__"}
+        if node.attr in dangerous_attrs:
+            self.errors.append(f"Access to dangerous attribute '{node.attr}' is forbidden")
         self.generic_visit(node)
 
     def visit_While(self, node):

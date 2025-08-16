@@ -27,6 +27,9 @@ from utils.logging_config import logger
 from utils.checker import run_code
 from utils.evaluator import evaluate_code_submission, evaluate_text_submission
 from utils.auth_dependencies import resolve_user_flexible, require_api_key, get_user_by_id
+from utils.security_validation import validate_code_request, validate_text_request, log_security_violation
+from utils.rate_limiting import check_code_execution_limits, record_security_violation_for_user
+from schemas.security import SecureCompileRequest, SecureCodeSubmitRequest, SecureTextSubmitRequest
 
 # Optional test patching hook for db session
 db = None  # tests may set routes.student.db to a Session-like object
@@ -715,13 +718,14 @@ class TextSubmitRequest(BaseModel):
 
 @router.post("/{user_id}/compile", summary="Compile and run code")
 async def compile_code(
-    request: CompileRequest,
+    request: SecureCompileRequest,
     user_id: Union[int, str] = Path(..., description="User ID (for auth/tracking)"),
     db: Session = Depends(get_db),
 ):
     """
     Compile and run code, returning the output.
     This endpoint is for testing code without submitting it as a solution.
+    Enhanced with security validation and rate limiting.
     """
     try:
         logger.info(f"Compile request received for user {user_id}")
@@ -729,9 +733,23 @@ async def compile_code(
         # Verify user exists (for auth/tracking purposes)
         user = resolve_user(user_id, db)
         logger.info(f"User resolved: {user.id}")
+        
+        # Check rate limits and security blocks
+        check_code_execution_limits(str(user.id))
 
         if not request.code:
             raise HTTPException(status_code=400, detail="No code provided")
+            
+        # Additional security validation (Pydantic validators handle most of this,
+        # but we can add runtime checks here)
+        is_valid, error_message = validate_code_request(request.code, request.language)
+        if not is_valid:
+            # Record security violation and log it
+            record_security_violation_for_user(str(user.id))
+            log_security_violation(str(user.id), type('SecurityViolation', (), {
+                'severity': 'high', 'category': 'code_validation', 'message': error_message
+            })(), request.code)
+            raise HTTPException(status_code=400, detail=f"Security validation failed: {error_message}")
 
         logger.info(f"About to run code: {request.code[:50]}...")
         # Run the code and return the output
@@ -761,19 +779,32 @@ async def compile_code(
 
 @router.post("/{user_id}/submit-code", summary="Submit code solution for a task")
 async def submit_code_solution(
-    request: CodeSubmitRequest,
+    request: SecureCodeSubmitRequest,
     user_id: Union[int, str] = Path(..., description="User ID"),
     db: Session = Depends(get_db),
 ):
     """
     Submit code as a solution for a specific task.
     This will evaluate the code against test cases and record the solution.
+    Enhanced with security validation and rate limiting.
     """
     try:
         # Use patched DB if present
         db = _db_session(db)
         # Resolve user
         user = resolve_user(user_id, db)
+        
+        # Check rate limits and security blocks for code submissions
+        check_code_execution_limits(str(user.id))
+        
+        # Additional security validation
+        is_valid, error_message = validate_code_request(request.code, request.language)
+        if not is_valid:
+            record_security_violation_for_user(str(user.id))
+            log_security_violation(str(user.id), type('SecurityViolation', (), {
+                'severity': 'high', 'category': 'code_submission', 'message': error_message
+            })(), request.code)
+            raise HTTPException(status_code=400, detail=f"Security validation failed: {error_message}")
 
         # Verify task exists
         task = db.query(Task).filter(Task.id == request.task_id).first()
@@ -859,19 +890,29 @@ async def submit_code_solution(
 
 @router.post("/{user_id}/submit-text", summary="Submit text answer for a task")
 async def submit_text_answer(
-    request: TextSubmitRequest,
+    request: SecureTextSubmitRequest,
     user_id: Union[int, str] = Path(..., description="User ID"),
     db: Session = Depends(get_db),
 ):
     """
     Submit a text answer for quiz-type tasks.
     This will evaluate the answer and record the solution.
+    Enhanced with security validation and input sanitization.
     """
     try:
         # Use patched DB if present
         db = _db_session(db)
         # Resolve user
         user = resolve_user(user_id, db)
+        
+        # Validate text input for security issues
+        is_valid, error_message = validate_text_request(request.user_answer)
+        if not is_valid:
+            record_security_violation_for_user(str(user.id))
+            log_security_violation(str(user.id), type('SecurityViolation', (), {
+                'severity': 'medium', 'category': 'text_validation', 'message': error_message
+            })(), request.user_answer)
+            raise HTTPException(status_code=400, detail=f"Input validation failed: {error_message}")
 
         # Verify task exists
         task = db.query(Task).filter(Task.id == request.task_id).first()
