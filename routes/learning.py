@@ -229,7 +229,7 @@ async def get_course(course_id: int = Path(..., description="Course ID"), db: Se
                     "tasks": [],
                 }
 
-                for task in topic.tasks.order_by(Task.order):
+                for task in sorted(topic.tasks, key=lambda t: t.order or 0):
                     task_data = {
                         "id": task.id,
                         "task_name": task.task_name,
