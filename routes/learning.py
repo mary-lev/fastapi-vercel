@@ -13,7 +13,10 @@ from pydantic import BaseModel
 
 from models import Course, Lesson, Topic, Task, Summary
 from db import get_db
-from utils.logging_config import logger
+from utils.structured_logging import get_logger, LogCategory
+from utils.cache_manager import cache_manager, cache_key_for_course, invalidate_course_cache
+
+logger = get_logger("routes.learning")
 from schemas.validation import TaskUpdateSchema
 from config import settings
 import json
@@ -122,10 +125,24 @@ async def get_courses(db: Session = Depends(get_db)):
     - Performance optimized with efficient queries
     - Includes all active courses
     - Basic course metadata for quick overview
+    - **Cached for performance** (1 hour TTL)
     """
     try:
+        # Check cache first
+        cache_key = "courses:list:all"
+        cached_courses = cache_manager.get(cache_key)
+        
+        if cached_courses is not None:
+            logger.debug(
+                "Returning cached course list",
+                category=LogCategory.PERFORMANCE,
+                extra={"cache_hit": True, "count": len(cached_courses)}
+            )
+            return cached_courses
+        
+        # Query database
         courses = db.query(Course).all()
-        return [
+        result = [
             {
                 "id": course.id,
                 "title": course.title,
@@ -135,15 +152,38 @@ async def get_courses(db: Session = Depends(get_db)):
             }
             for course in courses
         ]
+        
+        # Cache the result
+        cache_manager.set(cache_key, result, ttl=3600)  # 1 hour cache
+        
+        logger.info(
+            "Course list fetched and cached",
+            category=LogCategory.PERFORMANCE,
+            extra={"cache_hit": False, "count": len(result)}
+        )
+        
+        return result
     except Exception as e:
-        logger.error(f"Error retrieving courses: {e}")
+        logger.error(f"Error retrieving courses: {e}", category=LogCategory.ERROR, exception=e)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/{course_id}", response_model=CourseResponse, summary="Get course details")
 async def get_course(course_id: int = Path(..., description="Course ID"), db: Session = Depends(get_db)):
-    """Get course details with full lesson/topic/task hierarchy"""
+    """Get course details with full lesson/topic/task hierarchy - cached for performance"""
     try:
+        # Check cache first
+        cache_key = cache_key_for_course(course_id, "full_details")
+        cached_course = cache_manager.get(cache_key)
+        
+        if cached_course is not None:
+            logger.debug(
+                f"Returning cached course details",
+                category=LogCategory.PERFORMANCE,
+                extra={"cache_hit": True, "course_id": course_id}
+            )
+            return cached_course
+        
         # Use eager loading to prevent N+1 queries
         course = (
             db.query(Course)
@@ -152,7 +192,7 @@ async def get_course(course_id: int = Path(..., description="Course ID"), db: Se
             .first()
         )
         if not course:
-            logger.warning(f"Course not found: {course_id}")
+            logger.warning(f"Course not found: {course_id}", category=LogCategory.BUSINESS)
             raise HTTPException(status_code=404, detail="Course not found")
 
         # Build the hierarchical response
@@ -204,12 +244,21 @@ async def get_course(course_id: int = Path(..., description="Course ID"), db: Se
 
             course_data["lessons"].append(lesson_data)
 
+        # Cache the result for 30 minutes
+        cache_manager.set(cache_key, course_data, ttl=1800)
+        
+        logger.info(
+            f"Course details fetched and cached",
+            category=LogCategory.PERFORMANCE,
+            extra={"cache_hit": False, "course_id": course_id}
+        )
+
         return course_data
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Unexpected error in get_course: {e}")
+        logger.error(f"Unexpected error in get_course: {e}", category=LogCategory.ERROR, exception=e)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 

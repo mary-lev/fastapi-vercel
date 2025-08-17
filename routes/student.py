@@ -24,6 +24,7 @@ from models import (
 )
 from db import get_db
 from utils.structured_logging import get_logger, LogCategory, log_execution, log_security_event
+from utils.cache_manager import cache_manager, cache_key_for_user, invalidate_user_cache
 from utils.checker import run_code
 from utils.evaluator import evaluate_code_submission, evaluate_text_submission
 from utils.auth_dependencies import resolve_user_flexible, require_api_key, get_user_by_id
@@ -154,20 +155,43 @@ async def get_user_profile(
     - Integration status validation
     """
     try:
+        # Check cache first
+        cache_key = cache_key_for_user(user_id, "profile")
+        cached_profile = cache_manager.get(cache_key)
+        
+        if cached_profile is not None:
+            logger.debug(
+                f"Returning cached user profile",
+                category=LogCategory.PERFORMANCE,
+                extra={"cache_hit": True, "user_id": str(user_id)}
+            )
+            return cached_profile
+        
         user = await get_user_by_id(user_id, request, db)
 
-        return {
+        profile_data = {
             "id": user.id,
             "username": user.username,
             "internal_user_id": user.internal_user_id,
             "status": user.status.value if user.status else None,
             "telegram_user_id": user.telegram_user_id,
         }
+        
+        # Cache for 5 minutes
+        cache_manager.set(cache_key, profile_data, ttl=300)
+        
+        logger.info(
+            f"User profile fetched and cached",
+            category=LogCategory.PERFORMANCE,
+            extra={"cache_hit": False, "user_id": str(user_id)}
+        )
+        
+        return profile_data
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error retrieving user profile {user_id}: {e}")
+        logger.error(f"Error retrieving user profile {user_id}: {e}", category=LogCategory.ERROR, exception=e)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
