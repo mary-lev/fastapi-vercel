@@ -368,6 +368,76 @@ async def health_check():
     }
 
 
+# Database health check endpoint
+@app.get(
+    "/health/database",
+    tags=["🔧 System"],
+    summary="Database Health Check",
+    description="Comprehensive database health and performance monitoring",
+    response_description="Database health status and performance metrics",
+)
+async def database_health():
+    """
+    ## Database Health Check
+
+    Provides comprehensive database health monitoring including:
+    - Connection pool status
+    - Query performance metrics
+    - Index usage statistics
+    - Lock contention monitoring
+
+    Use this endpoint for:
+    - Database performance monitoring
+    - Debugging connection issues
+    - Performance optimization insights
+    """
+    from utils.database_health import async_health_check
+
+    try:
+        health_data = await async_health_check()
+        return {"success": True, **health_data}
+    except Exception as e:
+        logger.error(f"Database health check failed: {str(e)}", category=LogCategory.ERROR, exception=e)
+        return {
+            "success": False,
+            "status": "critical",
+            "timestamp": datetime.utcnow().isoformat(),
+            "error": "Database health check failed",
+            "detail": str(e),
+        }
+
+
+# Quick database health endpoint
+@app.get(
+    "/health/quick",
+    tags=["🔧 System"],
+    summary="Quick Health Check",
+    description="Fast health check for monitoring systems",
+    response_description="Basic health status",
+)
+async def quick_health():
+    """
+    ## Quick Health Check
+
+    Fast health check optimized for monitoring systems and load balancers.
+
+    Provides minimal database connectivity check with low overhead.
+    """
+    from utils.database_health import get_quick_health_status
+
+    try:
+        health_data = get_quick_health_status()
+        return {"success": True, **health_data}
+    except Exception as e:
+        return {
+            "success": False,
+            "status": "critical",
+            "timestamp": datetime.utcnow().isoformat(),
+            "error": "Quick health check failed",
+            "detail": str(e),
+        }
+
+
 # API version endpoint
 @app.get(
     "/api/v1",
