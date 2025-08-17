@@ -79,7 +79,7 @@ class CourseResponse(BaseModel):
 
 # Course level endpoints
 @router.get(
-    "/", 
+    "/",
     summary="List All Courses",
     description="Retrieve a comprehensive list of all available courses with enrollment information",
     response_description="List of courses with basic information and enrollment status",
@@ -94,33 +94,33 @@ class CourseResponse(BaseModel):
                             "title": "Computational Thinking and Programming",
                             "description": "Introduction to programming concepts using Python",
                             "created_at": "2024-01-15T10:30:00Z",
-                            "professor_id": 1
+                            "professor_id": 1,
                         }
                     ]
                 }
-            }
+            },
         }
-    }
+    },
 )
 async def get_courses(db: Session = Depends(get_db)):
     """
     ## List All Available Courses
-    
+
     Retrieves a comprehensive list of all courses available in the educational platform.
-    
+
     ### Returns:
     - **Course ID**: Unique identifier for the course
     - **Title**: Course name and subject area
     - **Description**: Detailed course overview
     - **Creation Date**: When the course was created
     - **Professor ID**: Course instructor identifier
-    
+
     ### Use Cases:
     - Course catalog display
     - Enrollment selection
     - Course discovery
     - Administrative overview
-    
+
     ### Features:
     - Performance optimized with efficient queries
     - Includes all active courses
@@ -131,15 +131,15 @@ async def get_courses(db: Session = Depends(get_db)):
         # Check cache first
         cache_key = "courses:list:all"
         cached_courses = cache_manager.get(cache_key)
-        
+
         if cached_courses is not None:
             logger.debug(
                 "Returning cached course list",
                 category=LogCategory.PERFORMANCE,
-                extra={"cache_hit": True, "count": len(cached_courses)}
+                extra={"cache_hit": True, "count": len(cached_courses)},
             )
             return cached_courses
-        
+
         # Query database
         courses = db.query(Course).all()
         result = [
@@ -152,16 +152,16 @@ async def get_courses(db: Session = Depends(get_db)):
             }
             for course in courses
         ]
-        
+
         # Cache the result
         cache_manager.set(cache_key, result, ttl=3600)  # 1 hour cache
-        
+
         logger.info(
             "Course list fetched and cached",
             category=LogCategory.PERFORMANCE,
-            extra={"cache_hit": False, "count": len(result)}
+            extra={"cache_hit": False, "count": len(result)},
         )
-        
+
         return result
     except Exception as e:
         logger.error(f"Error retrieving courses: {e}", category=LogCategory.ERROR, exception=e)
@@ -175,15 +175,15 @@ async def get_course(course_id: int = Path(..., description="Course ID"), db: Se
         # Check cache first
         cache_key = cache_key_for_course(course_id, "full_details")
         cached_course = cache_manager.get(cache_key)
-        
+
         if cached_course is not None:
             logger.debug(
                 f"Returning cached course details",
                 category=LogCategory.PERFORMANCE,
-                extra={"cache_hit": True, "course_id": course_id}
+                extra={"cache_hit": True, "course_id": course_id},
             )
             return cached_course
-        
+
         # Use eager loading to prevent N+1 queries
         course = (
             db.query(Course)
@@ -246,11 +246,11 @@ async def get_course(course_id: int = Path(..., description="Course ID"), db: Se
 
         # Cache the result for 30 minutes
         cache_manager.set(cache_key, course_data, ttl=1800)
-        
+
         logger.info(
             f"Course details fetched and cached",
             category=LogCategory.PERFORMANCE,
-            extra={"cache_hit": False, "course_id": course_id}
+            extra={"cache_hit": False, "course_id": course_id},
         )
 
         return course_data

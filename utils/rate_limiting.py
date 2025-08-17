@@ -99,7 +99,7 @@ class InMemoryRateLimiter:
     def record_security_violation(self, key: str) -> None:
         """Record a security violation for progressive penalties"""
         self.violations[key] = self.violations.get(key, 0) + 1
-        
+
         # Progressive blocking based on violation count
         violation_count = self.violations[key]
         if violation_count >= 3:
@@ -107,7 +107,7 @@ class InMemoryRateLimiter:
             block_minutes = min(60 * (2 ** (violation_count - 3)), 1440)  # Max 24 hours
             self.blocked_users[key] = datetime.utcnow() + timedelta(minutes=block_minutes)
             logger.warning(f"User {key} blocked for {block_minutes} minutes after {violation_count} violations")
-    
+
     def is_blocked(self, key: str) -> bool:
         """Check if a user is currently blocked due to security violations"""
         if key in self.blocked_users:
@@ -117,7 +117,7 @@ class InMemoryRateLimiter:
                 # Block expired, remove it
                 del self.blocked_users[key]
         return False
-    
+
     def get_block_info(self, key: str) -> Optional[dict]:
         """Get blocking information for a user"""
         if key in self.blocked_users:
@@ -126,7 +126,7 @@ class InMemoryRateLimiter:
                 return {
                     "blocked": True,
                     "remaining_seconds": int(remaining.total_seconds()),
-                    "violations": self.violations.get(key, 0)
+                    "violations": self.violations.get(key, 0),
                 }
         return {"blocked": False, "violations": self.violations.get(key, 0)}
 
@@ -199,32 +199,35 @@ def telegram_rate_limit_key(request: Request, *args, **kwargs) -> str:
     # Fallback to IP address
     return f"ip:{request.client.host if request.client else 'unknown'}"
 
+
 # Security-specific rate limiting functions for code execution
 def check_code_execution_limits(user_id: str) -> None:
     """Check both rate limits and security blocks for code execution"""
     key = f"code_exec:{user_id}"
-    
+
     # Check if user is blocked due to security violations
     if rate_limiter.is_blocked(key):
         block_info = rate_limiter.get_block_info(key)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Account temporarily blocked due to security violations. "
-                   f"Remaining: {block_info['remaining_seconds']} seconds"
+            f"Remaining: {block_info['remaining_seconds']} seconds",
         )
-    
+
     # Check rate limits (30 requests per 5 minutes for code execution)
     if not rate_limiter.is_allowed(key, max_requests=30, window_minutes=5):
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Rate limit exceeded for code execution: max 30 requests per 5 minutes"
+            detail="Rate limit exceeded for code execution: max 30 requests per 5 minutes",
         )
+
 
 def record_security_violation_for_user(user_id: str) -> None:
     """Record a security violation for a user"""
     key = f"code_exec:{user_id}"
     rate_limiter.record_security_violation(key)
     logger.warning(f"Security violation recorded for user {user_id}")
+
 
 def user_rate_limit_key(request: Request, user_id: str, *args, **kwargs) -> str:
     """Generate rate limit key for user-specific endpoints"""

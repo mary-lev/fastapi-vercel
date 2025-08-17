@@ -212,7 +212,7 @@ class Topic(Base):
     topic_order = Column(Integer, nullable=False)
 
     lesson = relationship("Lesson", back_populates="topics")  # Add this line
-    tasks = relationship("Task", backref="topic", lazy="dynamic", order_by="Task.order")
+    tasks = relationship("Task", backref="topic", lazy="select", order_by="Task.order")
     summary = relationship("Summary", uselist=False, back_populates="topic")
 
 

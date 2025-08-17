@@ -20,8 +20,11 @@ from utils.auth_middleware import add_auth_context_to_request
 
 # Configure structured logging
 from utils.structured_logging import (
-    configure_logging, get_logger, log_request_middleware,
-    set_correlation_id, LogCategory
+    configure_logging,
+    get_logger,
+    log_request_middleware,
+    set_correlation_id,
+    LogCategory,
 )
 
 # Configure structured logging system
@@ -39,16 +42,16 @@ app = FastAPI(
     contact=OpenAPIMetadata.CONTACT,
     license_info=OpenAPIMetadata.LICENSE_INFO,
     docs_url="/docs",
-    redoc_url="/redoc", 
+    redoc_url="/redoc",
     openapi_url="/openapi.json",
     servers=OpenAPIMetadata.SERVERS,
     openapi_tags=[
         OpenAPITags.LEARNING,
-        OpenAPITags.STUDENT, 
+        OpenAPITags.STUDENT,
         OpenAPITags.PROFESSOR,
         OpenAPITags.AUTH,
-        OpenAPITags.SYSTEM
-    ]
+        OpenAPITags.SYSTEM,
+    ],
 )
 
 # CORS configuration - Load from environment
@@ -58,8 +61,22 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=[
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With",
+        "Accept",
+        "Origin",
+        "User-Agent",
+        "DNT",
+        "Cache-Control",
+        "X-Mx-ReqToken",
+        "Keep-Alive",
+        "X-Requested-With",
+        "If-Modified-Since",
+    ],
+    expose_headers=["Content-Length", "Content-Range"],
 )
 
 
@@ -68,6 +85,7 @@ app.add_middleware(
 async def structured_logging_middleware(request: Request, call_next):
     """Add correlation IDs and structured logging to all requests"""
     return await log_request_middleware(request, call_next)
+
 
 # Authentication middleware - adds auth context to all requests
 @app.middleware("http")
@@ -85,7 +103,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         errors.append(
             {"field": ".".join(str(loc) for loc in error["loc"]), "message": error["msg"], "code": error["type"]}
         )
-    
+
     # Log validation error with structured logging
     logger.warning(
         "Validation error",
@@ -94,7 +112,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         request_path=request.url.path,
         error_type="ValidationError",
         error_message=f"{len(errors)} validation errors",
-        extra={"errors": errors}
+        extra={"errors": errors},
     )
 
     return JSONResponse(
@@ -113,7 +131,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     """Handle HTTP exceptions with proper structure and logging"""
-    
+
     # Log HTTP exception with appropriate level
     if exc.status_code >= 500:
         logger.error(
@@ -122,7 +140,7 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
             request_method=request.method,
             request_path=request.url.path,
             response_status=exc.status_code,
-            error_message=exc.detail
+            error_message=exc.detail,
         )
     elif exc.status_code >= 400:
         logger.warning(
@@ -131,9 +149,9 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
             request_method=request.method,
             request_path=request.url.path,
             response_status=exc.status_code,
-            error_message=exc.detail
+            error_message=exc.detail,
         )
-    
+
     return JSONResponse(
         status_code=exc.status_code,
         content={
@@ -150,7 +168,7 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
     """Handle unexpected exceptions with structured logging"""
-    
+
     # Log unexpected error with full context
     logger.critical(
         "Unexpected server error",
@@ -158,9 +176,9 @@ async def general_exception_handler(request: Request, exc: Exception):
         exception=exc,
         request_method=request.method,
         request_path=request.url.path,
-        user_id=getattr(request.state, "user_id", None)
+        user_id=getattr(request.state, "user_id", None),
     )
-    
+
     return JSONResponse(
         status_code=500,
         content={
@@ -180,17 +198,27 @@ app.include_router(
     prefix="/api/v1/courses",
     tags=["📚 Learning Content"],
     responses={
-        **{code: response for code, response in __import__('schemas.openapi_models', fromlist=['COMMON_RESPONSES']).COMMON_RESPONSES.items()}
-    }
+        **{
+            code: response
+            for code, response in __import__(
+                "schemas.openapi_models", fromlist=["COMMON_RESPONSES"]
+            ).COMMON_RESPONSES.items()
+        }
+    },
 )
 
 app.include_router(
     student.router,
-    prefix="/api/v1/students", 
+    prefix="/api/v1/students",
     tags=["👨‍🎓 Student Progress"],
     responses={
-        **{code: response for code, response in __import__('schemas.openapi_models', fromlist=['COMMON_RESPONSES']).COMMON_RESPONSES.items()}
-    }
+        **{
+            code: response
+            for code, response in __import__(
+                "schemas.openapi_models", fromlist=["COMMON_RESPONSES"]
+            ).COMMON_RESPONSES.items()
+        }
+    },
 )
 
 app.include_router(
@@ -198,8 +226,13 @@ app.include_router(
     prefix="/api/v1/professor",
     tags=["👨‍🏫 Professor Analytics"],
     responses={
-        **{code: response for code, response in __import__('schemas.openapi_models', fromlist=['COMMON_RESPONSES']).COMMON_RESPONSES.items()}
-    }
+        **{
+            code: response
+            for code, response in __import__(
+                "schemas.openapi_models", fromlist=["COMMON_RESPONSES"]
+            ).COMMON_RESPONSES.items()
+        }
+    },
 )
 
 app.include_router(
@@ -207,56 +240,76 @@ app.include_router(
     prefix="/api/v1/auth",
     tags=["🔐 Authentication"],
     responses={
-        **{code: response for code, response in __import__('schemas.openapi_models', fromlist=['COMMON_RESPONSES']).COMMON_RESPONSES.items()}
-    }
+        **{
+            code: response
+            for code, response in __import__(
+                "schemas.openapi_models", fromlist=["COMMON_RESPONSES"]
+            ).COMMON_RESPONSES.items()
+        }
+    },
 )
 
 app.include_router(
     users.router,
     tags=["👥 Users"],
     responses={
-        **{code: response for code, response in __import__('schemas.openapi_models', fromlist=['COMMON_RESPONSES']).COMMON_RESPONSES.items()}
-    }
+        **{
+            code: response
+            for code, response in __import__(
+                "schemas.openapi_models", fromlist=["COMMON_RESPONSES"]
+            ).COMMON_RESPONSES.items()
+        }
+    },
 )
 
 # Legacy-compatible endpoints used in tests
 app.include_router(
-    telegram_auth.router, 
+    telegram_auth.router,
     tags=["🔐 Authentication"],
     responses={
-        **{code: response for code, response in __import__('schemas.openapi_models', fromlist=['COMMON_RESPONSES']).COMMON_RESPONSES.items()}
-    }
+        **{
+            code: response
+            for code, response in __import__(
+                "schemas.openapi_models", fromlist=["COMMON_RESPONSES"]
+            ).COMMON_RESPONSES.items()
+        }
+    },
 )
 
 # Authentication demonstration endpoints
 app.include_router(
-    auth_demo.router, 
-    prefix="/api/v1", 
+    auth_demo.router,
+    prefix="/api/v1",
     tags=["🔐 Authentication"],
     responses={
-        **{code: response for code, response in __import__('schemas.openapi_models', fromlist=['COMMON_RESPONSES']).COMMON_RESPONSES.items()}
-    }
+        **{
+            code: response
+            for code, response in __import__(
+                "schemas.openapi_models", fromlist=["COMMON_RESPONSES"]
+            ).COMMON_RESPONSES.items()
+        }
+    },
 )
 
 
 # Root endpoint
 @app.get(
-    "/", 
+    "/",
     tags=["🔧 System"],
     summary="API Information",
     description="Get comprehensive API information including version, status, and available services",
-    response_description="API information and service endpoints"
+    response_description="API information and service endpoints",
 )
 async def root():
     """
     ## API Root Information
-    
+
     Returns comprehensive information about the Educational Platform API including:
     - Current API version and status
     - Available service endpoints
     - Documentation links
     - System timestamp
-    
+
     This endpoint can be used for API discovery and health checking.
     """
     return {
@@ -264,59 +317,43 @@ async def root():
         "version": "1.0.0",
         "status": "operational",
         "description": "Comprehensive educational platform with secure code execution",
-        "documentation": {
-            "swagger": "/docs",
-            "redoc": "/redoc",
-            "openapi_spec": "/openapi.json"
-        },
+        "documentation": {"swagger": "/docs", "redoc": "/redoc", "openapi_spec": "/openapi.json"},
         "timestamp": datetime.utcnow().isoformat(),
         "services": {
-            "courses": {
-                "endpoint": "/api/v1/courses",
-                "description": "Course content management"
-            },
-            "students": {
-                "endpoint": "/api/v1/students", 
-                "description": "Student progress and code execution"
-            },
-            "professor": {
-                "endpoint": "/api/v1/professor",
-                "description": "Analytics and course administration"
-            },
-            "auth": {
-                "endpoint": "/api/v1/auth",
-                "description": "Authentication and user management"
-            }
+            "courses": {"endpoint": "/api/v1/courses", "description": "Course content management"},
+            "students": {"endpoint": "/api/v1/students", "description": "Student progress and code execution"},
+            "professor": {"endpoint": "/api/v1/professor", "description": "Analytics and course administration"},
+            "auth": {"endpoint": "/api/v1/auth", "description": "Authentication and user management"},
         },
         "features": [
             "Secure code execution with AST analysis",
             "Multi-layered security protection",
-            "Real-time progress tracking", 
+            "Real-time progress tracking",
             "Telegram bot integration",
-            "Comprehensive analytics"
-        ]
+            "Comprehensive analytics",
+        ],
     }
 
 
 # Health check endpoint
 @app.get(
-    "/health", 
+    "/health",
     tags=["🔧 System"],
     summary="Health Check",
     description="Service health monitoring endpoint for uptime checks",
-    response_description="Current service health status"
+    response_description="Current service health status",
 )
 async def health_check():
     """
     ## Service Health Check
-    
+
     Provides real-time health status for monitoring and alerting systems.
-    
+
     Returns:
     - Service operational status
     - Current timestamp
     - API version information
-    
+
     Use this endpoint for:
     - Load balancer health checks
     - Monitoring system alerts
@@ -327,34 +364,30 @@ async def health_check():
         "timestamp": datetime.utcnow().isoformat(),
         "version": "1.0.0",
         "uptime": "Service operational",
-        "checks": {
-            "database": "operational",
-            "security_systems": "active",
-            "code_execution": "secure"
-        }
+        "checks": {"database": "operational", "security_systems": "active", "code_execution": "secure"},
     }
 
 
 # API version endpoint
 @app.get(
-    "/api/v1", 
+    "/api/v1",
     tags=["🔧 System"],
     summary="API v1 Information",
     description="Detailed information about API v1 endpoints and capabilities",
-    response_description="API v1 endpoint directory and documentation links"
+    response_description="API v1 endpoint directory and documentation links",
 )
 async def api_v1_info():
     """
     ## API v1 Endpoint Directory
-    
+
     Comprehensive directory of all available API v1 endpoints with descriptions.
-    
+
     ### Available Services:
     - **Courses**: Hierarchical content management
-    - **Students**: Progress tracking and code execution  
+    - **Students**: Progress tracking and code execution
     - **Professor**: Analytics and administration
     - **Auth**: User authentication and authorization
-    
+
     ### Documentation:
     - Interactive API docs at `/docs`
     - Alternative documentation at `/redoc`
@@ -367,36 +400,32 @@ async def api_v1_info():
             "courses": {
                 "path": "/api/v1/courses",
                 "description": "Course, lesson, topic, and task management",
-                "methods": ["GET", "POST", "PUT", "DELETE"]
+                "methods": ["GET", "POST", "PUT", "DELETE"],
             },
             "students": {
                 "path": "/api/v1/students",
                 "description": "Student progress, solutions, and secure code execution",
                 "methods": ["GET", "POST"],
-                "features": ["Code compilation", "Progress tracking", "Security validation"]
+                "features": ["Code compilation", "Progress tracking", "Security validation"],
             },
             "professor": {
-                "path": "/api/v1/professor", 
+                "path": "/api/v1/professor",
                 "description": "Course analytics and student performance monitoring",
                 "methods": ["GET"],
-                "features": ["Student analytics", "Course statistics", "Performance insights"]
+                "features": ["Student analytics", "Course statistics", "Performance insights"],
             },
             "auth": {
                 "path": "/api/v1/auth",
-                "description": "User authentication and session management", 
+                "description": "User authentication and session management",
                 "methods": ["POST"],
-                "features": ["Username/password auth", "Telegram integration", "JWT tokens"]
-            }
+                "features": ["Username/password auth", "Telegram integration", "JWT tokens"],
+            },
         },
-        "documentation": {
-            "interactive": "/docs",
-            "redoc": "/redoc", 
-            "openapi": "/openapi.json"
-        },
+        "documentation": {"interactive": "/docs", "redoc": "/redoc", "openapi": "/openapi.json"},
         "security": {
             "authentication": "JWT Bearer tokens",
             "code_execution": "AST-based security analysis",
             "rate_limiting": "Progressive penalties",
-            "input_validation": "Multi-layer sanitization"
-        }
+            "input_validation": "Multi-layer sanitization",
+        },
     }

@@ -17,23 +17,71 @@ logger.addHandler(console_handler)
 
 # Whitelist of allowed modules (enhanced security)
 ALLOWED_MODULES = [
-    "anytree", "math", "random", "datetime", "itertools", "collections",
-    "string", "re", "json", "statistics", "decimal", "fractions"
+    "anytree",
+    "math",
+    "random",
+    "datetime",
+    "itertools",
+    "collections",
+    "string",
+    "re",
+    "json",
+    "statistics",
+    "decimal",
+    "fractions",
 ]
 
 # List of dangerous functions (expanded)
 DANGEROUS_FUNCTIONS = [
-    "eval", "exec", "compile", "open", "input", "raw_input", "__import__",
-    "getattr", "setattr", "delattr", "hasattr", "globals", "locals", "vars",
-    "dir", "help", "exit", "quit", "reload", "breakpoint", "memoryview"
+    "eval",
+    "exec",
+    "compile",
+    "open",
+    "input",
+    "raw_input",
+    "__import__",
+    "getattr",
+    "setattr",
+    "delattr",
+    "hasattr",
+    "globals",
+    "locals",
+    "vars",
+    "dir",
+    "help",
+    "exit",
+    "quit",
+    "reload",
+    "breakpoint",
+    "memoryview",
 ]
 
 # Dangerous modules that should be blocked
 DANGEROUS_MODULES = {
-    "os", "sys", "subprocess", "shutil", "glob", "pickle", "marshal",
-    "ctypes", "threading", "multiprocessing", "socket", "urllib", 
-    "requests", "http", "ftplib", "smtplib", "tempfile", "webbrowser",
-    "platform", "pwd", "grp", "resource", "importlib", "runpy"
+    "os",
+    "sys",
+    "subprocess",
+    "shutil",
+    "glob",
+    "pickle",
+    "marshal",
+    "ctypes",
+    "threading",
+    "multiprocessing",
+    "socket",
+    "urllib",
+    "requests",
+    "http",
+    "ftplib",
+    "smtplib",
+    "tempfile",
+    "webbrowser",
+    "platform",
+    "pwd",
+    "grp",
+    "resource",
+    "importlib",
+    "runpy",
 }
 
 
@@ -63,16 +111,16 @@ class CodeSanitizer(ast.NodeVisitor):
             func_name = node.func.id
         elif isinstance(node.func, ast.Attribute):
             func_name = node.func.attr
-            
+
         if func_name and func_name in DANGEROUS_FUNCTIONS:
             self.errors.append(f"Use of dangerous function: {func_name}")
-            
+
         # Additional security checks
         if isinstance(node.func, ast.Attribute) and node.func.attr == "format":
             self.errors.append("String formatting can be dangerous - potential code injection risk")
-            
+
         self.generic_visit(node)
-        
+
     def visit_Attribute(self, node):
         # Check for dangerous attribute access
         dangerous_attrs = {"__class__", "__bases__", "__subclasses__", "__globals__", "__dict__"}

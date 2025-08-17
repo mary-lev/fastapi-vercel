@@ -109,7 +109,7 @@ class TaskProgressResponse(BaseModel):
 
 # User profile and basic info
 @router.get(
-    "/{user_id}/profile", 
+    "/{user_id}/profile",
     summary="Get Student Profile",
     description="Retrieve detailed student profile information including enrollment status and basic metrics",
     response_description="Student profile with enrollment and activity information",
@@ -123,12 +123,12 @@ class TaskProgressResponse(BaseModel):
                         "username": "student123",
                         "internal_user_id": "usr_abc123def456",
                         "status": "student",
-                        "telegram_user_id": 123456789
+                        "telegram_user_id": 123456789,
                     }
                 }
-            }
+            },
         }
-    }
+    },
 )
 async def get_user_profile(
     request: Request,
@@ -137,17 +137,17 @@ async def get_user_profile(
 ):
     """
     ## Get Student Profile Information
-    
+
     Retrieves comprehensive student profile data including:
     - Basic user information (username, ID, status)
     - Telegram integration status
     - Account creation and activity details
-    
+
     ### Supported User ID Formats:
     - **Integer**: Database primary key (e.g., `1`, `42`)
     - **String/UUID**: Internal user ID (e.g., `usr_abc123def456`)
     - **Username**: User's display name (e.g., `student123`)
-    
+
     ### Use Cases:
     - Profile page display
     - User verification
@@ -158,15 +158,15 @@ async def get_user_profile(
         # Check cache first
         cache_key = cache_key_for_user(user_id, "profile")
         cached_profile = cache_manager.get(cache_key)
-        
+
         if cached_profile is not None:
             logger.debug(
                 f"Returning cached user profile",
                 category=LogCategory.PERFORMANCE,
-                extra={"cache_hit": True, "user_id": str(user_id)}
+                extra={"cache_hit": True, "user_id": str(user_id)},
             )
             return cached_profile
-        
+
         user = await get_user_by_id(user_id, request, db)
 
         profile_data = {
@@ -176,16 +176,16 @@ async def get_user_profile(
             "status": user.status.value if user.status else None,
             "telegram_user_id": user.telegram_user_id,
         }
-        
+
         # Cache for 5 minutes
         cache_manager.set(cache_key, profile_data, ttl=300)
-        
+
         logger.info(
             f"User profile fetched and cached",
             category=LogCategory.PERFORMANCE,
-            extra={"cache_hit": False, "user_id": str(user_id)}
+            extra={"cache_hit": False, "user_id": str(user_id)},
         )
-        
+
         return profile_data
 
     except HTTPException:
@@ -783,7 +783,7 @@ class TextSubmitRequest(BaseModel):
 
 
 @router.post(
-    "/{user_id}/compile", 
+    "/{user_id}/compile",
     summary="Secure Code Compilation",
     description="Compile and execute Python code in a secure sandbox environment with comprehensive security analysis",
     response_description="Code execution results with output, errors, and security validation",
@@ -800,11 +800,11 @@ class TextSubmitRequest(BaseModel):
                         "security_checks": {
                             "dangerous_imports": False,
                             "malicious_functions": False,
-                            "resource_limits": True
-                        }
+                            "resource_limits": True,
+                        },
                     }
                 }
-            }
+            },
         },
         400: {
             "description": "Code validation failed or syntax error",
@@ -814,10 +814,10 @@ class TextSubmitRequest(BaseModel):
                         "status": "error",
                         "output": "",
                         "error": "Security validation failed: Import of dangerous module 'os' is not allowed",
-                        "execution_time": 0
+                        "execution_time": 0,
                     }
                 }
-            }
+            },
         },
         403: {
             "description": "Security violation detected",
@@ -827,10 +827,10 @@ class TextSubmitRequest(BaseModel):
                         "success": False,
                         "error": "Security violation: Use of dangerous function 'eval' is not allowed",
                         "detail": "Your code contains potentially dangerous operations that are not permitted",
-                        "status_code": 403
+                        "status_code": 403,
                     }
                 }
-            }
+            },
         },
         429: {
             "description": "Rate limit exceeded",
@@ -840,12 +840,12 @@ class TextSubmitRequest(BaseModel):
                         "success": False,
                         "error": "Rate limit exceeded",
                         "detail": "Too many requests. Try again in 60 seconds.",
-                        "status_code": 429
+                        "status_code": 429,
                     }
                 }
-            }
-        }
-    }
+            },
+        },
+    },
 )
 async def compile_code(
     request: SecureCompileRequest,
@@ -854,38 +854,38 @@ async def compile_code(
 ):
     """
     ## Secure Code Compilation & Execution
-    
+
     Compiles and executes Python code in a secure sandbox environment with comprehensive security analysis.
     This endpoint is designed for testing code without submitting it as a solution.
-    
+
     ### Security Features:
     - **AST-based Analysis**: Deep code inspection for dangerous patterns
     - **Module Restrictions**: Only approved modules are allowed
-    - **Function Blocking**: Dangerous functions like `eval`, `exec`, `open` are blocked  
+    - **Function Blocking**: Dangerous functions like `eval`, `exec`, `open` are blocked
     - **Rate Limiting**: 30 requests per 5 minutes with progressive penalties
     - **Resource Limits**: Execution timeout and memory constraints
     - **Input Validation**: Size limits and pattern detection
-    
+
     ### Blocked Operations:
     - System module imports (`os`, `subprocess`, `socket`, etc.)
     - Dynamic code execution (`eval`, `exec`, `compile`)
     - File system access (`open`, `file`)
     - Network operations (`urllib`, `requests`)
     - Process control (`multiprocessing`, `threading`)
-    
+
     ### Allowed Features:
     - Basic Python operations and syntax
     - Mathematical operations and libraries (`math`, `random`)
-    - Data structures (`collections`, `itertools`)  
+    - Data structures (`collections`, `itertools`)
     - Educational modules (`anytree` for tree exercises)
     - String and formatting operations
-    
+
     ### Use Cases:
     - Interactive code testing during exercises
     - Syntax validation before submission
     - Educational Python exploration
     - Algorithm development and testing
-    
+
     ### Response Format:
     Returns execution results with:
     - **Status**: `success` or `error`
@@ -900,7 +900,7 @@ async def compile_code(
             category=LogCategory.CODE_EXECUTION,
             user_id=str(user_id),
             code_length=len(request.code),
-            language=request.language
+            language=request.language,
         )
 
         # Verify user exists (for auth/tracking purposes)
@@ -909,57 +909,50 @@ async def compile_code(
             f"User resolved successfully",
             category=LogCategory.AUTHENTICATION,
             user_id=str(user.id),
-            username=user.username
+            username=user.username,
         )
-        
+
         # Check rate limits and security blocks
         check_code_execution_limits(str(user.id))
 
         if not request.code:
-            logger.warning(
-                "Empty code submission",
-                category=LogCategory.CODE_EXECUTION,
-                user_id=str(user.id)
-            )
+            logger.warning("Empty code submission", category=LogCategory.CODE_EXECUTION, user_id=str(user.id))
             raise HTTPException(status_code=400, detail="No code provided")
-            
+
         # Additional security validation
         is_valid, error_message = validate_code_request(request.code, request.language)
         if not is_valid:
             # Record security violation
             record_security_violation_for_user(str(user.id))
-            
+
             # Log security event with structured logging
             log_security_event(
                 event_type="code_injection_attempt",
                 message=f"Dangerous code pattern detected: {error_message}",
                 user_id=str(user.id),
                 severity="high",
-                details={
-                    "code_snippet": request.code[:100],
-                    "violation": error_message,
-                    "language": request.language
-                }
+                details={"code_snippet": request.code[:100], "violation": error_message, "language": request.language},
             )
-            
+
             raise HTTPException(status_code=400, detail=f"Security validation failed: {error_message}")
 
         # Log code execution start
         import time
+
         start_time = time.time()
         logger.debug(
             f"Starting code execution",
             category=LogCategory.CODE_EXECUTION,
             user_id=str(user.id),
-            code_preview=request.code[:50]
+            code_preview=request.code[:50],
         )
-        
+
         # Run the code and return the output
         result = run_code(request.code)
-        
+
         # Calculate execution time
         execution_time = (time.time() - start_time) * 1000
-        
+
         # Log code execution result
         logger.info(
             f"Code execution completed",
@@ -967,7 +960,7 @@ async def compile_code(
             user_id=str(user.id),
             success=result.get("success", False),
             duration_ms=execution_time,
-            output_length=len(result.get("output", ""))
+            output_length=len(result.get("output", "")),
         )
 
         # Map the result to the expected format
@@ -989,8 +982,8 @@ async def compile_code(
             f"Code compilation failed unexpectedly",
             category=LogCategory.CODE_EXECUTION,
             exception=e,
-            user_id=str(user_id) if 'user' in locals() else user_id,
-            code_length=len(request.code) if request else 0
+            user_id=str(user_id) if "user" in locals() else user_id,
+            code_length=len(request.code) if request else 0,
         )
         # Return 400 for user resolution failures to satisfy error-handling test
         if "User not found" in str(e):
@@ -1014,17 +1007,23 @@ async def submit_code_solution(
         db = _db_session(db)
         # Resolve user
         user = resolve_user(user_id, db)
-        
+
         # Check rate limits and security blocks for code submissions
         check_code_execution_limits(str(user.id))
-        
+
         # Additional security validation
         is_valid, error_message = validate_code_request(request.code, request.language)
         if not is_valid:
             record_security_violation_for_user(str(user.id))
-            log_security_violation(str(user.id), type('SecurityViolation', (), {
-                'severity': 'high', 'category': 'code_submission', 'message': error_message
-            })(), request.code)
+            log_security_violation(
+                str(user.id),
+                type(
+                    "SecurityViolation",
+                    (),
+                    {"severity": "high", "category": "code_submission", "message": error_message},
+                )(),
+                request.code,
+            )
             raise HTTPException(status_code=400, detail=f"Security validation failed: {error_message}")
 
         # Verify task exists
@@ -1125,14 +1124,20 @@ async def submit_text_answer(
         db = _db_session(db)
         # Resolve user
         user = resolve_user(user_id, db)
-        
+
         # Validate text input for security issues
         is_valid, error_message = validate_text_request(request.user_answer)
         if not is_valid:
             record_security_violation_for_user(str(user.id))
-            log_security_violation(str(user.id), type('SecurityViolation', (), {
-                'severity': 'medium', 'category': 'text_validation', 'message': error_message
-            })(), request.user_answer)
+            log_security_violation(
+                str(user.id),
+                type(
+                    "SecurityViolation",
+                    (),
+                    {"severity": "medium", "category": "text_validation", "message": error_message},
+                )(),
+                request.user_answer,
+            )
             raise HTTPException(status_code=400, detail=f"Input validation failed: {error_message}")
 
         # Verify task exists
