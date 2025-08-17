@@ -75,6 +75,7 @@ app.add_middleware(
         "Keep-Alive",
         "X-Requested-With",
         "If-Modified-Since",
+        "X-API-Key",
     ],
     expose_headers=["Content-Length", "Content-Range"],
 )
