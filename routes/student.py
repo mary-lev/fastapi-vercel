@@ -401,6 +401,157 @@ async def get_user_lesson_progress(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+@router.get("/{user_id}/courses/{course_id}/lessons/{lesson_id}/summary", summary="Get lesson completion summary")
+async def get_lesson_summary(
+    request: Request,
+    user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"),
+    course_id: int = Path(..., description="Course ID"),
+    lesson_id: int = Path(..., description="Lesson ID"),
+    db: Session = Depends(get_db),
+):
+    """
+    Get lesson completion summary with statistics and motivational message.
+    Returns summary text and completion statistics for the specified lesson.
+    """
+    try:
+        # Verify user exists
+        user = await get_user_by_id(user_id, request, db)
+        
+        # Verify lesson belongs to course
+        lesson = db.query(Lesson).filter(Lesson.id == lesson_id, Lesson.course_id == course_id).first()
+        
+        if not lesson:
+            raise HTTPException(status_code=404, detail="Lesson not found")
+        
+        # Verify user is enrolled
+        enrollment = (
+            db.query(CourseEnrollment)
+            .filter(CourseEnrollment.user_id == user.id, CourseEnrollment.course_id == course_id)
+            .first()
+        )
+        
+        if not enrollment:
+            raise HTTPException(status_code=404, detail="User not enrolled in this course")
+        
+        # Get all tasks in the lesson
+        total_tasks = db.query(Task).join(Topic).filter(Topic.lesson_id == lesson_id).count()
+        
+        # Get completed tasks (with successful attempts)
+        completed_tasks = (
+            db.query(TaskAttempt)
+            .join(Task)
+            .join(Topic)
+            .filter(
+                TaskAttempt.user_id == user.id,
+                Topic.lesson_id == lesson_id,
+                TaskAttempt.is_successful == True
+            )
+            .distinct(TaskAttempt.task_id)
+            .count()
+        )
+        
+        # Calculate accuracy rate based on first successful attempt per task
+        # Get distinct tasks attempted and their first success status
+        from sqlalchemy import and_, exists
+        
+        # Count unique tasks attempted
+        tasks_attempted = (
+            db.query(TaskAttempt.task_id)
+            .join(Task)
+            .join(Topic)
+            .filter(TaskAttempt.user_id == user.id, Topic.lesson_id == lesson_id)
+            .distinct()
+            .count()
+        )
+        
+        # Count unique tasks completed successfully (at least once)
+        tasks_completed_successfully = (
+            db.query(TaskAttempt.task_id)
+            .join(Task)
+            .join(Topic)
+            .filter(
+                TaskAttempt.user_id == user.id,
+                Topic.lesson_id == lesson_id,
+                TaskAttempt.is_successful == True
+            )
+            .distinct()
+            .count()
+        )
+        
+        accuracy_rate = 0
+        if tasks_attempted > 0:
+            accuracy_rate = round((tasks_completed_successfully / tasks_attempted) * 100, 1)
+            # Ensure accuracy never exceeds 100%
+            accuracy_rate = min(accuracy_rate, 100.0)
+        
+        # Calculate time spent per task, then sum up
+        time_spent_minutes = 0.0
+        if tasks_attempted > 0:
+            # Get first and last attempt per task to calculate time spent on each task
+            task_time_data = (
+                db.query(
+                    TaskAttempt.task_id,
+                    func.min(TaskAttempt.submitted_at).label('first_attempt'),
+                    func.max(TaskAttempt.submitted_at).label('last_attempt'),
+                    func.count(TaskAttempt.id).label('attempt_count')
+                )
+                .join(Task)
+                .join(Topic)
+                .filter(TaskAttempt.user_id == user.id, Topic.lesson_id == lesson_id)
+                .group_by(TaskAttempt.task_id)
+                .all()
+            )
+            
+            for task_data in task_time_data:
+                if task_data.first_attempt and task_data.last_attempt:
+                    task_time_diff = task_data.last_attempt - task_data.first_attempt
+                    task_minutes = task_time_diff.total_seconds() / 60
+                    
+                    # For single attempts or very short time spans, use a minimum time estimate
+                    if task_minutes < 2:  # Less than 2 minutes
+                        # Base time estimate: 3 minutes + 1 minute per additional attempt
+                        task_minutes = 3 + (task_data.attempt_count - 1)
+                    else:
+                        # Cap maximum time per task at 2 hours to handle cases where 
+                        # students leave tasks open for days
+                        task_minutes = min(task_minutes, 120)
+                    
+                    time_spent_minutes += task_minutes
+            
+            # Round total time to 1 decimal place
+            time_spent_minutes = round(time_spent_minutes, 1)
+        
+        # Generate appropriate summary message based on completion
+        completion_percentage = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
+        
+        if completion_percentage == 100:
+            summary = f"Congratulations on completing {lesson.title}! You've mastered all {total_tasks} tasks with {accuracy_rate}% accuracy. Excellent work!"
+        elif completion_percentage >= 80:
+            summary = f"Great progress on {lesson.title}! You've completed {completed_tasks} out of {total_tasks} tasks. Just a few more to go!"
+        elif completion_percentage >= 50:
+            summary = f"You're making good progress in {lesson.title}! Keep going - you've completed {completed_tasks} out of {total_tasks} tasks."
+        elif completion_percentage > 0:
+            summary = f"You've started {lesson.title} and completed {completed_tasks} task{'s' if completed_tasks != 1 else ''}. Continue learning to unlock more concepts!"
+        else:
+            summary = f"Welcome to {lesson.title}! This lesson contains {total_tasks} engaging tasks. Start your learning journey now!"
+        
+        return {
+            "summary": summary,
+            "stats": {
+                "tasks_completed": completed_tasks,
+                "total_tasks": total_tasks,
+                "accuracy_rate": accuracy_rate,
+                "time_spent_minutes": time_spent_minutes
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving lesson summary: {e}", category=LogCategory.ERROR, exception=e)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
 # Task submissions
 @router.post("/{user_id}/submissions", summary="Submit task attempt")
 async def submit_task_attempt(

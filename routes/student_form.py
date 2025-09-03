@@ -97,7 +97,7 @@ class StudentFormSummary(BaseModel):
     updated_at: datetime
 
 
-@router.post("/api/student-form", response_model=StudentFormResponse)
+@router.post("/student-form", response_model=StudentFormResponse)
 async def submit_student_form(form_data: StudentFormRequest, db: Session = Depends(get_db)):
     """
     Submit student intake form
@@ -188,7 +188,7 @@ async def submit_student_form(form_data: StudentFormRequest, db: Session = Depen
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
 
 
-@router.get("/api/student-form/{internal_user_id}", response_model=Dict[str, Any])
+@router.get("/student-form/{internal_user_id}", response_model=Dict[str, Any])
 async def get_student_form(internal_user_id: str, db: Session = Depends(get_db)):
     """
     Retrieve student form submission by internal user ID
@@ -238,7 +238,7 @@ async def get_student_form(internal_user_id: str, db: Session = Depends(get_db))
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to retrieve student form")
 
 
-@router.get("/api/student-forms", response_model=Dict[str, Any])
+@router.get("/student-forms", response_model=Dict[str, Any])
 async def get_all_student_forms(limit: int = 100, offset: int = 0, db: Session = Depends(get_db)):
     """
     Retrieve all student form submissions (Admin endpoint)
@@ -286,7 +286,7 @@ async def get_all_student_forms(limit: int = 100, offset: int = 0, db: Session =
         )
 
 
-@router.delete("/api/student-form/{internal_user_id}")
+@router.delete("/student-form/{internal_user_id}")
 async def delete_student_form(internal_user_id: str, db: Session = Depends(get_db)):
     """
     Delete student form submission by internal user ID
@@ -319,7 +319,7 @@ async def delete_student_form(internal_user_id: str, db: Session = Depends(get_d
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to delete student form")
 
 
-@router.post("/api/student-form/debug")
+@router.post("/student-form/debug")
 async def debug_student_form(request: Request):
     """
     Debug endpoint to see exactly what data is being sent
