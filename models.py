@@ -272,12 +272,56 @@ class Course(Base):
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, index=True)
     description = Column(String, index=True)
+    
+    # Extended course information fields
+    course_overview = Column(Text, nullable=True)  # Extended description for overview section
+    learning_objectives = Column(JSON, nullable=True)  # Array of learning goals
+    requirements = Column(JSON, nullable=True)  # Array of course requirements
+    target_audience = Column(JSON, nullable=True)  # Array of target audience descriptions
+    
+    # Course metadata
+    duration_weeks = Column(Integer, nullable=True)  # Estimated course duration
+    difficulty_level = Column(String(20), nullable=True)  # beginner, intermediate, advanced
+    course_image = Column(String, nullable=True)  # Course cover image URL
+    
     created_at = Column(DateTime, default=func.now(), nullable=False)
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
     professor_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
-    # Ensure lessons are returned in configured order (lesson_order) by default
-    lessons = relationship("Lesson", order_by="Lesson.lesson_order", back_populates="course")  # Add this line
+    # Relationships
+    lessons = relationship("Lesson", order_by="Lesson.lesson_order", back_populates="course")
+    instructors = relationship("CourseInstructor", back_populates="course", cascade="all, delete-orphan")
+
+
+class CourseInstructor(Base):
+    __tablename__ = "course_instructors"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    course_id = Column(Integer, ForeignKey("courses.id"), nullable=False)
+    
+    # Instructor information
+    name = Column(String(255), nullable=False)  # Full name
+    title = Column(String(255), nullable=True)  # Professional title/role
+    bio = Column(Text, nullable=True)  # Biography text
+    image = Column(String, nullable=True)  # Profile photo URL
+    email = Column(String(255), nullable=True)  # Contact email
+    
+    # Social media links stored as JSON
+    social_links = Column(JSON, nullable=True)  # Array of {platform, url} objects
+    
+    # Metadata
+    is_primary = Column(Boolean, default=False, nullable=False)  # Primary instructor flag
+    display_order = Column(Integer, default=1, nullable=False)  # Display order
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+    
+    # Relationships
+    course = relationship("Course", back_populates="instructors")
+    
+    # Table constraints
+    __table_args__ = (
+        Index("idx_course_instructors_course_order", "course_id", "display_order"),
+    )
 
 
 class Lesson(Base):

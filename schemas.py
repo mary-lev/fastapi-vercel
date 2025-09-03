@@ -125,9 +125,42 @@ class AIFeedbackResponse(AIFeedbackBase):
 
 
 # Course schemas
+# Course Instructor schemas
+class CourseInstructorBase(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    title: Optional[str] = Field(None, max_length=255)
+    bio: Optional[str] = None
+    image: Optional[str] = None
+    email: Optional[str] = Field(None, max_length=255)
+    social_links: Optional[List[Dict[str, str]]] = None  # Array of {platform, url}
+    is_primary: bool = False
+    display_order: int = 1
+
+
+class CourseInstructorCreate(CourseInstructorBase):
+    course_id: int = Field(..., gt=0)
+
+
+class CourseInstructorResponse(CourseInstructorBase):
+    id: int
+    course_id: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class CourseBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = Field(None, max_length=1000)
+    course_overview: Optional[str] = None  # Extended description
+    learning_objectives: Optional[List[str]] = None  # Array of learning goals
+    requirements: Optional[List[str]] = None  # Array of requirements
+    target_audience: Optional[List[str]] = None  # Array of target audience
+    duration_weeks: Optional[int] = Field(None, ge=1, le=52)
+    difficulty_level: Optional[str] = Field(None, regex="^(beginner|intermediate|advanced)$")
+    course_image: Optional[str] = None  # Course cover image URL
 
 
 class CourseCreate(CourseBase):
@@ -137,8 +170,17 @@ class CourseCreate(CourseBase):
 class CourseResponse(CourseBase):
     id: int
     professor_id: int
+    instructors: Optional[List[CourseInstructorResponse]] = None
     created_at: datetime
     updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# Extended Course Response for detailed course information including lessons
+class CourseDetailResponse(CourseResponse):
+    lessons: Optional[List[Dict]] = None  # Will be populated with lesson data
 
     class Config:
         from_attributes = True

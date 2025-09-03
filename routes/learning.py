@@ -106,25 +106,41 @@ async def get_courses(db: Session = Depends(get_db)):
     """
     ## List All Available Courses
 
-    Retrieves a comprehensive list of all courses available in the educational platform.
+    Retrieves a comprehensive list of all courses available in the educational platform with full course information including instructors and learning structure.
 
-    ### Returns:
-    - **Course ID**: Unique identifier for the course
-    - **Title**: Course name and subject area
-    - **Description**: Detailed course overview
-    - **Creation Date**: When the course was created
-    - **Professor ID**: Course instructor identifier
+    ### Essential Course Fields:
+    - **id**: Course identifier
+    - **title**: Course name (header + breadcrumb)
+    - **description**: Main description (header + overview)
+    - **course_overview**: Extended description (overview section)
+    - **learning_objectives**: Array of learning goals (overview bullets)
+    - **requirements**: Array of course requirements
+    - **target_audience**: Array of target audience descriptions
+    - **duration_weeks**: Estimated course duration
+    - **difficulty_level**: beginner, intermediate, or advanced
+    - **course_image**: Course cover image URL
+    - **lessons**: Course structure with topics and tasks
+
+    ### Essential Instructor Fields:
+    - **instructors[].id**: Instructor identifier
+    - **instructors[].name**: Full name (header + instructor section)
+    - **instructors[].title**: Professional title/role
+    - **instructors[].bio**: Biography text
+    - **instructors[].image**: Profile photo URL
+    - **instructors[].social_links[]**: Array of social media links
+      - platform (linkedin, twitter, web, etc.)
+      - url (full URL)
 
     ### Use Cases:
-    - Course catalog display
-    - Enrollment selection
-    - Course discovery
-    - Administrative overview
+    - Course catalog display with complete information
+    - Frontend course cards and detailed views
+    - Student enrollment decision making
+    - Course discovery and filtering
 
     ### Features:
-    - Performance optimized with efficient queries
-    - Includes all active courses
-    - Basic course metadata for quick overview
+    - Performance optimized with eager loading
+    - Complete course metadata for rich UI display
+    - Instructor information for credibility
     - **Cached for performance** (1 hour TTL)
     """
     try:
@@ -140,18 +156,101 @@ async def get_courses(db: Session = Depends(get_db)):
             )
             return cached_courses
 
-        # Query database
-        courses = db.query(Course).all()
-        result = [
-            {
+        # Query database with instructor and lesson information
+        from sqlalchemy.orm import joinedload
+        courses = (
+            db.query(Course)
+            .options(
+                joinedload(Course.instructors),
+                joinedload(Course.lessons).joinedload(Lesson.topics).joinedload(Topic.tasks)
+            )
+            .all()
+        )
+        
+        result = []
+        for course in courses:
+            # Build instructor list
+            instructors = []
+            for instructor in course.instructors:
+                instructors.append({
+                    "id": instructor.id,
+                    "name": instructor.name,
+                    "title": instructor.title,
+                    "bio": instructor.bio,
+                    "image": instructor.image,
+                    "email": instructor.email,
+                    "social_links": instructor.social_links or [],
+                    "is_primary": instructor.is_primary,
+                    "display_order": instructor.display_order
+                })
+            
+            # Sort instructors by display order
+            instructors.sort(key=lambda x: x["display_order"])
+            
+            # Build lessons structure
+            lessons = []
+            for lesson in course.lessons:
+                topics = []
+                for topic in lesson.topics:
+                    tasks = []
+                    for task in topic.tasks:
+                        tasks.append({
+                            "id": task.id,
+                            "task_name": task.task_name,
+                            "task_link": task.task_link,
+                            "type": task.type,
+                            "points": task.points,
+                            "order": task.order,
+                            "is_active": task.is_active
+                        })
+                    
+                    # Sort tasks by order
+                    tasks.sort(key=lambda x: x["order"])
+                    
+                    topics.append({
+                        "id": topic.id,
+                        "title": topic.title,
+                        "background": topic.background,
+                        "objectives": topic.objectives,
+                        "content_file_md": topic.content_file_md,
+                        "concepts": topic.concepts,
+                        "topic_order": topic.topic_order,
+                        "tasks": tasks
+                    })
+                
+                # Sort topics by order
+                topics.sort(key=lambda x: x["topic_order"])
+                
+                lessons.append({
+                    "id": lesson.id,
+                    "title": lesson.title,
+                    "description": lesson.description,
+                    "lesson_order": lesson.lesson_order,
+                    "textbook": lesson.textbook,
+                    "start_date": lesson.start_date,
+                    "topics": topics
+                })
+            
+            # Sort lessons by order
+            lessons.sort(key=lambda x: x["lesson_order"])
+            
+            course_data = {
                 "id": course.id,
                 "title": course.title,
                 "description": course.description,
+                "course_overview": course.course_overview,
+                "learning_objectives": course.learning_objectives or [],
+                "requirements": course.requirements or [],
+                "target_audience": course.target_audience or [],
+                "duration_weeks": course.duration_weeks,
+                "difficulty_level": course.difficulty_level,
+                "course_image": course.course_image,
+                "instructors": instructors,
+                "lessons": lessons,
                 "created_at": course.created_at,
                 "professor_id": course.professor_id,
             }
-            for course in courses
-        ]
+            result.append(course_data)
 
         # Cache the result
         cache_manager.set(cache_key, result, ttl=3600)  # 1 hour cache
