@@ -8,7 +8,7 @@ from typing import Optional, Dict, Any
 from datetime import datetime, timezone
 
 from db import get_db
-from models import User, TelegramLinkToken
+from models import User, TelegramLinkToken, UserStatus
 from utils.jwt_utils import jwt_manager
 from utils.logging_config import logger
 from utils.rate_limiting import rate_limit, telegram_rate_limit_key
@@ -219,7 +219,7 @@ async def complete_telegram_link(
                 first_name=token_record.first_name,
                 last_name=token_record.last_name,
                 hashed_sub=f"telegram:{telegram_user_id}",  # Unique identifier
-                status="STUDENT",  # Will be set based on business logic
+                status=UserStatus.STUDENT,  # Enum-safe status
             )
 
             db.add(user)

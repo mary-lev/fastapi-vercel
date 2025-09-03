@@ -37,11 +37,13 @@ def provide_code_feedback(
         "Remember to be constructive and supportive in your feedback, focusing on helping the student."
     )
     user_prompt = (
-        f"Here is the task description: {task}.\n"
+        f"Here is the task description: {task.data}.\n"
         f"The student's answer is: {answer}\n"
         f"The output of the code is: {output}\n"
-        "Generate the feedback. Be polite and laconic."
+        "Generate the feedback. Be polite and laconic." \
+        "Respond to student in one sentence."
     )
+    print(user_prompt)
 
     completion = client.beta.chat.completions.parse(
         model="gpt-4o-2024-08-06",

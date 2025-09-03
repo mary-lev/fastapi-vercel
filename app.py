@@ -14,7 +14,7 @@ import uuid
 import json
 
 # Import consolidated v1 routers ONLY
-from routes import learning, student, professor, auth, users, telegram_auth, auth_demo
+from routes import learning, student, professor, auth, users, telegram_auth, auth_demo, task_attempts
 from config import settings
 from utils.auth_middleware import add_auth_context_to_request
 
@@ -282,6 +282,20 @@ app.include_router(
     auth_demo.router,
     prefix="/api/v1",
     tags=["🔐 Authentication"],
+    responses={
+        **{
+            code: response
+            for code, response in __import__(
+                "schemas.openapi_models", fromlist=["COMMON_RESPONSES"]
+            ).COMMON_RESPONSES.items()
+        }
+    },
+)
+
+# Task attempt tracking endpoints
+app.include_router(
+    task_attempts.router,
+    tags=["📝 Task Attempts"],
     responses={
         **{
             code: response

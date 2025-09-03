@@ -8,10 +8,10 @@ from fastapi import APIRouter, HTTPException, Depends, Path
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import func
-from typing import List, Optional
+from typing import List, Optional, Union
 from pydantic import BaseModel
 
-from models import Course, Lesson, Topic, Task, Summary
+from models import Course, Lesson, Topic, Task, Summary, User, TaskSolution, TaskAttempt
 from db import get_db
 from utils.structured_logging import get_logger, LogCategory
 from utils.cache_manager import cache_manager, cache_key_for_course, invalidate_course_cache
@@ -419,6 +419,7 @@ async def get_course_lessons(course_id: int = Path(..., description="Course ID")
 async def get_lesson(
     course_id: int = Path(..., description="Course ID"),
     lesson_id: int = Path(..., description="Lesson ID"),
+    user_id: Optional[Union[int, str]] = None,
     db: Session = Depends(get_db),
 ):
     """Get lesson details with topics and tasks"""
@@ -434,6 +435,25 @@ async def get_lesson(
         if not lesson:
             raise HTTPException(status_code=404, detail="Lesson not found")
 
+        # Resolve user if user_id is provided (to get actual user.id for database queries)
+        resolved_user_id = None
+        if user_id:
+            try:
+                if isinstance(user_id, int):
+                    user = db.query(User).filter(User.id == user_id).first()
+                else:
+                    # Handle string user IDs (internal_user_id, username, etc.)
+                    user = db.query(User).filter(User.internal_user_id == user_id).first()
+                    if not user:
+                        user = db.query(User).filter(User.username == user_id).first()
+
+                if user:
+                    resolved_user_id = user.id
+                else:
+                    logger.warning(f"User not found for user_id: {user_id}")
+            except Exception as e:
+                logger.warning(f"Error resolving user {user_id}: {e}")
+
         lesson_data = {
             "id": lesson.id,
             "title": lesson.title,
@@ -443,6 +463,57 @@ async def get_lesson(
             "start_date": lesson.start_date,
             "topics": [],
         }
+
+        # Fetch user progress data in bulk to avoid N+1 queries
+        user_solutions_dict = {}
+        user_attempts_dict = {}
+
+        # Prefetch generated tasks for this user and lesson once
+        lesson_generated_task_ids = []
+        if resolved_user_id:
+            generated_tasks_for_lesson = (
+                db.query(Task.id)
+                .join(Topic)
+                .filter(
+                    Topic.lesson_id == lesson_id,
+                    Task.is_generated == True,
+                    Task.generated_for_user_id == resolved_user_id,
+                )
+                .all()
+            )
+            # generated_tasks_for_lesson is a list of tuples like [(id,), ...]
+            lesson_generated_task_ids = [t[0] for t in generated_tasks_for_lesson]
+
+            # Collect all task IDs from topics
+            all_task_ids = [task.id for topic in lesson.topics for task in topic.tasks]
+            all_task_ids.extend(lesson_generated_task_ids)
+
+            if all_task_ids:
+                # Bulk fetch solutions
+                solutions = (
+                    db.query(TaskSolution)
+                    .filter(
+                        TaskSolution.user_id == resolved_user_id,
+                        TaskSolution.task_id.in_(all_task_ids),
+                    )
+                    .all()
+                )
+                user_solutions_dict = {sol.task_id: sol for sol in solutions}
+
+                # Bulk fetch latest attempts per task
+                attempts = (
+                    db.query(TaskAttempt)
+                    .filter(
+                        TaskAttempt.user_id == resolved_user_id,
+                        TaskAttempt.task_id.in_(all_task_ids),
+                    )
+                    .order_by(TaskAttempt.task_id, TaskAttempt.submitted_at.desc())
+                    .all()
+                )
+
+                # Group attempts by task_id
+                for attempt in attempts:
+                    user_attempts_dict.setdefault(attempt.task_id, []).append(attempt)
 
         # Topics and tasks are already eagerly loaded, so no additional queries
         for topic in sorted(lesson.topics, key=lambda t: t.topic_order):
@@ -457,8 +528,24 @@ async def get_lesson(
                 "tasks": [],
             }
 
-            # Sort tasks in Python to avoid additional query
-            for task in sorted(topic.tasks, key=lambda t: t.order):
+            # Get all tasks for this topic (including user-specific generated tasks)
+            topic_tasks = list(topic.tasks)  # Regular tasks
+
+            # If user_id is provided, also fetch generated tasks for this user
+            if resolved_user_id:
+                generated_tasks = (
+                    db.query(Task)
+                    .filter(
+                        Task.topic_id == topic.id,
+                        Task.is_generated == True,
+                        Task.generated_for_user_id == resolved_user_id,
+                    )
+                    .all()
+                )
+                topic_tasks.extend(generated_tasks)
+
+            # Sort all tasks by order
+            for task in sorted(topic_tasks, key=lambda t: t.order):
                 task_data = {
                     "id": task.id,
                     "task_name": task.task_name,
@@ -466,7 +553,77 @@ async def get_lesson(
                     "points": task.points,
                     "order": task.order,
                     "data": task.data,
+                    "is_generated": getattr(task, "is_generated", False),
+                    "task_link": task.task_link,
+                    "is_active": task.is_active,
                 }
+
+                # Add user-specific progress data if user_id provided
+                if resolved_user_id:
+                    # Get pre-fetched solution and attempts data
+                    user_solution = user_solutions_dict.get(task.id)
+                    user_attempts = user_attempts_dict.get(task.id, [])
+
+                    # Determine task state
+                    task_data["is_solved"] = user_solution is not None
+                    task_data["has_attempts"] = len(user_attempts) > 0
+                    task_data["attempt_count"] = len(user_attempts)
+
+                    # For quiz tasks, check if they have failed attempts (making them unavailable)
+                    # The DB stores polymorphic identity in `type` like 'multiple_select_quiz'
+                    is_quiz_task = task.type in [
+                        "multiple_select_quiz",
+                        "true_false_quiz",
+                        "single_question_task",
+                        "MultipleSelectQuiz",
+                        "TrueFalseQuiz",
+                        "SingleQuestionTask",
+                    ]
+
+                    # Quiz logic: if attempted but not solved = unavailable (keep attempt info but mark unavailable)
+                    if is_quiz_task and user_attempts and not user_solution:
+                        task_data["is_available"] = False
+                        task_data["unavailable_reason"] = "failed_attempt"
+                        # Mark the task as attempted; is_solved should reflect completion, not merely attempt
+                        task_data["is_solved"] = False
+                        task_data["is_correct"] = False
+                    else:
+                        task_data["is_available"] = True
+                        task_data["unavailable_reason"] = None
+
+                    # Add solution details if exists
+                    if user_solution:
+                        task_data["solution_id"] = user_solution.id
+                        task_data["completed_at"] = user_solution.completed_at
+                        task_data["is_correct"] = getattr(user_solution, "is_correct", True)
+                        task_data["is_solved"] = True
+                    elif not is_quiz_task or not user_attempts:
+                        # No solution and either not a quiz or no attempts
+                        task_data["is_correct"] = None
+                        task_data["is_solved"] = False
+
+                    # Add latest attempt info
+                    if user_attempts:
+                        latest_attempt = user_attempts[0]  # Already sorted by submitted_at desc
+                        task_data["latest_attempt"] = {
+                            "submitted_at": latest_attempt.submitted_at,
+                            "is_successful": latest_attempt.is_successful,
+                            "attempt_number": latest_attempt.attempt_number,
+                        }
+                else:
+                    # Default state for users without specific data
+                    task_data["is_solved"] = False
+                    task_data["has_attempts"] = False
+                    task_data["attempt_count"] = 0
+                    task_data["is_available"] = True
+                    task_data["unavailable_reason"] = None
+
+                # Add visual indicators for generated tasks
+                if getattr(task, "is_generated", False):
+                    # Add emoji prefix to name for visual distinction
+                    if not task_data["task_name"].startswith("📝"):
+                        task_data["task_name"] = f"📝 {task_data['task_name']}"
+
                 topic_data["tasks"].append(task_data)
 
             lesson_data["topics"].append(topic_data)
@@ -738,7 +895,8 @@ async def update_task(
         # Update the JSON field based on task type
         task_json = task.data.copy() if task.data else {}
 
-        if task.type == "MultipleSelectQuiz":
+        # Accept both polymorphic identities and class-name variants
+        if task.type in ("multiple_select_quiz", "MultipleSelectQuiz"):
             task_json["question"] = task_data.newQuestion
             task_json["options"] = [
                 {"id": str(i + 1), "name": option["name"]} for i, option in enumerate(task_data.newOptions)
@@ -749,6 +907,13 @@ async def update_task(
         task.updated_at = func.now()
 
         db.commit()
+        # Invalidate cached course data since task content changed
+        try:
+            invalidate_course_cache(course_id)
+        except Exception:
+            # Non-fatal: log and continue
+            logger.debug(f"Could not invalidate cache for course {course_id}", category=LogCategory.PERFORMANCE)
+
         logger.info(f"Task {task_id} updated successfully")
 
         return {"message": "Task updated successfully", "task_id": task_id}

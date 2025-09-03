@@ -16,6 +16,7 @@ from models import (
     Task,
     TaskAttempt,
     TaskSolution,
+    TaskGenerationRequest,
     Course,
     Lesson,
     Topic,
@@ -525,8 +526,48 @@ async def submit_task_solution(
             .first()
         )
 
-        if existing_solution:
-            raise HTTPException(status_code=409, detail="Solution already exists for this task")
+        # For quiz tasks, only allow one solution. For code tasks, allow multiple solutions.
+        task_type = task.type.lower()
+        is_quiz_task = task_type in ["multiple_select_quiz", "true_false_quiz", "single_question_task"]
+
+        if existing_solution and is_quiz_task:
+            raise HTTPException(status_code=409, detail="Quiz tasks can only be solved once")
+        elif existing_solution and not is_quiz_task:
+            # For code tasks, update the existing solution
+            import json
+
+            logger.info(f"Updating existing solution for code task {solution.task_id} by user {user_id}")
+            existing_solution.solution_content = (
+                json.dumps(solution.solution_data)
+                if isinstance(solution.solution_data, dict)
+                else str(solution.solution_data)
+            )
+            existing_solution.completed_at = datetime.utcnow()
+            existing_solution.is_correct = solution.is_correct
+
+            # Update the latest attempt to mark it as successful
+            latest_attempt = (
+                db.query(TaskAttempt)
+                .filter(TaskAttempt.user_id == user.id, TaskAttempt.task_id == solution.task_id)
+                .order_by(TaskAttempt.submitted_at.desc())
+                .first()
+            )
+
+            if latest_attempt:
+                latest_attempt.is_successful = True
+
+            db.commit()
+            db.refresh(existing_solution)
+
+            logger.info(f"Task solution updated: user {user_id}, task {solution.task_id}")
+
+            return {
+                "solution_id": existing_solution.id,
+                "task_id": solution.task_id,
+                "completed_at": existing_solution.completed_at,
+                "points_earned": task.points if solution.is_correct else 0,
+                "message": "Task solution updated successfully",
+            }
 
         # Create task solution
         import json
@@ -1068,6 +1109,13 @@ async def submit_code_solution(
         )
 
         db.add(task_attempt)
+        db.commit()  # Commit the attempt first to get the ID
+
+        # If unsuccessful, trigger adaptive task generation
+        if not is_successful:
+            await _trigger_adaptive_task_generation(
+                user=user, task_attempt=task_attempt, task=task, user_solution=request.code, db=db
+            )
 
         # If successful, create or update solution
         if is_successful:
@@ -1146,6 +1194,48 @@ async def submit_text_answer(
             raise HTTPException(status_code=404, detail="Task not found")
 
         logger.info(f"Text submission received for user {user_id}, task {request.task_id}")
+        
+        # Check attempt limits for quiz-type tasks
+        if task.attempt_strategy != 'unlimited':
+            # Check if user has already completed the task
+            completed = db.query(TaskAttempt).filter(
+                TaskAttempt.user_id == user.id,
+                TaskAttempt.task_id == request.task_id,
+                TaskAttempt.is_successful == True
+            ).first()
+            
+            if completed:
+                return {
+                    "is_correct": True,
+                    "attempt_number": completed.attempt_number,
+                    "feedback": "You have already completed this task successfully.",
+                    "task_id": request.task_id,
+                    "already_completed": True
+                }
+            
+            # Check attempt count against limit
+            existing_attempts = db.query(TaskAttempt).filter(
+                TaskAttempt.user_id == user.id,
+                TaskAttempt.task_id == request.task_id
+            ).count()
+            
+            if existing_attempts >= (task.max_attempts or 0):
+                # Return the correct answer when max attempts reached
+                correct_answer = None
+                if task.data and isinstance(task.data, dict):
+                    correct_answer = task.data.get('correct_answers') or task.data.get('correct_answer')
+                
+                raise HTTPException(
+                    status_code=403,
+                    detail={
+                        "error": "max_attempts_reached",
+                        "message": f"Maximum attempts ({task.max_attempts}) reached for this quiz.",
+                        "max_attempts": task.max_attempts,
+                        "attempts_used": existing_attempts,
+                        "correct_answer": correct_answer,
+                        "task_type": task.type
+                    }
+                )
 
         # Evaluate the text answer
         evaluation = evaluate_text_submission(request.user_answer, task)
@@ -1171,6 +1261,13 @@ async def submit_text_answer(
         )
 
         db.add(task_attempt)
+        db.commit()  # Commit the attempt first to get the ID
+
+        # If unsuccessful, trigger adaptive task generation
+        if not is_successful:
+            await _trigger_adaptive_task_generation(
+                user=user, task_attempt=task_attempt, task=task, user_solution=request.user_answer, db=db
+            )
 
         # If successful, create or update solution
         if is_successful:
@@ -1208,3 +1305,120 @@ async def submit_text_answer(
         logger.error(f"Error submitting text answer: {e}")
         # For tests, return a 200 with error status if external evaluator fails
         return {"is_correct": False, "attempt_number": 0, "feedback": str(e), "task_id": request.task_id}
+
+
+async def _trigger_adaptive_task_generation(
+    user: User, task_attempt: TaskAttempt, task: Task, user_solution: str, db: Session
+):
+    """
+    Trigger adaptive task generation for a failed attempt.
+    This runs as a background task to avoid slowing down the submission response.
+    """
+    try:
+        # Check if we already have a pending or recent generation request for this user/task
+        recent_request = (
+            db.query(TaskGenerationRequest)
+            .filter(
+                TaskGenerationRequest.user_id == user.id,
+                TaskGenerationRequest.source_task_attempt_id == task_attempt.id,
+            )
+            .first()
+        )
+
+        if recent_request:
+            logger.info(f"Adaptive task generation already requested for attempt {task_attempt.id}")
+            return
+
+        # Create a generation request record
+        generation_request = TaskGenerationRequest(
+            user_id=user.id,
+            source_task_attempt_id=task_attempt.id,
+            topic_id=task.topic_id,
+            status="pending",
+            error_analysis={
+                "attempt_number": task_attempt.attempt_number,
+                "task_type": task.type,
+                "submission_length": len(user_solution),
+                "has_syntax_errors": "error" in user_solution.lower() if task.type == "code" else False,
+            },
+        )
+
+        db.add(generation_request)
+        db.commit()
+
+        # Import here to avoid circular imports
+        from utils.task_generator import generate_adaptive_task
+
+        # Schedule the background task generation
+        # For now, we'll use FastAPI BackgroundTasks, but this could be moved to Celery later
+        import asyncio
+
+        asyncio.create_task(
+            _generate_adaptive_task_background(generation_request.id, user.id, task.id, user_solution, task.topic_id)
+        )
+
+        logger.info(f"Triggered adaptive task generation for user {user.id}, failed task {task.id}")
+
+    except Exception as e:
+        logger.error(f"Error triggering adaptive task generation: {str(e)}")
+        # Don't fail the submission if task generation fails
+        pass
+
+
+async def _generate_adaptive_task_background(
+    generation_request_id: int, user_id: int, failed_task_id: int, user_solution: str, topic_id: int
+):
+    """
+    Background task to generate the adaptive task.
+    """
+    db = SessionLocal()
+    try:
+        # Update request status
+        generation_request = (
+            db.query(TaskGenerationRequest).filter(TaskGenerationRequest.id == generation_request_id).first()
+        )
+
+        if not generation_request:
+            logger.error(f"Generation request {generation_request_id} not found")
+            return
+
+        generation_request.status = "generating"
+        db.commit()
+
+        # Import here to avoid circular imports
+        from utils.task_generator import generate_adaptive_task
+
+        # Generate the adaptive task
+        generated_task_id = await generate_adaptive_task(
+            user_id=user_id,
+            failed_task_id=failed_task_id,
+            user_solution=user_solution,
+            topic_id=topic_id,
+            error_analysis=generation_request.error_analysis,
+            db=db,
+        )
+
+        # Update the generation request with results
+        if generated_task_id:
+            generation_request.status = "completed"
+            generation_request.generated_task_id = generated_task_id
+            generation_request.completed_at = datetime.utcnow()
+            logger.info(f"Successfully generated adaptive task {generated_task_id} for user {user_id}")
+        else:
+            generation_request.status = "failed"
+            logger.error(f"Failed to generate adaptive task for user {user_id}")
+
+        db.commit()
+
+    except Exception as e:
+        # Mark as failed
+        if generation_request:
+            generation_request.status = "failed"
+            db.commit()
+        logger.error(f"Error in background task generation: {str(e)}")
+    finally:
+        db.close()
+
+
+# Import at the end to avoid circular imports
+from db import SessionLocal

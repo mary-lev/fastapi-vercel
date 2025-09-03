@@ -7,14 +7,18 @@ from openai import OpenAI
 
 from db import SessionLocal  # Keep for backwards compatibility in utility files
 
-from models import Lesson, Topic
+from models import Lesson, Topic, Task
 from models import TrueFalseQuiz, MultipleSelectQuiz, CodeTask, SingleQuestionTask
+from sqlalchemy import func
 from routes.topics import get_topic_data
 from routes.lesson import rebuild_task_links
 
 from dotenv import load_dotenv
+from utils.structured_logging import get_logger
 
 load_dotenv()
+
+logger = get_logger("task_generator")
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
@@ -44,6 +48,18 @@ class Task(BaseModel):
 
 class TaskGroup(BaseModel):
     tasks: List[Task]
+
+
+class AdaptiveTask(BaseModel):
+    """Single adaptive task generated to address specific learning gaps"""
+
+    type: TaskType
+    name: str
+    question: str = Field(description="Question text that addresses the specific learning gap")
+    code: Optional[str] = Field(None, description="Code snippet if this is a code task")
+    explanation: str = Field(description="Brief explanation of what skill this task trains")
+    difficulty_adjustment: str = Field(description="How this task adjusts difficulty compared to the original")
+    points: int = Field(description="Points (5-15) based on complexity and remediation needs")
 
 
 # Mapping from task 'type' to 'lessonType'
@@ -305,6 +321,189 @@ def generate_tasks(
         db.close()
 
     return list_items
+
+
+async def generate_adaptive_task(
+    user_id: int, failed_task_id: int, user_solution: str, topic_id: int, error_analysis: dict = None, db=None
+) -> Optional[int]:
+    """
+    Generate an adaptive task to address specific learning gaps.
+
+    Args:
+        user_id: ID of the user who needs the adaptive task
+        failed_task_id: ID of the task the user failed
+        user_solution: The incorrect solution submitted by the user
+        topic_id: ID of the topic for the adaptive task
+        error_analysis: Optional analysis of what went wrong
+        db: Database session
+
+    Returns:
+        ID of the generated task, or None if generation failed
+    """
+    if db is None:
+        db = SessionLocal()
+        should_close = True
+    else:
+        should_close = False
+
+    try:
+        # Get the original task details
+        original_task = db.query(Task).filter(Task.id == failed_task_id).first()
+        if not original_task:
+            logger.error(f"Original task {failed_task_id} not found")
+            return None
+
+        # Get topic and lesson context
+        topic = db.query(Topic).filter(Topic.id == topic_id).first()
+        if not topic:
+            logger.error(f"Topic {topic_id} not found")
+            return None
+
+        lesson = db.query(Lesson).filter(Lesson.id == topic.lesson_id).first()
+
+        # Analyze the error and create targeted prompt
+        error_context = _analyze_user_error(original_task, user_solution, error_analysis)
+
+        # Create AI prompt for adaptive task generation
+        system_prompt = f"""
+        You are an expert programming educator creating personalized remedial tasks.
+        
+        A student failed a task and needs a targeted practice exercise to address their specific learning gap.
+        
+        **Original Task Context:**
+        - Task Name: {original_task.task_name}
+        - Task Type: {original_task.type}
+        - Topic: {topic.title} 
+        - Concepts: {topic.concepts}
+        
+        **Student's Learning Gap:**
+        {error_context}
+        
+        **Instructions:**
+        Create ONE focused task that:
+        1. Addresses the specific error pattern shown
+        2. Is slightly simpler than the original to build confidence
+        3. Reinforces the fundamental concept the student missed
+        4. Provides a stepping stone toward mastering the original concept
+        5. Uses engaging, relatable examples from Digital Humanities context
+        
+        **Task Requirements:**
+        - Must be directly related to the missed concept
+        - Should be completable in 5-10 minutes
+        - Include clear guidance without giving away the answer
+        - Match the original task type when possible
+        """
+
+        user_prompt = f"""
+        Generate an adaptive task based on this failed attempt:
+        
+        **Original Task Data:** {original_task.data}
+        **Student's Incorrect Solution:** {user_solution}
+        **Error Pattern:** {error_context}
+        
+        Create a task that helps the student understand what they got wrong and practice the correct approach.
+        """
+
+        # Generate the adaptive task using OpenAI
+        completion = client.beta.chat.completions.parse(
+            model="gpt-4o-2024-08-06",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=0.3,  # Lower temperature for more focused remediation
+            response_format=AdaptiveTask,
+        )
+
+        adaptive_task_data = completion.choices[0].message.parsed
+
+        # Get the highest order number for tasks in this topic
+        max_order = db.query(func.max(Task.order)).filter(Task.topic_id == topic_id).scalar() or 0
+
+        # Create the new adaptive task
+        new_task = task_model_mapping.get(type_mapping.get(adaptive_task_data.type.value, "UnknownType"), Task)(
+            task_name=f"📝 {adaptive_task_data.name}",  # Mark as adaptive with emoji
+            task_link=f"adaptive-{failed_task_id}-{user_id}",  # Unique identifier
+            points=adaptive_task_data.points,
+            order=max_order + 1,  # Add to end of topic
+            topic_id=topic_id,
+            data=_prepare_adaptive_task_data(adaptive_task_data),
+            is_active=True,
+            is_generated=True,
+            generated_for_user_id=user_id,
+            source_task_id=failed_task_id,
+            generation_prompt=system_prompt + "\n\n" + user_prompt,
+            ai_model_used="gpt-4o-2024-08-06",
+        )
+
+        db.add(new_task)
+        db.commit()
+        db.refresh(new_task)
+
+        logger.info(f"Generated adaptive task {new_task.id} for user {user_id} based on failed task {failed_task_id}")
+
+        return new_task.id
+
+    except Exception as e:
+        logger.error(f"Failed to generate adaptive task: {str(e)}")
+        db.rollback()
+        return None
+    finally:
+        if should_close:
+            db.close()
+
+
+def _analyze_user_error(original_task: Task, user_solution: str, error_analysis: dict = None) -> str:
+    """Analyze what went wrong with the user's solution"""
+    analysis_parts = []
+
+    # Add task type context
+    if original_task.type == "code":
+        analysis_parts.append(f"This was a coding task. The student's code was: {user_solution}")
+    elif "quiz" in original_task.type.lower():
+        analysis_parts.append(f"This was a quiz question. The student's answer was: {user_solution}")
+
+    # Add any provided error analysis
+    if error_analysis:
+        if "syntax_errors" in error_analysis:
+            analysis_parts.append(f"Syntax errors detected: {error_analysis['syntax_errors']}")
+        if "logic_errors" in error_analysis:
+            analysis_parts.append(f"Logic issues: {error_analysis['logic_errors']}")
+        if "concept_gaps" in error_analysis:
+            analysis_parts.append(f"Concept understanding gaps: {error_analysis['concept_gaps']}")
+
+    return " ".join(analysis_parts)
+
+
+def _prepare_adaptive_task_data(adaptive_task: AdaptiveTask) -> dict:
+    """Convert AdaptiveTask to the data format expected by the Task model"""
+    data = {}
+
+    if adaptive_task.type.value == "code":
+        data["text"] = adaptive_task.question
+        if adaptive_task.explanation:
+            data["text"] += f"\n\n💡 **Tip:** {adaptive_task.explanation}"
+        data["code"] = adaptive_task.code or "# Your code here..."
+
+    elif adaptive_task.type.value == "multiple_choice":
+        data["question"] = adaptive_task.question
+        if adaptive_task.explanation:
+            data["question"] += f"\n\n💡 **Note:** {adaptive_task.explanation}"
+        # For now, generate simple options - can be enhanced later
+        data["options"] = [
+            {"id": "1", "name": "Option A"},
+            {"id": "2", "name": "Option B"},
+            {"id": "3", "name": "Option C"},
+            {"id": "4", "name": "Option D"},
+        ]
+        data["correctAnswers"] = ["1"]  # Default to first option
+
+    elif adaptive_task.type.value == "single_question":
+        data["question"] = adaptive_task.question
+        if adaptive_task.explanation:
+            data["question"] += f"\n\n💡 **Guidance:** {adaptive_task.explanation}"
+
+    return data
 
 
 # generate_tasks(19, 5)

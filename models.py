@@ -93,12 +93,50 @@ class Task(Base):
     created_at = Column(DateTime, default=func.now(), nullable=False)
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
 
+    # Dynamic task generation fields
+    is_generated = Column(Boolean, default=False, nullable=False)
+    generated_for_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    source_task_id = Column(Integer, ForeignKey("tasks.id"), nullable=True)
+    generation_prompt = Column(Text, nullable=True)
+    ai_model_used = Column(String(50), nullable=True)
+
+    # Attempt limit fields
+    max_attempts = Column(Integer, nullable=True)  # NULL means unlimited
+    attempt_strategy = Column(String(20), default="unlimited", nullable=False)  # 'unlimited', 'single'
+
     __mapper_args__ = {"polymorphic_on": type, "polymorphic_identity": "task"}
 
     tags = relationship("Tag", secondary=task_tags, backref="tasks", cascade="all")
     ai_feedbacks = relationship("AIFeedback", back_populates="related_task", cascade="all, delete-orphan")
     attempts = relationship("TaskAttempt", back_populates="related_task", cascade="all, delete-orphan")
     solutions = relationship("TaskSolution", back_populates="related_task", cascade="all, delete-orphan")
+
+    def get_attempt_count(self, user_id: int, db) -> int:
+        """Get the number of attempts a user has made on this task"""
+        from sqlalchemy import func
+
+        return (
+            db.query(func.count(TaskAttempt.id))
+            .filter(TaskAttempt.task_id == self.id, TaskAttempt.user_id == user_id)
+            .scalar()
+            or 0
+        )
+
+    def can_attempt(self, user_id: int, db) -> bool:
+        """Check if user can make another attempt"""
+        if self.attempt_strategy == "unlimited":
+            return True
+        attempt_count = self.get_attempt_count(user_id, db)
+        return attempt_count < (self.max_attempts or 0)
+
+    def is_completed_by_user(self, user_id: int, db) -> bool:
+        """Check if user has successfully completed this task"""
+        return (
+            db.query(TaskAttempt)
+            .filter(TaskAttempt.task_id == self.id, TaskAttempt.user_id == user_id, TaskAttempt.is_successful == True)
+            .first()
+            is not None
+        )
 
 
 class TrueFalseQuiz(Task):
@@ -107,12 +145,28 @@ class TrueFalseQuiz(Task):
     # Define the polymorphic identity and any additional properties for this model
     __mapper_args__ = {"polymorphic_identity": "true_false_quiz"}
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Override defaults for quiz type
+        if "attempt_strategy" not in kwargs:
+            self.attempt_strategy = "single"
+        if "max_attempts" not in kwargs:
+            self.max_attempts = 1
+
 
 class MultipleSelectQuiz(Task):
     __tablename__ = "multiple_select_quizzes"
     id = Column(Integer, ForeignKey("tasks.id", ondelete="CASCADE"), primary_key=True)
 
     __mapper_args__ = {"polymorphic_identity": "multiple_select_quiz"}
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Override defaults for quiz type - single attempt only
+        if "attempt_strategy" not in kwargs:
+            self.attempt_strategy = "single"
+        if "max_attempts" not in kwargs:
+            self.max_attempts = 1
 
 
 class CodeTask(Task):
@@ -121,12 +175,28 @@ class CodeTask(Task):
 
     __mapper_args__ = {"polymorphic_identity": "code_task"}
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Code tasks have unlimited attempts by default
+        if "attempt_strategy" not in kwargs:
+            self.attempt_strategy = "unlimited"
+        if "max_attempts" not in kwargs:
+            self.max_attempts = None  # NULL = unlimited
+
 
 class SingleQuestionTask(Task):
     __tablename__ = "single_question_tasks"
     id = Column(Integer, ForeignKey("tasks.id", ondelete="CASCADE"), primary_key=True)
 
     __mapper_args__ = {"polymorphic_identity": "single_question_task"}
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Single question tasks are quizzes - single attempt only
+        if "attempt_strategy" not in kwargs:
+            self.attempt_strategy = "single"
+        if "max_attempts" not in kwargs:
+            self.max_attempts = 1
 
 
 class TaskAttempt(Base):
@@ -158,6 +228,8 @@ class TaskSolution(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     solution_content = Column(Text, nullable=False)  # Changed to Text and made not nullable
     completed_at = Column(DateTime, default=func.now(), nullable=False)
+    is_correct = Column(Boolean, default=False, nullable=False)
+    points_earned = Column(Integer, nullable=True)
 
     user = relationship("User", backref="task_solutions")
     related_task = relationship("Task", back_populates="solutions")
@@ -166,6 +238,31 @@ class TaskSolution(Base):
     __table_args__ = (
         Index("idx_task_solutions_user_task", "user_id", "task_id"),
         Index("idx_task_solutions_completed_at", "completed_at"),
+    )
+
+
+class TaskGenerationRequest(Base):
+    __tablename__ = "task_generation_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    source_task_attempt_id = Column(Integer, ForeignKey("task_attempts.id"), nullable=False)
+    topic_id = Column(Integer, ForeignKey("topics.id"), nullable=False)
+    status = Column(String(20), default="pending", nullable=False)  # pending, generating, completed, failed
+    error_analysis = Column(JSON, nullable=True)  # Store analysis of what went wrong
+    generated_task_id = Column(Integer, ForeignKey("tasks.id"), nullable=True)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    completed_at = Column(DateTime, nullable=True)
+
+    user = relationship("User", backref="generation_requests")
+    source_attempt = relationship("TaskAttempt", backref="generation_requests")
+    topic = relationship("Topic", backref="generation_requests")
+    generated_task = relationship("Task", foreign_keys=[generated_task_id], backref="generation_request")
+
+    # Add indexes for common queries
+    __table_args__ = (
+        Index("idx_generation_requests_user_status", "user_id", "status"),
+        Index("idx_generation_requests_created_at", "created_at"),
     )
 
 
@@ -179,7 +276,8 @@ class Course(Base):
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
     professor_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
-    lessons = relationship("Lesson", order_by="Lesson.id", back_populates="course")  # Add this line
+    # Ensure lessons are returned in configured order (lesson_order) by default
+    lessons = relationship("Lesson", order_by="Lesson.lesson_order", back_populates="course")  # Add this line
 
 
 class Lesson(Base):
