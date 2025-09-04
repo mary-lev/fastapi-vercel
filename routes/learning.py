@@ -11,7 +11,7 @@ from sqlalchemy.sql import func
 from typing import List, Optional, Union
 from pydantic import BaseModel
 
-from models import Course, Lesson, Topic, Task, Summary, User, TaskSolution, TaskAttempt
+from models import Course, Lesson, Topic, Task, Summary, User, TaskSolution, TaskAttempt, CourseEnrollment
 from db import get_db
 from utils.structured_logging import get_logger, LogCategory
 from utils.cache_manager import cache_manager, cache_key_for_course, invalidate_course_cache
