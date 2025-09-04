@@ -357,8 +357,8 @@ class OpenAPIMetadata:
     LICENSE_INFO = {"name": "MIT License", "url": "https://opensource.org/licenses/MIT"}
 
     SERVERS = [
-        {"url": "https://fastapi-vercel-lake.vercel.app", "description": "Production server"},
         {"url": "http://localhost:8000", "description": "Development server"},
+        {"url": "https://fastapi-vercel-lake.vercel.app", "description": "Production server"},
     ]
 
 
