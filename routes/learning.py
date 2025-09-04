@@ -253,7 +253,7 @@ async def get_courses(db: Session = Depends(get_db)):
             result.append(course_data)
 
         # Cache the result
-        cache_manager.set(cache_key, result, ttl=3600)  # 1 hour cache
+        cache_manager.set(cache_key, result, ttl=36)  # 1 hour cache
 
         logger.info(
             "Course list fetched and cached",
