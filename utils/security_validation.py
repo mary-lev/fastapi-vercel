@@ -369,8 +369,10 @@ def sanitize_code_input(code: str) -> ValidationResult:
     # Check for obvious malicious patterns
     malicious_patterns = [
         # Only block truly dangerous dunder methods, not common class methods
-        (r"__(?:class__|bases__|subclasses__|globals__|builtins__|import__|code__|dict__|mro__)(?:\s|$|\()", 
-         "Use of dangerous dunder attributes is restricted"),
+        (
+            r"__(?:class__|bases__|subclasses__|globals__|builtins__|import__|code__|dict__|mro__)(?:\s|$|\()",
+            "Use of dangerous dunder attributes is restricted",
+        ),
         (r"chr\(|ord\(", "Character manipulation functions are restricted"),
         (r"exec\s*\(|eval\s*\(", "Dynamic code execution is forbidden"),
         (r"import\s+os|from\s+os", "OS module access is forbidden"),

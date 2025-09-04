@@ -158,35 +158,38 @@ async def get_courses(db: Session = Depends(get_db)):
 
         # Query database with instructor and lesson information
         from sqlalchemy.orm import joinedload
+
         courses = (
             db.query(Course)
             .options(
                 joinedload(Course.instructors),
-                joinedload(Course.lessons).joinedload(Lesson.topics).joinedload(Topic.tasks)
+                joinedload(Course.lessons).joinedload(Lesson.topics).joinedload(Topic.tasks),
             )
             .all()
         )
-        
+
         result = []
         for course in courses:
             # Build instructor list
             instructors = []
             for instructor in course.instructors:
-                instructors.append({
-                    "id": instructor.id,
-                    "name": instructor.name,
-                    "title": instructor.title,
-                    "bio": instructor.bio,
-                    "image": instructor.image,
-                    "email": instructor.email,
-                    "social_links": instructor.social_links or [],
-                    "is_primary": instructor.is_primary,
-                    "display_order": instructor.display_order
-                })
-            
+                instructors.append(
+                    {
+                        "id": instructor.id,
+                        "name": instructor.name,
+                        "title": instructor.title,
+                        "bio": instructor.bio,
+                        "image": instructor.image,
+                        "email": instructor.email,
+                        "social_links": instructor.social_links or [],
+                        "is_primary": instructor.is_primary,
+                        "display_order": instructor.display_order,
+                    }
+                )
+
             # Sort instructors by display order
             instructors.sort(key=lambda x: x["display_order"])
-            
+
             # Build lessons structure
             lessons = []
             for lesson in course.lessons:
@@ -194,46 +197,55 @@ async def get_courses(db: Session = Depends(get_db)):
                 for topic in lesson.topics:
                     tasks = []
                     for task in topic.tasks:
-                        tasks.append({
-                            "id": task.id,
-                            "task_name": task.task_name,
-                            "task_link": task.task_link,
-                            "type": task.type,
-                            "points": task.points,
-                            "order": task.order,
-                            "is_active": task.is_active
-                        })
-                    
+                        tasks.append(
+                            {
+                                "id": task.id,
+                                "task_name": task.task_name,
+                                "task_link": task.task_link,
+                                "type": task.type,
+                                "points": task.points,
+                                "order": task.order,
+                                "is_active": task.is_active,
+                            }
+                        )
+
                     # Sort tasks by order
                     tasks.sort(key=lambda x: x["order"])
-                    
-                    topics.append({
-                        "id": topic.id,
-                        "title": topic.title,
-                        "background": topic.background,
-                        "objectives": topic.objectives,
-                        "content_file_md": topic.content_file_md,
-                        "concepts": topic.concepts,
-                        "topic_order": topic.topic_order,
-                        "tasks": tasks
-                    })
-                
+
+                    topics.append(
+                        {
+                            "id": topic.id,
+                            "title": topic.title,
+                            "background": topic.background,
+                            "objectives": topic.objectives,
+                            "content_file_md": topic.content_file_md,
+                            "concepts": topic.concepts,
+                            "topic_order": topic.topic_order,
+                            "tasks": tasks,
+                        }
+                    )
+
                 # Sort topics by order
                 topics.sort(key=lambda x: x["topic_order"])
-                
-                lessons.append({
-                    "id": lesson.id,
-                    "title": lesson.title,
-                    "description": lesson.description,
-                    "lesson_order": lesson.lesson_order,
-                    "textbook": lesson.textbook,
-                    "start_date": lesson.start_date,
-                    "topics": topics
-                })
-            
+
+                lessons.append(
+                    {
+                        "id": lesson.id,
+                        "title": lesson.title,
+                        "description": lesson.description,
+                        "lesson_order": lesson.lesson_order,
+                        "textbook": lesson.textbook,
+                        "start_date": lesson.start_date,
+                        "topics": topics,
+                    }
+                )
+
             # Sort lessons by order
             lessons.sort(key=lambda x: x["lesson_order"])
-            
+
+            # Get current enrollment count
+            current_enrollments = db.query(CourseEnrollment).filter(CourseEnrollment.course_id == course.id).count()
+
             course_data = {
                 "id": course.id,
                 "title": course.title,
@@ -245,6 +257,14 @@ async def get_courses(db: Session = Depends(get_db)):
                 "duration_weeks": course.duration_weeks,
                 "difficulty_level": course.difficulty_level,
                 "course_image": course.course_image,
+                # Enrollment management fields
+                "enrollment_open_date": course.enrollment_open_date,
+                "enrollment_close_date": course.enrollment_close_date,
+                "max_enrollments": course.max_enrollments,
+                "enrollment_status": course.get_enrollment_status(),
+                "is_enrollment_open": course.is_enrollment_open(),
+                "current_enrollments": current_enrollments,
+                # Course structure
                 "instructors": instructors,
                 "lessons": lessons,
                 "created_at": course.created_at,

@@ -40,7 +40,7 @@ def provide_code_feedback(
         f"Here is the task description: {task.data}.\n"
         f"The student's answer is: {answer}\n"
         f"The output of the code is: {output}\n"
-        "Generate the feedback. Be polite and laconic." \
+        "Generate the feedback. Be polite and laconic."
         "Respond to student in one sentence."
     )
     print(user_prompt)

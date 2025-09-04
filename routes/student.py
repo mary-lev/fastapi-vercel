@@ -416,44 +416,40 @@ async def get_lesson_summary(
     try:
         # Verify user exists
         user = await get_user_by_id(user_id, request, db)
-        
+
         # Verify lesson belongs to course
         lesson = db.query(Lesson).filter(Lesson.id == lesson_id, Lesson.course_id == course_id).first()
-        
+
         if not lesson:
             raise HTTPException(status_code=404, detail="Lesson not found")
-        
+
         # Verify user is enrolled
         enrollment = (
             db.query(CourseEnrollment)
             .filter(CourseEnrollment.user_id == user.id, CourseEnrollment.course_id == course_id)
             .first()
         )
-        
+
         if not enrollment:
             raise HTTPException(status_code=404, detail="User not enrolled in this course")
-        
+
         # Get all tasks in the lesson
         total_tasks = db.query(Task).join(Topic).filter(Topic.lesson_id == lesson_id).count()
-        
+
         # Get completed tasks (with successful attempts)
         completed_tasks = (
             db.query(TaskAttempt)
             .join(Task)
             .join(Topic)
-            .filter(
-                TaskAttempt.user_id == user.id,
-                Topic.lesson_id == lesson_id,
-                TaskAttempt.is_successful == True
-            )
+            .filter(TaskAttempt.user_id == user.id, Topic.lesson_id == lesson_id, TaskAttempt.is_successful == True)
             .distinct(TaskAttempt.task_id)
             .count()
         )
-        
+
         # Calculate accuracy rate based on first successful attempt per task
         # Get distinct tasks attempted and their first success status
         from sqlalchemy import and_, exists
-        
+
         # Count unique tasks attempted
         tasks_attempted = (
             db.query(TaskAttempt.task_id)
@@ -463,27 +459,23 @@ async def get_lesson_summary(
             .distinct()
             .count()
         )
-        
+
         # Count unique tasks completed successfully (at least once)
         tasks_completed_successfully = (
             db.query(TaskAttempt.task_id)
             .join(Task)
             .join(Topic)
-            .filter(
-                TaskAttempt.user_id == user.id,
-                Topic.lesson_id == lesson_id,
-                TaskAttempt.is_successful == True
-            )
+            .filter(TaskAttempt.user_id == user.id, Topic.lesson_id == lesson_id, TaskAttempt.is_successful == True)
             .distinct()
             .count()
         )
-        
+
         accuracy_rate = 0
         if tasks_attempted > 0:
             accuracy_rate = round((tasks_completed_successfully / tasks_attempted) * 100, 1)
             # Ensure accuracy never exceeds 100%
             accuracy_rate = min(accuracy_rate, 100.0)
-        
+
         # Calculate time spent per task, then sum up
         time_spent_minutes = 0.0
         if tasks_attempted > 0:
@@ -491,9 +483,9 @@ async def get_lesson_summary(
             task_time_data = (
                 db.query(
                     TaskAttempt.task_id,
-                    func.min(TaskAttempt.submitted_at).label('first_attempt'),
-                    func.max(TaskAttempt.submitted_at).label('last_attempt'),
-                    func.count(TaskAttempt.id).label('attempt_count')
+                    func.min(TaskAttempt.submitted_at).label("first_attempt"),
+                    func.max(TaskAttempt.submitted_at).label("last_attempt"),
+                    func.count(TaskAttempt.id).label("attempt_count"),
                 )
                 .join(Task)
                 .join(Topic)
@@ -501,29 +493,29 @@ async def get_lesson_summary(
                 .group_by(TaskAttempt.task_id)
                 .all()
             )
-            
+
             for task_data in task_time_data:
                 if task_data.first_attempt and task_data.last_attempt:
                     task_time_diff = task_data.last_attempt - task_data.first_attempt
                     task_minutes = task_time_diff.total_seconds() / 60
-                    
+
                     # For single attempts or very short time spans, use a minimum time estimate
                     if task_minutes < 2:  # Less than 2 minutes
                         # Base time estimate: 3 minutes + 1 minute per additional attempt
                         task_minutes = 3 + (task_data.attempt_count - 1)
                     else:
-                        # Cap maximum time per task at 2 hours to handle cases where 
+                        # Cap maximum time per task at 2 hours to handle cases where
                         # students leave tasks open for days
                         task_minutes = min(task_minutes, 120)
-                    
+
                     time_spent_minutes += task_minutes
-            
+
             # Round total time to 1 decimal place
             time_spent_minutes = round(time_spent_minutes, 1)
-        
+
         # Generate appropriate summary message based on completion
         completion_percentage = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
-        
+
         if completion_percentage == 100:
             summary = f"Congratulations on completing {lesson.title}! You've mastered all {total_tasks} tasks with {accuracy_rate}% accuracy. Excellent work!"
         elif completion_percentage >= 80:
@@ -534,17 +526,17 @@ async def get_lesson_summary(
             summary = f"You've started {lesson.title} and completed {completed_tasks} task{'s' if completed_tasks != 1 else ''}. Continue learning to unlock more concepts!"
         else:
             summary = f"Welcome to {lesson.title}! This lesson contains {total_tasks} engaging tasks. Start your learning journey now!"
-        
+
         return {
             "summary": summary,
             "stats": {
                 "tasks_completed": completed_tasks,
                 "total_tasks": total_tasks,
                 "accuracy_rate": accuracy_rate,
-                "time_spent_minutes": time_spent_minutes
-            }
+                "time_spent_minutes": time_spent_minutes,
+            },
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -914,6 +906,57 @@ async def enroll_user_in_course(
         if not course:
             logger.warning(f"Course not found: {course_id}")
             raise HTTPException(status_code=404, detail="Course not found")
+
+        # Check if enrollment is currently open
+        if not course.is_enrollment_open():
+            enrollment_status = course.get_enrollment_status()
+            logger.warning(f"Enrollment attempt blocked for course {course_id}: {enrollment_status}")
+
+            if enrollment_status == "not_yet_open":
+                message = (
+                    f"Enrollment opens on {course.enrollment_open_date.strftime('%Y-%m-%d %H:%M')}"
+                    if course.enrollment_open_date
+                    else "Enrollment not yet open"
+                )
+            elif enrollment_status == "closed":
+                message = (
+                    f"Enrollment closed on {course.enrollment_close_date.strftime('%Y-%m-%d %H:%M')}"
+                    if course.enrollment_close_date
+                    else "Enrollment is closed"
+                )
+            else:
+                message = "Enrollment is not available for this course"
+
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": "enrollment_closed",
+                    "message": message,
+                    "enrollment_status": enrollment_status,
+                    "enrollment_open_date": (
+                        course.enrollment_open_date.isoformat() if course.enrollment_open_date else None
+                    ),
+                    "enrollment_close_date": (
+                        course.enrollment_close_date.isoformat() if course.enrollment_close_date else None
+                    ),
+                },
+            )
+
+        # Check enrollment capacity if set
+        if course.max_enrollments:
+            current_enrollments = db.query(CourseEnrollment).filter(CourseEnrollment.course_id == course_id).count()
+
+            if current_enrollments >= course.max_enrollments:
+                logger.warning(f"Course {course_id} is at capacity: {current_enrollments}/{course.max_enrollments}")
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "error": "course_full",
+                        "message": f"Course is full ({current_enrollments}/{course.max_enrollments} students enrolled)",
+                        "current_enrollments": current_enrollments,
+                        "max_enrollments": course.max_enrollments,
+                    },
+                )
 
         # Check if already enrolled
         existing_enrollment = (
@@ -1345,37 +1388,42 @@ async def submit_text_answer(
             raise HTTPException(status_code=404, detail="Task not found")
 
         logger.info(f"Text submission received for user {user_id}, task {request.task_id}")
-        
+
         # Check attempt limits for quiz-type tasks
-        if task.attempt_strategy != 'unlimited':
+        if task.attempt_strategy != "unlimited":
             # Check if user has already completed the task
-            completed = db.query(TaskAttempt).filter(
-                TaskAttempt.user_id == user.id,
-                TaskAttempt.task_id == request.task_id,
-                TaskAttempt.is_successful == True
-            ).first()
-            
+            completed = (
+                db.query(TaskAttempt)
+                .filter(
+                    TaskAttempt.user_id == user.id,
+                    TaskAttempt.task_id == request.task_id,
+                    TaskAttempt.is_successful == True,
+                )
+                .first()
+            )
+
             if completed:
                 return {
                     "is_correct": True,
                     "attempt_number": completed.attempt_number,
                     "feedback": "You have already completed this task successfully.",
                     "task_id": request.task_id,
-                    "already_completed": True
+                    "already_completed": True,
                 }
-            
+
             # Check attempt count against limit
-            existing_attempts = db.query(TaskAttempt).filter(
-                TaskAttempt.user_id == user.id,
-                TaskAttempt.task_id == request.task_id
-            ).count()
-            
+            existing_attempts = (
+                db.query(TaskAttempt)
+                .filter(TaskAttempt.user_id == user.id, TaskAttempt.task_id == request.task_id)
+                .count()
+            )
+
             if existing_attempts >= (task.max_attempts or 0):
                 # Return the correct answer when max attempts reached
                 correct_answer = None
                 if task.data and isinstance(task.data, dict):
-                    correct_answer = task.data.get('correct_answers') or task.data.get('correct_answer')
-                
+                    correct_answer = task.data.get("correct_answers") or task.data.get("correct_answer")
+
                 raise HTTPException(
                     status_code=403,
                     detail={
@@ -1384,8 +1432,8 @@ async def submit_text_answer(
                         "max_attempts": task.max_attempts,
                         "attempts_used": existing_attempts,
                         "correct_answer": correct_answer,
-                        "task_type": task.type
-                    }
+                        "task_type": task.type,
+                    },
                 )
 
         # Evaluate the text answer

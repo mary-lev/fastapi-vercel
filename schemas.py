@@ -161,6 +161,10 @@ class CourseBase(BaseModel):
     duration_weeks: Optional[int] = Field(None, ge=1, le=52)
     difficulty_level: Optional[str] = Field(None, regex="^(beginner|intermediate|advanced)$")
     course_image: Optional[str] = None  # Course cover image URL
+    # Enrollment management
+    enrollment_open_date: Optional[datetime] = None  # When enrollment opens
+    enrollment_close_date: Optional[datetime] = None  # When enrollment closes
+    max_enrollments: Optional[int] = Field(None, ge=1)  # Maximum students allowed
 
 
 class CourseCreate(CourseBase):
@@ -171,6 +175,10 @@ class CourseResponse(CourseBase):
     id: int
     professor_id: int
     instructors: Optional[List[CourseInstructorResponse]] = None
+    # Computed enrollment fields (not in database, calculated by API)
+    enrollment_status: Optional[str] = None  # "open", "closed", "not_yet_open"
+    is_enrollment_open: Optional[bool] = None  # True/False for enrollment availability
+    current_enrollments: Optional[int] = None  # Current number of enrolled students
     created_at: datetime
     updated_at: datetime
 
