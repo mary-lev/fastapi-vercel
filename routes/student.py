@@ -686,7 +686,7 @@ async def submit_task_solution(
                 else str(solution.solution_data)
             )
             existing_solution.completed_at = datetime.utcnow()
-            existing_solution.is_correct = solution.is_correct
+            existing_solution.is_correct = solution.is_correct  # ← This was already correct
 
             # Update the latest attempt to mark it as successful
             latest_attempt = (
@@ -727,6 +727,7 @@ async def submit_task_solution(
             task_id=solution.task_id,
             solution_content=solution_content_str,
             completed_at=datetime.utcnow(),
+            is_correct=solution.is_correct,  # ← FIX: Store the is_correct value from frontend
         )
 
         db.add(task_solution)
@@ -818,8 +819,8 @@ async def get_user_solutions(
                     "task_name": task.task_name if task else None,
                     "solution_data": solution_data,
                     "completed_at": solution.completed_at,
-                    "is_correct": getattr(solution, "is_correct", True),
-                    "points_earned": task.points if task and getattr(solution, "is_correct", True) else 0,
+                    "is_correct": solution.is_correct,  # ← FIX: Use actual field value instead of defaulting to True
+                    "points_earned": task.points if task and solution.is_correct else 0,
                 }
             )
 
@@ -871,8 +872,8 @@ async def get_user_solution(
             "task_name": task.task_name if task else None,
             "solution_data": solution_data,
             "completed_at": solution.completed_at,
-            "is_correct": getattr(solution, "is_correct", True),
-            "points_earned": task.points if task and getattr(solution, "is_correct", True) else 0,
+            "is_correct": solution.is_correct,
+            "points_earned": task.points if task and solution.is_correct else 0,
         }
 
     except HTTPException:
@@ -1328,12 +1329,14 @@ async def submit_code_solution(
             if existing_solution:
                 existing_solution.solution_content = request.code
                 existing_solution.completed_at = datetime.utcnow()
+                existing_solution.is_correct = True  # ← FIX: Mark as correct since is_successful = True
             else:
                 task_solution = TaskSolution(
                     user_id=user.id,
                     task_id=request.task_id,
                     solution_content=request.code,
                     completed_at=datetime.utcnow(),
+                    is_correct=True,  # ← FIX: Mark as correct since is_successful = True
                 )
                 db.add(task_solution)
 
@@ -1491,12 +1494,14 @@ async def submit_text_answer(
             if existing_solution:
                 existing_solution.solution_content = request.user_answer
                 existing_solution.completed_at = datetime.utcnow()
+                existing_solution.is_correct = True  # ← FIX: Mark as correct since is_successful = True
             else:
                 task_solution = TaskSolution(
                     user_id=user.id,
                     task_id=request.task_id,
                     solution_content=request.user_answer,
                     completed_at=datetime.utcnow(),
+                    is_correct=True,  # ← FIX: Mark as correct since is_successful = True
                 )
                 db.add(task_solution)
 
