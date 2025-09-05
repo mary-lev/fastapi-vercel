@@ -12,6 +12,14 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 
+def get_language_instruction(language: str) -> str:
+    """Get language-specific instruction for AI prompts"""
+    if language and language.lower() == "russian":
+        return "IMPORTANT: Provide all feedback, explanations, and guidance in RUSSIAN language. Use proper Russian grammar and vocabulary appropriate for programming education."
+    else:
+        return "IMPORTANT: Provide all feedback, explanations, and guidance in ENGLISH language."
+
+
 class SubmissionGrader(BaseModel):
     feedback: str
     is_solved: bool
@@ -21,9 +29,13 @@ def provide_code_feedback(
     answer: str,
     output: str,
     task: dict,
+    language: str = "English",
 ):
 
+    language_instruction = get_language_instruction(language)
+
     system_prompt = (
+        f"{language_instruction}\n\n"
         "You are an AI assistant tasked with evaluating a student's Python code submission. "
         "You will be provided with the task description and the student's answer. "
         "Your job is to analyze the code, check for errors, and provide feedback. "
@@ -62,9 +74,13 @@ def provide_code_feedback(
 def provide_text_feedback(
     answer: str,
     task: dict,
+    language: str = "English",
 ):
 
+    language_instruction = get_language_instruction(language)
+
     system_prompt = (
+        f"{language_instruction}\n\n"
         "You are an AI assistant tasked with evaluating a student's submission. "
         "You will be provided with the task description and the student's answer. "
         "Your job is to analyze the text and provide feedback based on the task requirements. "
@@ -96,25 +112,27 @@ def provide_text_feedback(
     return result
 
 
-def evaluate_code_submission(submission, output, task):
+def evaluate_code_submission(submission, output, task, language="English"):
     """
     Evaluate a code submission for a task.
     :param submission: a code submission
     :param task: a task
+    :param language: language for AI feedback
     :return: a dictionary with the evaluation results
     """
     answer = submission["code"]
-    feedback = provide_code_feedback(answer, output, task)
+    feedback = provide_code_feedback(answer, output, task, language)
 
     return feedback
 
 
-def evaluate_text_submission(answer, task):
+def evaluate_text_submission(answer, task, language="English"):
     """
     Evaluate a text submission for a task.
     :param answer: a text submission
     :param task: a task
+    :param language: language for AI feedback
     :return: a tuple with a boolean indicating correctness and a feedback message
     """
-    feedback = provide_text_feedback(answer, task)
+    feedback = provide_text_feedback(answer, task, language)
     return feedback

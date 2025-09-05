@@ -669,11 +669,11 @@ async def submit_task_solution(
             .first()
         )
 
-        # For quiz tasks, only allow one solution. For code tasks, allow multiple solutions.
+        # For quiz tasks, check attempt strategy. For code tasks, allow multiple solutions.
         task_type = task.type.lower()
         is_quiz_task = task_type in ["multiple_select_quiz", "true_false_quiz", "single_question_task"]
 
-        if existing_solution and is_quiz_task:
+        if existing_solution and is_quiz_task and task.attempt_strategy != "unlimited":
             raise HTTPException(status_code=409, detail="Quiz tasks can only be solved once")
         elif existing_solution and not is_quiz_task:
             # For code tasks, update the existing solution
@@ -1278,9 +1278,15 @@ async def submit_code_solution(
         else:
             # Evaluate the code against test cases
             output = result.get("output", "")
+            # Get course language for AI feedback
+            course_language = (
+                task.topic.lesson.course.language
+                if task.topic and task.topic.lesson and task.topic.lesson.course
+                else "English"
+            )
             # Pass submission as a dict with 'code' key as expected by evaluate_code_submission
             submission_dict = {"code": request.code}
-            evaluation = evaluate_code_submission(submission_dict, output, task)
+            evaluation = evaluate_code_submission(submission_dict, output, task, course_language)
             # evaluation is a SubmissionGrader object with is_solved and feedback attributes
             is_successful = evaluation.is_solved if hasattr(evaluation, "is_solved") else False
             feedback = evaluation.feedback if hasattr(evaluation, "feedback") else "Evaluation completed"
@@ -1389,8 +1395,8 @@ async def submit_text_answer(
 
         logger.info(f"Text submission received for user {user_id}, task {request.task_id}")
 
-        # Check attempt limits for quiz-type tasks
-        if task.attempt_strategy != "unlimited":
+        # Check attempt limits for quiz-type tasks (only if not unlimited)
+        if task.attempt_strategy != "unlimited" and task.max_attempts is not None:
             # Check if user has already completed the task
             completed = (
                 db.query(TaskAttempt)
@@ -1418,7 +1424,7 @@ async def submit_text_answer(
                 .count()
             )
 
-            if existing_attempts >= (task.max_attempts or 0):
+            if existing_attempts >= task.max_attempts:
                 # Return the correct answer when max attempts reached
                 correct_answer = None
                 if task.data and isinstance(task.data, dict):
@@ -1437,7 +1443,13 @@ async def submit_text_answer(
                 )
 
         # Evaluate the text answer
-        evaluation = evaluate_text_submission(request.user_answer, task)
+        # Get course language for AI feedback
+        course_language = (
+            task.topic.lesson.course.language
+            if task.topic and task.topic.lesson and task.topic.lesson.course
+            else "English"
+        )
+        evaluation = evaluate_text_submission(request.user_answer, task, course_language)
         # evaluation is a SubmissionGrader object with is_solved and feedback attributes
         is_successful = evaluation.is_solved if hasattr(evaluation, "is_solved") else False
         feedback = evaluation.feedback if hasattr(evaluation, "feedback") else "Evaluation completed"

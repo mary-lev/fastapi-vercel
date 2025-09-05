@@ -147,11 +147,11 @@ class TrueFalseQuiz(Task):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # Override defaults for quiz type
+        # Override defaults for quiz type - unlimited attempts
         if "attempt_strategy" not in kwargs:
-            self.attempt_strategy = "single"
+            self.attempt_strategy = "unlimited"
         if "max_attempts" not in kwargs:
-            self.max_attempts = 1
+            self.max_attempts = None  # NULL = unlimited
 
 
 class MultipleSelectQuiz(Task):
@@ -162,11 +162,11 @@ class MultipleSelectQuiz(Task):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # Override defaults for quiz type - single attempt only
+        # Override defaults for quiz type - unlimited attempts
         if "attempt_strategy" not in kwargs:
-            self.attempt_strategy = "single"
+            self.attempt_strategy = "unlimited"
         if "max_attempts" not in kwargs:
-            self.max_attempts = 1
+            self.max_attempts = None  # NULL = unlimited
 
 
 class CodeTask(Task):
@@ -192,11 +192,11 @@ class SingleQuestionTask(Task):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # Single question tasks are quizzes - single attempt only
+        # Single question tasks are quizzes - unlimited attempts
         if "attempt_strategy" not in kwargs:
-            self.attempt_strategy = "single"
+            self.attempt_strategy = "unlimited"
         if "max_attempts" not in kwargs:
-            self.max_attempts = 1
+            self.max_attempts = None  # NULL = unlimited
 
 
 class TaskAttempt(Base):
@@ -283,6 +283,7 @@ class Course(Base):
     duration_weeks = Column(Integer, nullable=True)  # Estimated course duration
     difficulty_level = Column(String(20), nullable=True)  # beginner, intermediate, advanced
     course_image = Column(String, nullable=True)  # Course cover image URL
+    language = Column(String(10), nullable=True, default="English")  # Course language for AI prompts and content
 
     # Enrollment management
     enrollment_open_date = Column(DateTime, nullable=True)  # When enrollment opens

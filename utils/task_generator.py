@@ -7,20 +7,79 @@ from openai import OpenAI
 
 from db import SessionLocal  # Keep for backwards compatibility in utility files
 
-from models import Lesson, Topic, Task
+from models import Lesson, Topic, Task as DBTask
 from models import TrueFalseQuiz, MultipleSelectQuiz, CodeTask, SingleQuestionTask
 from sqlalchemy import func
-from routes.topics import get_topic_data
-from routes.lesson import rebuild_task_links
+
+# Removed missing imports - functions implemented locally
 
 from dotenv import load_dotenv
 from utils.structured_logging import get_logger
 
 load_dotenv()
 
+
+# Local implementations of missing functions
+def get_topic_data(topic_id: int):
+    """Get topic data with tasks for context generation"""
+    db = SessionLocal()
+    try:
+        topic = db.query(Topic).filter(Topic.id == topic_id).first()
+        if not topic:
+            return {"tasks": []}
+
+        tasks = []
+        for task in topic.tasks:
+            task_data = {
+                "id": task.id,
+                "type": task.type,
+                "text": task.task_name,
+            }
+            if hasattr(task, "data") and task.data:
+                task_data.update(task.data)
+            tasks.append(task_data)
+
+        return {"tasks": tasks}
+    finally:
+        db.close()
+
+
+def rebuild_task_links(lesson_id: int):
+    """Rebuild task links to ensure unique IDs within the lesson"""
+    db = SessionLocal()
+    try:
+        # Import here to avoid circular imports
+        from models import Topic, Task
+
+        # Get all topics in the lesson, ordered by topic_order
+        topics = db.query(Topic).filter(Topic.lesson_id == lesson_id).order_by(Topic.topic_order).all()
+
+        for topic in topics:
+            # Get all tasks in the topic, ordered by order
+            tasks = db.query(Task).filter(Task.topic_id == topic.id).order_by(Task.order).all()
+
+            # Regenerate task_link for each task
+            for task_index, task in enumerate(tasks):
+                new_task_link = f"{topic.id}-{task_index + 1}"
+                task.task_link = new_task_link
+
+        db.commit()
+    finally:
+        db.close()
+
+
 logger = get_logger("task_generator")
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+
+def get_language_instruction(language: str) -> str:
+    """Get language-specific instruction for AI prompts"""
+    if language and language.lower() == "russian":
+        return "IMPORTANT: Generate all tasks, questions, instructions, and explanations in RUSSIAN language. Use proper Russian grammar and vocabulary appropriate for programming education."
+    else:
+        return "IMPORTANT: Generate all tasks, questions, instructions, and explanations in ENGLISH language."
+
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
@@ -34,10 +93,12 @@ class TaskType(str, Enum):
 
 class Task(BaseModel):
     type: TaskType
-    name: str
+    task_name: str
     question: str = Field(description="Question for the student to answer. No code here")
-    # answer_choices: Optional[List[str]] = None
-    # correct_answers: Optional[List[str]] = Field(None, description="The ordered numbers of correct answers to the question.")
+    answer_choices: Optional[List[str]] = Field(
+        None, description="List of answer choices for multiple choice questions"
+    )
+    correct_answers: Optional[List[str]] = Field(None, description="The correct answers for multiple choice questions")
     code: Optional[str] = Field(
         None, description="Code snipper provided to a students that they are supposed to fix or continue."
     )
@@ -95,10 +156,10 @@ def process_task(task, index, topic_id, db=None):
     # Generate lssonLink and lessonName based on task type and index
     if task_type == "code":
         # processed_task["lssonLink"] = f"code-task-{index+1}"
-        processed_task["lessonName"] = task.name or "Coding Exercise"
+        processed_task["lessonName"] = task.task_name or "Coding Exercise"
     else:
         # processed_task["lssonLink"] = f"question-{index+1}"
-        processed_task["lessonName"] = task.name or "Quiz Question"
+        processed_task["lessonName"] = task.task_name or "Quiz Question"
 
     # Prepare the data field
     data = {}
@@ -110,7 +171,17 @@ def process_task(task, index, topic_id, db=None):
         for i, choice in enumerate(answer_choices):
             options.append({"id": str(i + 1), "name": choice})
         data["options"] = options
-        data["correctAnswers"] = task.correct_answers
+
+        # Convert correct answers from strings to option IDs (indices)
+        correct_answer_ids = []
+        if task.correct_answers:
+            for correct_answer in task.correct_answers:
+                # Find the matching option by text and get its ID
+                for option in options:
+                    if option["name"] == correct_answer:
+                        correct_answer_ids.append(option["id"])
+                        break
+        data["correctAnswers"] = correct_answer_ids
 
     elif lesson_type == "Code":
         data["text"] = task.question
@@ -131,16 +202,22 @@ def process_task(task, index, topic_id, db=None):
     processed_task["is_active"] = False
 
     # Insert into the database
-    task_model_class = task_model_mapping.get(lesson_type, Task)
+    task_model_class = task_model_mapping.get(lesson_type, DBTask)
+
+    # Get the current count of tasks in this topic to ensure proper ordering
+    existing_task_count = db.query(DBTask).filter(DBTask.topic_id == topic_id).count()
+    task_order = existing_task_count + index + 1
 
     new_task = task_model_class(
         task_name=processed_task["lessonName"],
-        task_link=str(index + 1),  # Use the index as the task link
+        task_link=f"{topic_id}-{task_order}",  # Use proper topic_id-task_number format with global counting
         points=processed_task["points"],
-        order=index + 1,  # Ensure the tasks are ordered
+        order=task_order,  # Ensure the tasks are ordered properly
         topic_id=topic_id,
         data=processed_task["data"],
         is_active=False,  # Ensure is_active is set to False
+        attempt_strategy="unlimited",  # Ensure all tasks have unlimited attempts
+        max_attempts=None,  # NULL = unlimited
     )
 
     # Add the task to the session and commit
@@ -180,9 +257,12 @@ def generate_tasks(
     else:
         should_close = False
 
-    # Fetch the current topic
+    # Fetch the current topic, lesson, and course
     current_topic = db.query(Topic).filter(Topic.id == topic_id).first()
     current_lesson = db.query(Lesson).filter(Lesson.id == current_topic.lesson_id).first()
+    from models import Course
+
+    current_course = db.query(Course).filter(Course.id == current_lesson.course_id).first()
 
     # Fetch all previous lessons in the course (including the current lesson)
     previous_lessons = (
@@ -225,12 +305,34 @@ def generate_tasks(
     print(text_about_previous_concepts)
 
     # Read the content of the current topic
+    topic_content = ""
     try:
-        with open(f"data/textbook/{current_topic.content_file_md}", "r") as f:
-            topic_content = f.read()
-    except:
-        with open(f"data/lectures/{current_lesson.id}.txt", "r") as f:
-            topic_content = f.read()
+        # Try to read from the content file path (handle both relative and absolute paths)
+        content_path = current_topic.content_file_md
+        if content_path:
+            # If it's an absolute path, use it directly
+            if content_path.startswith("/"):
+                with open(content_path, "r") as f:
+                    topic_content = f.read()
+            else:
+                # If it's relative, try different base directories
+                try:
+                    with open(f"data/textbook/{content_path}", "r") as f:
+                        topic_content = f.read()
+                except:
+                    with open(f"data/tasks-2025/{content_path}", "r") as f:
+                        topic_content = f.read()
+        else:
+            # Fallback to lesson-based content (if it exists)
+            try:
+                with open(f"data/lectures/{current_lesson.id}.txt", "r") as f:
+                    topic_content = f.read()
+            except FileNotFoundError:
+                # Use topic information directly if no content file available
+                topic_content = f"Topic: {current_topic.title}\n\nBackground: {current_topic.background or 'No background provided'}\n\nObjectives: {current_topic.objectives or 'No objectives provided'}\n\nConcepts: {current_topic.concepts or 'No concepts provided'}"
+    except Exception as e:
+        # If all else fails, use topic information directly
+        topic_content = f"Topic: {current_topic.title}\n\nBackground: {current_topic.background or 'No background provided'}\n\nObjectives: {current_topic.objectives or 'No objectives provided'}\n\nConcepts: {current_topic.concepts or 'No concepts provided'}"
 
     starting_text = f"""
         We are creating the set of tasks for the graduate students in the Digital Humanities program learning their first Python course.
@@ -277,8 +379,13 @@ def generate_tasks(
             **Suggested Material:** Use the {material} material to create tasks that are engaging and relevant to the students.  
         """
 
-    # Modify system prompt to include previous concepts
+    # Get language instruction based on course language
+    language_instruction = get_language_instruction(current_course.language if current_course else "English")
+
+    # Modify system prompt to include previous concepts and language instruction
     system_prompt = f"""
+        {language_instruction}
+        
         {starting_text}
         {structure_description}      
     """
@@ -293,12 +400,12 @@ def generate_tasks(
     """
     try:
         completion = client.beta.chat.completions.parse(
-            model="gpt-4o-2024-08-06",
+            model="gpt-5",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
-            temperature=0.7,
+            # temperature=0.7,
             response_format=TaskGroup,
         )
     except Exception as e:
@@ -348,24 +455,32 @@ async def generate_adaptive_task(
 
     try:
         # Get the original task details
-        original_task = db.query(Task).filter(Task.id == failed_task_id).first()
+        original_task = db.query(DBTask).filter(DBTask.id == failed_task_id).first()
         if not original_task:
             logger.error(f"Original task {failed_task_id} not found")
             return None
 
-        # Get topic and lesson context
+        # Get topic, lesson, and course context
         topic = db.query(Topic).filter(Topic.id == topic_id).first()
         if not topic:
             logger.error(f"Topic {topic_id} not found")
             return None
 
         lesson = db.query(Lesson).filter(Lesson.id == topic.lesson_id).first()
+        from models import Course
+
+        course = db.query(Course).filter(Course.id == lesson.course_id).first()
 
         # Analyze the error and create targeted prompt
         error_context = _analyze_user_error(original_task, user_solution, error_analysis)
 
+        # Get language instruction for adaptive tasks
+        language_instruction = get_language_instruction(course.language if course else "English")
+
         # Create AI prompt for adaptive task generation
         system_prompt = f"""
+        {language_instruction}
+        
         You are an expert programming educator creating personalized remedial tasks.
         
         A student failed a task and needs a targeted practice exercise to address their specific learning gap.
@@ -418,10 +533,10 @@ async def generate_adaptive_task(
         adaptive_task_data = completion.choices[0].message.parsed
 
         # Get the highest order number for tasks in this topic
-        max_order = db.query(func.max(Task.order)).filter(Task.topic_id == topic_id).scalar() or 0
+        max_order = db.query(func.max(DBTask.order)).filter(DBTask.topic_id == topic_id).scalar() or 0
 
         # Create the new adaptive task
-        new_task = task_model_mapping.get(type_mapping.get(adaptive_task_data.type.value, "UnknownType"), Task)(
+        new_task = task_model_mapping.get(type_mapping.get(adaptive_task_data.type.value, "UnknownType"), DBTask)(
             task_name=f"📝 {adaptive_task_data.name}",  # Mark as adaptive with emoji
             task_link=f"adaptive-{failed_task_id}-{user_id}",  # Unique identifier
             points=adaptive_task_data.points,
@@ -453,7 +568,7 @@ async def generate_adaptive_task(
             db.close()
 
 
-def _analyze_user_error(original_task: Task, user_solution: str, error_analysis: dict = None) -> str:
+def _analyze_user_error(original_task: DBTask, user_solution: str, error_analysis: dict = None) -> str:
     """Analyze what went wrong with the user's solution"""
     analysis_parts = []
 
