@@ -446,32 +446,42 @@ async def get_lesson_summary(
             .count()
         )
 
-        # Calculate accuracy rate based on first successful attempt per task
-        # Get distinct tasks attempted and their first success status
-        from sqlalchemy import and_, exists
+        # Calculate accuracy rate based on unique tasks attempted vs completed
+        # Use subqueries to ensure accurate distinct counting
+        from sqlalchemy import and_, exists, distinct, func
 
-        # Count unique tasks attempted
+        # Count unique tasks attempted - use func.count(distinct()) for more reliable counting
         tasks_attempted = (
-            db.query(TaskAttempt.task_id)
+            db.query(func.count(distinct(TaskAttempt.task_id)))
             .join(Task)
             .join(Topic)
             .filter(TaskAttempt.user_id == user.id, Topic.lesson_id == lesson_id)
-            .distinct()
-            .count()
-        )
+            .scalar()
+        ) or 0
 
-        # Count unique tasks completed successfully (at least once)
+        # Count unique tasks completed successfully (at least once) - use func.count(distinct())
         tasks_completed_successfully = (
-            db.query(TaskAttempt.task_id)
+            db.query(func.count(distinct(TaskAttempt.task_id)))
             .join(Task)
             .join(Topic)
             .filter(TaskAttempt.user_id == user.id, Topic.lesson_id == lesson_id, TaskAttempt.is_successful == True)
-            .distinct()
-            .count()
-        )
+            .scalar()
+        ) or 0
 
         accuracy_rate = 0
         if tasks_attempted > 0:
+            # Debug logging to help identify issues
+            logger.debug(
+                f"Accuracy calculation: {tasks_completed_successfully} successful / {tasks_attempted} attempted"
+            )
+
+            # Ensure we don't have more successful tasks than attempted tasks (data integrity check)
+            if tasks_completed_successfully > tasks_attempted:
+                logger.warning(
+                    f"Data integrity issue: {tasks_completed_successfully} successful > {tasks_attempted} attempted for user {user.id}, lesson {lesson_id}"
+                )
+                tasks_completed_successfully = tasks_attempted
+
             accuracy_rate = round((tasks_completed_successfully / tasks_attempted) * 100, 1)
             # Ensure accuracy never exceeds 100%
             accuracy_rate = min(accuracy_rate, 100.0)
