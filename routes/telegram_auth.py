@@ -8,7 +8,7 @@ from typing import Optional, Dict, Any
 from datetime import datetime, timezone
 
 from db import get_db
-from models import User, TelegramLinkToken, UserStatus
+from models import User, TelegramLinkToken, UserStatus, Course, CourseEnrollment
 from utils.jwt_utils import jwt_manager
 from utils.logging_config import logger
 from utils.rate_limiting import rate_limit, telegram_rate_limit_key
@@ -40,6 +40,7 @@ class TelegramCompleteResponse(BaseModel):
     user: Dict[str, Any]
     token: Optional[str] = None
     course_id: Optional[int] = None
+    enrolled: Optional[bool] = None
 
 
 def verify_api_key(authorization: str = Header(...)):
@@ -194,6 +195,26 @@ async def complete_telegram_link(
             # User already exists and is linked
             user = existing_user
             logger.info(f"Existing user {user.id} authenticated via Telegram")
+            
+            # Check if existing user is enrolled in the course (if course_id provided)
+            if course_id:
+                existing_enrollment = (
+                    db.query(CourseEnrollment)
+                    .filter(CourseEnrollment.user_id == user.id, CourseEnrollment.course_id == course_id)
+                    .first()
+                )
+                
+                if not existing_enrollment:
+                    # Verify course exists and is open for enrollment
+                    course = db.query(Course).filter(Course.id == course_id).first()
+                    if course and course.is_enrollment_open():
+                        enrollment = CourseEnrollment(user_id=user.id, course_id=course_id)
+                        db.add(enrollment)
+                        logger.info(f"Auto-enrolled existing Telegram user {telegram_user_id} in course {course_id}")
+                    elif course:
+                        logger.warning(f"Course {course_id} enrollment is closed, existing user {telegram_user_id} not enrolled")
+                    else:
+                        logger.warning(f"Course {course_id} not found, existing user {telegram_user_id} not enrolled")
         else:
             # Check if we should create a new user or link to existing user
             # For this implementation, we'll create a new user
@@ -223,12 +244,39 @@ async def complete_telegram_link(
             )
 
             db.add(user)
+            db.flush()  # Flush to get user.id before commit
             logger.info(f"Created new user for Telegram user {telegram_user_id} with username: {username}")
+
+            # Auto-enroll new user in the specified course (if course_id is provided)
+            if course_id:
+                # Verify course exists
+                course = db.query(Course).filter(Course.id == course_id).first()
+                if course:
+                    # Check if enrollment is open
+                    if course.is_enrollment_open():
+                        # Create enrollment
+                        enrollment = CourseEnrollment(user_id=user.id, course_id=course_id)
+                        db.add(enrollment)
+                        logger.info(f"Auto-enrolled new Telegram user {telegram_user_id} in course {course_id}")
+                    else:
+                        logger.warning(f"Course {course_id} enrollment is closed, user {telegram_user_id} not enrolled")
+                else:
+                    logger.warning(f"Course {course_id} not found, user {telegram_user_id} not enrolled")
 
         db.commit()
 
         # Create session token
         session_token = jwt_manager.create_session_token(user.id, telegram_user_id)
+
+        # Check final enrollment status
+        enrolled = False
+        if course_id:
+            enrollment_check = (
+                db.query(CourseEnrollment)
+                .filter(CourseEnrollment.user_id == user.id, CourseEnrollment.course_id == course_id)
+                .first()
+            )
+            enrolled = enrollment_check is not None
 
         # Return success response
         response_data = {
@@ -241,6 +289,7 @@ async def complete_telegram_link(
             },
             "token": session_token,
             "course_id": course_id,
+            "enrolled": enrolled,
         }
 
         logger.info(f"Telegram linking completed successfully for user {user.id}")
