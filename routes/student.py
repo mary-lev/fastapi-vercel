@@ -1323,10 +1323,10 @@ async def submit_code_solution(
         db.commit()  # Commit the attempt first to get the ID
 
         # If unsuccessful, trigger adaptive task generation
-        if not is_successful:
-            await _trigger_adaptive_task_generation(
-                user=user, task_attempt=task_attempt, task=task, user_solution=request.code, db=db
-            )
+        # if not is_successful:
+        #     await _trigger_adaptive_task_generation(
+        #         user=user, task_attempt=task_attempt, task=task, user_solution=request.code, db=db
+        #     )
 
         # If successful, create or update solution
         if is_successful:
@@ -1488,10 +1488,10 @@ async def submit_text_answer(
         db.commit()  # Commit the attempt first to get the ID
 
         # If unsuccessful, trigger adaptive task generation
-        if not is_successful:
-            await _trigger_adaptive_task_generation(
-                user=user, task_attempt=task_attempt, task=task, user_solution=request.user_answer, db=db
-            )
+        # if not is_successful:
+        #     await _trigger_adaptive_task_generation(
+        #         user=user, task_attempt=task_attempt, task=task, user_solution=request.user_answer, db=db
+        #     )
 
         # If successful, create or update solution
         if is_successful:

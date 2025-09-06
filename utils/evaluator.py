@@ -105,7 +105,7 @@ def provide_text_feedback(
             {"role": "user", "content": user_prompt},
         ],
         response_format=SubmissionGrader,
-        max_tokens=300,
+        # max_tokens=300,
     )
     result = completion.choices[0].message.parsed
 
