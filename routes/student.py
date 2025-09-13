@@ -433,15 +433,15 @@ async def get_lesson_summary(
         if not enrollment:
             raise HTTPException(status_code=404, detail="User not enrolled in this course")
 
-        # Get all tasks in the lesson
-        total_tasks = db.query(Task).join(Topic).filter(Topic.lesson_id == lesson_id).count()
+        # Get all ACTIVE tasks in the lesson only
+        total_tasks = db.query(Task).join(Topic).filter(Topic.lesson_id == lesson_id, Task.is_active == True).count()
 
-        # Get completed tasks (with successful attempts)
+        # Get completed ACTIVE tasks (with successful attempts)
         completed_tasks = (
             db.query(TaskAttempt)
             .join(Task)
             .join(Topic)
-            .filter(TaskAttempt.user_id == user.id, Topic.lesson_id == lesson_id, TaskAttempt.is_successful == True)
+            .filter(TaskAttempt.user_id == user.id, Topic.lesson_id == lesson_id, Task.is_active == True, TaskAttempt.is_successful == True)
             .distinct(TaskAttempt.task_id)
             .count()
         )
@@ -450,21 +450,21 @@ async def get_lesson_summary(
         # Use subqueries to ensure accurate distinct counting
         from sqlalchemy import and_, exists, distinct, func
 
-        # Count unique tasks attempted - use func.count(distinct()) for more reliable counting
+        # Count unique ACTIVE tasks attempted - use func.count(distinct()) for more reliable counting
         tasks_attempted = (
             db.query(func.count(distinct(TaskAttempt.task_id)))
             .join(Task)
             .join(Topic)
-            .filter(TaskAttempt.user_id == user.id, Topic.lesson_id == lesson_id)
+            .filter(TaskAttempt.user_id == user.id, Topic.lesson_id == lesson_id, Task.is_active == True)
             .scalar()
         ) or 0
 
-        # Count unique tasks completed successfully (at least once) - use func.count(distinct())
+        # Count unique ACTIVE tasks completed successfully (at least once) - use func.count(distinct())
         tasks_completed_successfully = (
             db.query(func.count(distinct(TaskAttempt.task_id)))
             .join(Task)
             .join(Topic)
-            .filter(TaskAttempt.user_id == user.id, Topic.lesson_id == lesson_id, TaskAttempt.is_successful == True)
+            .filter(TaskAttempt.user_id == user.id, Topic.lesson_id == lesson_id, Task.is_active == True, TaskAttempt.is_successful == True)
             .scalar()
         ) or 0
 
@@ -489,7 +489,7 @@ async def get_lesson_summary(
         # Calculate time spent per task, then sum up
         time_spent_minutes = 0.0
         if tasks_attempted > 0:
-            # Get first and last attempt per task to calculate time spent on each task
+            # Get first and last attempt per ACTIVE task to calculate time spent on each task
             task_time_data = (
                 db.query(
                     TaskAttempt.task_id,
@@ -499,7 +499,7 @@ async def get_lesson_summary(
                 )
                 .join(Task)
                 .join(Topic)
-                .filter(TaskAttempt.user_id == user.id, Topic.lesson_id == lesson_id)
+                .filter(TaskAttempt.user_id == user.id, Topic.lesson_id == lesson_id, Task.is_active == True)
                 .group_by(TaskAttempt.task_id)
                 .all()
             )
