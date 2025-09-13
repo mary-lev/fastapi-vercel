@@ -474,7 +474,7 @@ async def get_lesson_summary(
 
         # Calculate accuracy rate based on unique tasks attempted vs completed
         # Use subqueries to ensure accurate distinct counting
-        from sqlalchemy import and_, exists, distinct, func
+        from sqlalchemy import and_, exists, distinct
 
         # Count unique ACTIVE tasks attempted (code tasks from TaskAttempt + quiz tasks from TaskSolution)
         code_tasks_attempted = 0
