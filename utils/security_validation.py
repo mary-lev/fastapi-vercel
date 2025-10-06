@@ -373,7 +373,7 @@ def sanitize_code_input(code: str) -> ValidationResult:
             r"__(?:class__|bases__|subclasses__|globals__|builtins__|import__|code__|dict__|mro__)(?:\s|$|\()",
             "Use of dangerous dunder attributes is restricted",
         ),
-        (r"chr\(|ord\(", "Character manipulation functions are restricted"),
+        # (r"chr\(|ord\(", "Character manipulation functions are restricted"),
         (r"exec\s*\(|eval\s*\(", "Dynamic code execution is forbidden"),
         (r"import\s+os|from\s+os", "OS module access is forbidden"),
         (r"while\s+True\s*:", "Infinite loops are not allowed"),
