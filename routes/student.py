@@ -20,7 +20,7 @@ from models import (
     Course,
     Lesson,
     Topic,
-    # AIFeedback,  # currently unused
+    AIFeedback,
     CourseEnrollment,
 )
 from db import get_db
@@ -1351,6 +1351,20 @@ async def submit_code_solution(
 
         db.add(task_attempt)
         db.commit()  # Commit the attempt first to get the ID
+        db.refresh(task_attempt)
+
+        # Save AI feedback to database
+        if feedback:
+            ai_feedback_entry = AIFeedback(
+                user_id=user.id,
+                task_id=request.task_id,
+                task_attempt_id=task_attempt.id,
+                feedback=feedback,
+                created_at=datetime.utcnow()
+            )
+            db.add(ai_feedback_entry)
+            db.commit()
+            logger.info(f"AI feedback saved for user {user_id}, task {request.task_id}, attempt {task_attempt.id}")
 
         # If unsuccessful, trigger adaptive task generation
         # if not is_successful:
@@ -1516,6 +1530,20 @@ async def submit_text_answer(
 
         db.add(task_attempt)
         db.commit()  # Commit the attempt first to get the ID
+        db.refresh(task_attempt)
+
+        # Save AI feedback to database
+        if feedback:
+            ai_feedback_entry = AIFeedback(
+                user_id=user.id,
+                task_id=request.task_id,
+                task_attempt_id=task_attempt.id,
+                feedback=feedback,
+                created_at=datetime.utcnow()
+            )
+            db.add(ai_feedback_entry)
+            db.commit()
+            logger.info(f"AI feedback saved for user {user_id}, task {request.task_id}, attempt {task_attempt.id}")
 
         # If unsuccessful, trigger adaptive task generation
         # if not is_successful:

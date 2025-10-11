@@ -55,7 +55,6 @@ def provide_code_feedback(
         "Generate the feedback. Be polite and laconic."
         "Respond to student in one sentence."
     )
-    print(user_prompt)
 
     completion = client.beta.chat.completions.parse(
         model="gpt-5",
