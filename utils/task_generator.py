@@ -249,6 +249,9 @@ def generate_tasks(
     add_quizzes: bool = False,
     add_previous_tasks: bool = True,
     material: str = "Harry Potter",
+    include_previous_lessons: bool = True,
+    include_previous_topics: bool = True,
+    custom_instructions: str = "",
     db=None,
 ):
     if db is None:
@@ -264,38 +267,42 @@ def generate_tasks(
 
     current_course = db.query(Course).filter(Course.id == current_lesson.course_id).first()
 
-    # Fetch all previous lessons in the course (including the current lesson)
-    previous_lessons = (
-        db.query(Lesson)
-        .filter(
-            Lesson.course_id == current_lesson.course_id,
-            Lesson.lesson_order < current_lesson.lesson_order,  # Lessons before or same as current one
-        )
-        .order_by(Lesson.lesson_order)
-        .all()
-    )
-
+    # Build previous concepts list based on context options
     previous_concepts = []
-    for lesson in previous_lessons:
-        lesson_topics = db.query(Topic).filter(Topic.lesson_id == lesson.id).order_by(Topic.topic_order).all()
-        for topic in lesson_topics:
-            if topic.concepts:
-                previous_concepts.append(topic.concepts)
 
-    # Add the earliest topics of the current lesson (up to the current topic's order)
-    earliest_topics = (
-        db.query(Topic)
-        .filter(
-            Topic.lesson_id == current_lesson.id,
-            Topic.topic_order <= current_topic.topic_order,  # Only topics up to the current one
+    # Include concepts from previous lessons if requested
+    if include_previous_lessons:
+        previous_lessons = (
+            db.query(Lesson)
+            .filter(
+                Lesson.course_id == current_lesson.course_id,
+                Lesson.lesson_order < current_lesson.lesson_order,
+            )
+            .order_by(Lesson.lesson_order)
+            .all()
         )
-        .order_by(Topic.topic_order)
-        .all()
-    )
 
-    for topic in earliest_topics:
-        if topic.concepts and topic not in previous_concepts:
-            previous_concepts.append(topic.concepts)
+        for lesson in previous_lessons:
+            lesson_topics = db.query(Topic).filter(Topic.lesson_id == lesson.id).order_by(Topic.topic_order).all()
+            for topic in lesson_topics:
+                if topic.concepts:
+                    previous_concepts.append(topic.concepts)
+
+    # Include concepts from previous topics in current lesson if requested
+    if include_previous_topics:
+        earliest_topics = (
+            db.query(Topic)
+            .filter(
+                Topic.lesson_id == current_lesson.id,
+                Topic.topic_order < current_topic.topic_order,  # Only topics BEFORE current one
+            )
+            .order_by(Topic.topic_order)
+            .all()
+        )
+
+        for topic in earliest_topics:
+            if topic.concepts and topic.concepts not in previous_concepts:
+                previous_concepts.append(topic.concepts)
 
     # Combine all collected concepts from previous lessons and topics
     previous_concepts_text = " ".join(previous_concepts)
@@ -314,8 +321,12 @@ def generate_tasks(
             if content_path.startswith("/"):
                 with open(content_path, "r") as f:
                     topic_content = f.read()
+            # If path already starts with data/, use it as-is
+            elif content_path.startswith("data/"):
+                with open(content_path, "r") as f:
+                    topic_content = f.read()
             else:
-                # If it's relative, try different base directories
+                # If it's just a filename, try different base directories
                 try:
                     with open(f"data/textbook/{content_path}", "r") as f:
                         topic_content = f.read()
@@ -332,6 +343,7 @@ def generate_tasks(
                 topic_content = f"Topic: {current_topic.title}\n\nBackground: {current_topic.background or 'No background provided'}\n\nObjectives: {current_topic.objectives or 'No objectives provided'}\n\nConcepts: {current_topic.concepts or 'No concepts provided'}"
     except Exception as e:
         # If all else fails, use topic information directly
+        logger.warning(f"Failed to read content file for topic {topic_id}: {str(e)}")
         topic_content = f"Topic: {current_topic.title}\n\nBackground: {current_topic.background or 'No background provided'}\n\nObjectives: {current_topic.objectives or 'No objectives provided'}\n\nConcepts: {current_topic.concepts or 'No concepts provided'}"
 
     starting_text = f"""
@@ -376,7 +388,13 @@ def generate_tasks(
 
     if material:
         starting_text += f"""
-            **Suggested Material:** Use the {material} material to create tasks that are engaging and relevant to the students.  
+            **Suggested Material:** Use the {material} material to create tasks that are engaging and relevant to the students.
+        """
+
+    # Add custom instructions if provided
+    if custom_instructions:
+        starting_text += f"""
+            **Custom Instructions from Professor:** {custom_instructions}
         """
 
     # Get language instruction based on course language
@@ -385,9 +403,9 @@ def generate_tasks(
     # Modify system prompt to include previous concepts and language instruction
     system_prompt = f"""
         {language_instruction}
-        
+
         {starting_text}
-        {structure_description}      
+        {structure_description}
     """
     print(system_prompt)
 
@@ -521,7 +539,7 @@ async def generate_adaptive_task(
 
         # Generate the adaptive task using OpenAI
         completion = client.beta.chat.completions.parse(
-            model="gpt-4o-2024-08-06",
+            model="gpt-5",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
@@ -548,7 +566,7 @@ async def generate_adaptive_task(
             generated_for_user_id=user_id,
             source_task_id=failed_task_id,
             generation_prompt=system_prompt + "\n\n" + user_prompt,
-            ai_model_used="gpt-4o-2024-08-06",
+            ai_model_used="gpt-5",
         )
 
         db.add(new_task)

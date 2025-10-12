@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, func, Enum, Boolean, JSON, BigInteger, Text
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, func, Enum, Boolean, JSON, BigInteger, Text, Numeric
 from sqlalchemy import Table, UniqueConstraint, Index
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -509,3 +509,161 @@ class StudentFormSubmission(Base):
 
     # Relationship to User
     user = relationship("User", backref="student_form_submissions")
+
+
+# Learning Analytics Models
+
+
+class StudentTaskAnalysis(Base):
+    """Task-level analysis for each student's performance on individual tasks"""
+
+    __tablename__ = "student_task_analysis"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    task_id = Column(Integer, ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False)
+    course_id = Column(Integer, ForeignKey("courses.id", ondelete="CASCADE"), nullable=False)
+
+    # Attempt metadata
+    total_attempts = Column(Integer, nullable=False)
+    successful_attempts = Column(Integer, nullable=False)
+    failed_attempts = Column(Integer, nullable=False)
+    first_attempt_at = Column(DateTime, nullable=False)
+    last_attempt_at = Column(DateTime, nullable=False)
+    final_success = Column(Boolean, nullable=False)
+
+    # Time gap analysis (human-readable text for LLM)
+    attempt_time_gaps = Column(Text, nullable=True)  # JSON array like ["Immediately", "After 5 minutes"]
+    total_time_spent = Column(Text, nullable=True)  # "3 hours across 2 days"
+
+    # LLM analysis (structured JSON)
+    analysis = Column(JSON, nullable=False)
+
+    # Professor view only (no student_summary for task level)
+    professor_notes = Column(Text, nullable=True)
+
+    # Metadata
+    analyzed_at = Column(DateTime, default=func.now(), nullable=False)
+    llm_model = Column(String(50), nullable=True)
+    analysis_version = Column(Integer, default=1, nullable=False)
+
+    # Performance tracking
+    outlier_flag = Column(Boolean, default=False, nullable=False)
+
+    # Relationships
+    user = relationship("User", backref="task_analyses")
+    task = relationship("Task", backref="task_analyses")
+    course = relationship("Course", backref="task_analyses")
+
+    # Table constraints
+    __table_args__ = (
+        UniqueConstraint("user_id", "task_id", name="uq_user_task_analysis"),
+        Index("idx_sta_user_course", "user_id", "course_id"),
+        Index("idx_sta_task", "task_id"),
+        Index("idx_sta_analyzed_at", "analyzed_at"),
+    )
+
+
+class StudentLessonAnalysis(Base):
+    """Lesson-level synthesis for each student's progress across topics"""
+
+    __tablename__ = "student_lesson_analysis"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    lesson_id = Column(Integer, ForeignKey("lessons.id", ondelete="CASCADE"), nullable=False)
+    course_id = Column(Integer, ForeignKey("courses.id", ondelete="CASCADE"), nullable=False)
+
+    # Topic completion metrics
+    total_topics = Column(Integer, nullable=False)
+    completed_topics = Column(Integer, nullable=False)
+    completion_percentage = Column(Numeric(5, 2), nullable=False)
+
+    # Aggregated task data
+    total_tasks = Column(Integer, nullable=False)
+    solved_tasks = Column(Integer, nullable=False)
+    total_points_available = Column(Integer, nullable=False)
+    points_earned = Column(Integer, nullable=False)
+
+    # Time analysis
+    lesson_start_date = Column(DateTime, nullable=False)
+    lesson_completion_date = Column(DateTime, nullable=True)
+    total_lesson_time = Column(Text, nullable=True)  # "2 weeks with 5 active days"
+
+    # LLM lesson synthesis (structured JSON)
+    analysis = Column(JSON, nullable=False)
+
+    # Professor view: detailed lesson assessment
+    professor_notes = Column(Text, nullable=True)
+
+    # Student view: motivational lesson summary
+    student_summary = Column(Text, nullable=True)
+
+    # Metadata
+    analyzed_at = Column(DateTime, default=func.now(), nullable=False)
+    llm_model = Column(String(50), nullable=True)
+    analysis_version = Column(Integer, default=1, nullable=False)
+
+    # Relationships
+    user = relationship("User", backref="lesson_analyses")
+    lesson = relationship("Lesson", backref="lesson_analyses")
+    course = relationship("Course", backref="lesson_analyses")
+
+    # Table constraints
+    __table_args__ = (
+        UniqueConstraint("user_id", "lesson_id", name="uq_user_lesson_analysis"),
+        Index("idx_sla_user_course", "user_id", "course_id"),
+        Index("idx_sla_lesson", "lesson_id"),
+    )
+
+
+class StudentCourseProfile(Base):
+    """Course-level profile with holistic analysis and personalized recommendations"""
+
+    __tablename__ = "student_course_profile"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    course_id = Column(Integer, ForeignKey("courses.id", ondelete="CASCADE"), nullable=False)
+
+    # Overall metrics
+    total_lessons = Column(Integer, nullable=False)
+    completed_lessons = Column(Integer, nullable=False)
+    course_completion_percentage = Column(Numeric(5, 2), nullable=False)
+    total_course_points = Column(Integer, nullable=False)
+    points_earned = Column(Integer, nullable=False)
+
+    # Time tracking
+    course_start_date = Column(DateTime, nullable=False)
+    last_activity_date = Column(DateTime, nullable=False)
+    course_completion_date = Column(DateTime, nullable=True)
+    total_course_time = Column(Text, nullable=True)  # "8 weeks with 45 active days"
+
+    # LLM course-level profile (structured JSON)
+    analysis = Column(JSON, nullable=False)
+
+    # Personalized task generation recommendations
+    recommended_practice_areas = Column(JSON, nullable=True)
+
+    # Professor view: comprehensive technical profile
+    professor_notes = Column(Text, nullable=True)
+
+    # Student view: congratulatory course summary for dashboard
+    student_summary = Column(Text, nullable=True)
+
+    # Metadata
+    analyzed_at = Column(DateTime, default=func.now(), nullable=False)
+    llm_model = Column(String(50), nullable=True)
+    analysis_version = Column(Integer, default=1, nullable=False)
+
+    # Relationships
+    user = relationship("User", backref="course_profiles")
+    course = relationship("Course", backref="course_profiles")
+
+    # Table constraints
+    __table_args__ = (
+        UniqueConstraint("user_id", "course_id", name="uq_user_course_profile"),
+        Index("idx_scp_user", "user_id"),
+        Index("idx_scp_course", "course_id"),
+        Index("idx_scp_analyzed_at", "analyzed_at"),
+    )

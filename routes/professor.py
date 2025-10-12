@@ -645,3 +645,133 @@ async def get_system_stats(db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"Error retrieving system stats: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+# Learning Analytics Endpoints
+@router.get("/analytics/courses/{course_id}/students/{user_id}/profile", summary="Get student course profile")
+async def get_student_course_profile(
+    course_id: int,
+    user_id: int,
+    regenerate: bool = Query(False, description="Force regenerate profile even if recent"),
+    db: Session = Depends(get_db),
+):
+    """
+    Get comprehensive learning analytics profile for a student in a specific course.
+
+    This endpoint provides professor-level insights including:
+    - Core programming strengths and persistent weaknesses
+    - Learning velocity and progression trajectory
+    - Resilience score and recovery patterns
+    - Preferred learning style identification
+    - Readiness assessment for advanced topics
+    - Concept mastery graph (strong foundations vs weak connections)
+    - Personalized practice recommendations
+
+    The analysis synthesizes data from:
+    - All task-level analyses (individual task performance)
+    - All lesson-level analyses (lesson-wide patterns)
+    - Aggregated statistics across the entire course
+
+    Args:
+        course_id: Course ID to analyze
+        user_id: Student user ID
+        regenerate: Force regeneration even if profile is recent (within 7 days)
+
+    Returns:
+        Comprehensive student profile with technical analysis and statistics
+    """
+    try:
+        from utils.learning_analytics import analyze_course_profile
+        from models import StudentCourseProfile
+
+        # Verify course and user exist
+        course = db.query(Course).filter(Course.id == course_id).first()
+        if not course:
+            raise HTTPException(status_code=404, detail="Course not found")
+
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Check if profile exists
+        existing_profile = db.query(StudentCourseProfile).filter(
+            StudentCourseProfile.user_id == user_id,
+            StudentCourseProfile.course_id == course_id
+        ).first()
+
+        # If regenerate flag is set, delete existing profile to force regeneration
+        if regenerate and existing_profile:
+            db.delete(existing_profile)
+            db.commit()
+            existing_profile = None
+
+        # If profile doesn't exist or is outdated, generate it
+        if not existing_profile:
+            logger.info(f"Generating course profile for user {user_id}, course {course_id}")
+            profile = await analyze_course_profile(user_id, course_id, db)
+
+            if not profile:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Unable to generate profile. Ensure student has completed tasks in at least one lesson."
+                )
+        else:
+            profile = existing_profile
+
+        # Format response
+        import json
+        from models import StudentTaskAnalysis
+
+        # Get additional task-level statistics for calculation
+        task_analyses = db.query(StudentTaskAnalysis).filter(
+            StudentTaskAnalysis.user_id == user_id,
+            StudentTaskAnalysis.course_id == course_id
+        ).all()
+
+        total_tasks_attempted = len(task_analyses)
+        tasks_completed = len([ta for ta in task_analyses if ta.final_success])
+        total_attempts = sum(ta.total_attempts for ta in task_analyses)
+
+        response = {
+            "user_id": profile.user_id,
+            "course_id": profile.course_id,
+            "student_username": user.username,
+            "course_title": course.title,
+
+            # Statistics
+            "statistics": {
+                "total_lessons": profile.total_lessons,
+                "lessons_completed": profile.completed_lessons,
+                "total_tasks_attempted": total_tasks_attempted,
+                "tasks_completed": tasks_completed,
+                "course_completion_percentage": round(float(profile.course_completion_percentage), 2),
+                "total_points_available": profile.total_course_points,
+                "points_earned": profile.points_earned,
+                "total_attempts": total_attempts,
+                "average_attempts_per_task": round(
+                    total_attempts / total_tasks_attempted if total_tasks_attempted > 0 else 0,
+                    2
+                ),
+                "course_start_date": profile.course_start_date.isoformat(),
+                "last_activity_date": profile.last_activity_date.isoformat(),
+                "total_course_time": profile.total_course_time,
+            },
+
+            # LLM Analysis
+            "analysis": profile.analysis,
+
+            # Metadata
+            "metadata": {
+                "analyzed_at": profile.analyzed_at.isoformat(),
+                "llm_model": profile.llm_model,
+                "analysis_version": profile.analysis_version,
+            },
+        }
+
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving course profile for user {user_id}, course {course_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")

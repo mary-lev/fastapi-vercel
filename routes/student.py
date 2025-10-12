@@ -4,7 +4,7 @@ Handles user-centric operations: progress tracking, submissions, solutions
 """
 
 from datetime import datetime
-from fastapi import APIRouter, HTTPException, Depends, Path, Query, Request
+from fastapi import APIRouter, HTTPException, Depends, Path, Query, Request, BackgroundTasks
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import func
@@ -40,6 +40,97 @@ router = APIRouter()
 
 # Create logger for this module
 logger = get_logger("routes.student")
+
+
+# Background task functions for learning analytics (use separate DB sessions)
+def _run_task_analysis_background(user_id: int, task_id: int):
+    """
+    Background task to analyze task performance with its own database session.
+    This prevents blocking the main API response and avoids session conflicts.
+
+    IMPORTANT: This is a sync function (not async) to ensure it runs truly in background.
+    If it were async, FastAPI would await it before closing the HTTP response.
+    """
+    import asyncio
+    from db import SessionLocal
+
+    # Create new event loop for this background task
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    db = SessionLocal()
+    try:
+        from utils.learning_analytics import analyze_task_performance
+
+        logger.info(
+            f"🔄 [BACKGROUND] Task analysis STARTED for user {user_id}, task {task_id}",
+            category=LogCategory.PERFORMANCE,
+            extra={"step": "background_started", "timestamp": datetime.utcnow().isoformat()}
+        )
+
+        # Run async function in this thread's event loop
+        loop.run_until_complete(analyze_task_performance(user_id, task_id, db))
+
+        logger.info(
+            f"✅ [BACKGROUND] Task analysis COMPLETED for user {user_id}, task {task_id}",
+            category=LogCategory.PERFORMANCE,
+            extra={"step": "background_completed", "timestamp": datetime.utcnow().isoformat()}
+        )
+    except Exception as e:
+        logger.error(
+            f"Background task analysis failed: {str(e)}",
+            category=LogCategory.ERROR,
+            exception=e,
+            extra={"user_id": user_id, "task_id": task_id}
+        )
+    finally:
+        db.close()
+        loop.close()
+
+
+def _run_lesson_analysis_background(user_id: int, lesson_id: int):
+    """
+    Background task to analyze lesson progress with its own database session.
+    This prevents blocking the main API response and avoids session conflicts.
+
+    IMPORTANT: This is a sync function (not async) to ensure it runs truly in background.
+    If it were async, FastAPI would await it before closing the HTTP response.
+    """
+    import asyncio
+    from db import SessionLocal
+
+    # Create new event loop for this background task
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    db = SessionLocal()
+    try:
+        from utils.learning_analytics import analyze_lesson_progress
+
+        logger.info(
+            f"🔄 [BACKGROUND] Lesson analysis STARTED for user {user_id}, lesson {lesson_id}",
+            category=LogCategory.PERFORMANCE,
+            extra={"step": "background_started", "timestamp": datetime.utcnow().isoformat()}
+        )
+
+        # Run async function in this thread's event loop
+        loop.run_until_complete(analyze_lesson_progress(user_id, lesson_id, db))
+
+        logger.info(
+            f"✅ [BACKGROUND] Lesson analysis COMPLETED for user {user_id}, lesson {lesson_id}",
+            category=LogCategory.PERFORMANCE,
+            extra={"step": "background_completed", "timestamp": datetime.utcnow().isoformat()}
+        )
+    except Exception as e:
+        logger.error(
+            f"Background lesson analysis failed: {str(e)}",
+            category=LogCategory.ERROR,
+            exception=e,
+            extra={"user_id": user_id, "lesson_id": lesson_id}
+        )
+    finally:
+        db.close()
+        loop.close()
 
 
 # Helper function to resolve user ID (supports both integer and string/UUID formats)
@@ -404,6 +495,7 @@ async def get_user_lesson_progress(
 @router.get("/{user_id}/courses/{course_id}/lessons/{lesson_id}/summary", summary="Get lesson completion summary")
 async def get_lesson_summary(
     request: Request,
+    background_tasks: BackgroundTasks,
     user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"),
     course_id: int = Path(..., description="Course ID"),
     lesson_id: int = Path(..., description="Lesson ID"),
@@ -556,7 +648,43 @@ async def get_lesson_summary(
         # Generate appropriate summary message based on completion
         completion_percentage = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
 
-        if completion_percentage == 100:
+        # NEW: Trigger lesson-level analysis if completion >= 50% (course_id=2 only)
+        lesson_analysis = None
+        if completion_percentage >= 50 and course_id == 2:
+            try:
+                from models import StudentLessonAnalysis
+
+                # Check if analysis already exists
+                existing_analysis = db.query(StudentLessonAnalysis).filter(
+                    StudentLessonAnalysis.user_id == user.id,
+                    StudentLessonAnalysis.lesson_id == lesson_id
+                ).first()
+
+                if existing_analysis:
+                    lesson_analysis = existing_analysis
+                else:
+                    # Schedule background task with separate DB session
+                    background_tasks.add_task(
+                        _run_lesson_analysis_background,
+                        user.id,
+                        lesson_id
+                    )
+                    logger.info(
+                        f"Lesson analysis scheduled for user {user.id}, lesson {lesson_id}",
+                        category=LogCategory.PERFORMANCE
+                    )
+            except Exception as e:
+                # Log error but don't block response
+                logger.error(
+                    f"Failed to schedule lesson analysis: {str(e)}",
+                    category=LogCategory.ERROR,
+                    exception=e
+                )
+
+        # Use motivational student summary if available, otherwise use generic summary
+        if lesson_analysis and lesson_analysis.student_summary:
+            summary = lesson_analysis.student_summary
+        elif completion_percentage == 100:
             summary = f"Congratulations on completing {lesson.title}! You've mastered all {total_tasks} tasks with {accuracy_rate}% accuracy. Excellent work!"
         elif completion_percentage >= 80:
             summary = f"Great progress on {lesson.title}! You've completed {completed_tasks} out of {total_tasks} tasks. Just a few more to go!"
@@ -581,6 +709,122 @@ async def get_lesson_summary(
         raise
     except Exception as e:
         logger.error(f"Error retrieving lesson summary: {e}", category=LogCategory.ERROR, exception=e)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/{user_id}/courses/{course_id}/completion-summary", summary="Get course completion summary")
+async def get_course_completion_summary(
+    request: Request,
+    user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"),
+    course_id: int = Path(..., description="Course ID"),
+    db: Session = Depends(get_db),
+):
+    """
+    Get course completion summary with congratulatory message and statistics.
+
+    This endpoint provides students with:
+    - Personalized congratulatory message (generated by AI for course completers)
+    - Overall course completion statistics
+    - Recommended next steps and practice areas
+
+    Note: The congratulatory message is only available after students have completed
+    tasks in multiple lessons and the AI analysis has been generated.
+    """
+    try:
+        from models import StudentCourseProfile
+        import json
+
+        # Verify user exists
+        user = await get_user_by_id(user_id, request, db)
+
+        # Verify user is enrolled in the course
+        enrollment = (
+            db.query(CourseEnrollment)
+            .filter(CourseEnrollment.user_id == user.id, CourseEnrollment.course_id == course_id)
+            .first()
+        )
+
+        if not enrollment:
+            raise HTTPException(status_code=404, detail="User not enrolled in this course")
+
+        # Get course object
+        course = db.query(Course).filter(Course.id == course_id).first()
+        if not course:
+            raise HTTPException(status_code=404, detail="Course not found")
+
+        # Get course profile if it exists
+        course_profile = db.query(StudentCourseProfile).filter(
+            StudentCourseProfile.user_id == user.id,
+            StudentCourseProfile.course_id == course_id
+        ).first()
+
+        # Calculate basic completion statistics
+        all_code_tasks = db.query(Task).join(Topic).join(Lesson).filter(
+            Lesson.course_id == course_id,
+            Task.type == 'code_task'
+        ).count()
+
+        completed_tasks = db.query(TaskAttempt).join(Task).join(Topic).join(Lesson).filter(
+            TaskAttempt.user_id == user.id,
+            Lesson.course_id == course_id,
+            Task.type == 'code_task',
+            TaskAttempt.is_successful == True
+        ).distinct(TaskAttempt.task_id).count()
+
+        completion_percentage = (completed_tasks / all_code_tasks * 100) if all_code_tasks > 0 else 0
+
+        # Prepare response
+        response = {
+            "course_id": course_id,
+            "course_title": course.title,
+            "user_id": user.id,
+            "username": user.username,
+            "statistics": {
+                "tasks_completed": completed_tasks,
+                "total_tasks": all_code_tasks,
+                "completion_percentage": round(completion_percentage, 2),
+            },
+            "summary": None,
+            "recommended_practice": [],
+            "profile_available": False
+        }
+
+        # If course profile exists with student summary, include it
+        if course_profile and course_profile.student_summary:
+            response["summary"] = course_profile.student_summary
+            response["profile_available"] = True
+
+            # Add additional statistics from profile
+            response["statistics"].update({
+                "total_lessons": course_profile.total_lessons,
+                "lessons_completed": course_profile.completed_lessons,
+                "total_course_points": course_profile.total_course_points,
+                "points_earned": course_profile.points_earned,
+                "course_start_date": course_profile.course_start_date.isoformat(),
+                "last_activity_date": course_profile.last_activity_date.isoformat(),
+                "total_course_time": course_profile.total_course_time,
+            })
+
+            # Add recommended practice if available
+            if course_profile.analysis and 'recommended_practice' in course_profile.analysis:
+                response["recommended_practice"] = course_profile.analysis['recommended_practice']
+        else:
+            # Generic message if no profile yet
+            if completion_percentage >= 80:
+                response["summary"] = f"Great progress in {course.title}! You've completed {completion_percentage:.0f}% of the course. Keep going!"
+            elif completion_percentage >= 50:
+                response["summary"] = f"You're making solid progress in {course.title}. {completion_percentage:.0f}% complete!"
+            elif completion_percentage > 0:
+                response["summary"] = f"Welcome to {course.title}! You've started {completed_tasks} task{'s' if completed_tasks != 1 else ''}. Continue learning!"
+            else:
+                response["summary"] = f"Welcome to {course.title}! Start your programming journey today."
+
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving course completion summary: {e}", category=LogCategory.ERROR, exception=e)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -1270,6 +1514,7 @@ async def compile_code(
 @router.post("/{user_id}/submit-code", summary="Submit code solution for a task")
 async def submit_code_solution(
     request: SecureCodeSubmitRequest,
+    background_tasks: BackgroundTasks,
     user_id: Union[int, str] = Path(..., description="User ID"),
     db: Session = Depends(get_db),
 ):
@@ -1279,6 +1524,11 @@ async def submit_code_solution(
     Enhanced with security validation and rate limiting.
     """
     try:
+        logger.info(
+            f"⏱️  [TIMING] Code submission request received for user {user_id}",
+            category=LogCategory.PERFORMANCE,
+            extra={"step": "request_start", "timestamp": datetime.utcnow().isoformat()}
+        )
         # Use patched DB if present
         db = _db_session(db)
         # Resolve user
@@ -1355,6 +1605,11 @@ async def submit_code_solution(
 
         # Save AI feedback to database
         if feedback:
+            logger.info(
+                f"⏱️  [TIMING] Creating AIFeedback for user {user_id}, task {request.task_id}",
+                category=LogCategory.PERFORMANCE,
+                extra={"step": "ai_feedback_start", "timestamp": datetime.utcnow().isoformat()}
+            )
             ai_feedback_entry = AIFeedback(
                 user_id=user.id,
                 task_id=request.task_id,
@@ -1364,7 +1619,11 @@ async def submit_code_solution(
             )
             db.add(ai_feedback_entry)
             db.commit()
-            logger.info(f"AI feedback saved for user {user_id}, task {request.task_id}, attempt {task_attempt.id}")
+            logger.info(
+                f"⏱️  [TIMING] AIFeedback saved and committed for user {user_id}, task {request.task_id}",
+                category=LogCategory.PERFORMANCE,
+                extra={"step": "ai_feedback_committed", "timestamp": datetime.utcnow().isoformat()}
+            )
 
         # If unsuccessful, trigger adaptive task generation
         # if not is_successful:
@@ -1395,7 +1654,110 @@ async def submit_code_solution(
                 db.add(task_solution)
 
         db.commit()
+        logger.info(
+            f"⏱️  [TIMING] All database commits complete for user {user_id}, task {request.task_id}",
+            category=LogCategory.PERFORMANCE,
+            extra={"step": "db_commits_complete", "timestamp": datetime.utcnow().isoformat()}
+        )
 
+        # NEW: Trigger learning analytics for successful code task submissions (course_id=2 only)
+        if is_successful and task.type == 'code_task':
+            # Get course_id by traversing relationships
+            try:
+                topic = db.query(Topic).filter(Topic.id == task.topic_id).first()
+                if topic:
+                    lesson = db.query(Lesson).filter(Lesson.id == topic.lesson_id).first()
+                    if lesson and lesson.course_id == 2:
+                        # Schedule background task with separate DB session
+                        logger.info(
+                            f"⏱️  [TIMING] Scheduling background task for user {user.id}, task {request.task_id}",
+                            category=LogCategory.PERFORMANCE,
+                            extra={"step": "background_scheduling", "timestamp": datetime.utcnow().isoformat()}
+                        )
+                        background_tasks.add_task(
+                            _run_task_analysis_background,
+                            user.id,
+                            request.task_id
+                        )
+                        logger.info(
+                            f"⏱️  [TIMING] Background task scheduled (not started yet) for user {user.id}, task {request.task_id}",
+                            category=LogCategory.PERFORMANCE,
+                            extra={"step": "background_scheduled", "timestamp": datetime.utcnow().isoformat()}
+                        )
+
+                        # Check if all tasks in the lesson are now completed
+                        if lesson:
+                            try:
+                                from models import StudentLessonAnalysis
+
+                                # Get all active code tasks in this lesson
+                                all_lesson_tasks = db.query(Task).join(Topic).filter(
+                                    Topic.lesson_id == lesson.id,
+                                    Task.type == 'code_task',
+                                    Task.is_active == True
+                                ).all()
+
+                                if all_lesson_tasks:
+                                    # Check how many the user has completed
+                                    completed_task_ids = set(
+                                        attempt.task_id for attempt in
+                                        db.query(TaskAttempt.task_id).filter(
+                                            TaskAttempt.user_id == user.id,
+                                            TaskAttempt.task_id.in_([t.id for t in all_lesson_tasks]),
+                                            TaskAttempt.is_successful == True
+                                        ).distinct()
+                                    )
+
+                                    # If all tasks are completed
+                                    if len(completed_task_ids) == len(all_lesson_tasks):
+                                        # Check if lesson analysis already exists
+                                        existing_lesson_analysis = db.query(StudentLessonAnalysis).filter(
+                                            StudentLessonAnalysis.user_id == user.id,
+                                            StudentLessonAnalysis.lesson_id == lesson.id
+                                        ).first()
+
+                                        if not existing_lesson_analysis:
+                                            # Schedule lesson analysis in background
+                                            logger.info(
+                                                f"🎓 [TIMING] All tasks completed! Scheduling lesson analysis for user {user.id}, lesson {lesson.id}",
+                                                category=LogCategory.PERFORMANCE,
+                                                extra={"step": "lesson_analysis_scheduling", "timestamp": datetime.utcnow().isoformat()}
+                                            )
+                                            background_tasks.add_task(
+                                                _run_lesson_analysis_background,
+                                                user.id,
+                                                lesson.id
+                                            )
+                                            logger.info(
+                                                f"🎓 [TIMING] Lesson analysis scheduled for user {user.id}, lesson {lesson.id}",
+                                                category=LogCategory.PERFORMANCE,
+                                                extra={"step": "lesson_analysis_scheduled", "timestamp": datetime.utcnow().isoformat()}
+                                            )
+                                        else:
+                                            logger.info(
+                                                f"Lesson analysis already exists for user {user.id}, lesson {lesson.id}",
+                                                category=LogCategory.PERFORMANCE
+                                            )
+                            except Exception as lesson_check_error:
+                                # Log error but don't block submission
+                                logger.error(
+                                    f"Failed to check/schedule lesson analysis: {str(lesson_check_error)}",
+                                    category=LogCategory.ERROR,
+                                    exception=lesson_check_error
+                                )
+            except Exception as e:
+                # Log error but don't block submission
+                logger.error(
+                    f"Failed to schedule learning analytics: {str(e)}",
+                    category=LogCategory.ERROR,
+                    exception=e
+                )
+
+        logger.info(
+            f"⏱️  [TIMING] About to return response to frontend for user {user_id}, task {request.task_id}",
+            category=LogCategory.PERFORMANCE,
+            extra={"step": "response_returning", "timestamp": datetime.utcnow().isoformat()}
+        )
         return {
             "status": "success" if is_successful else "failed",
             "is_correct": is_successful,

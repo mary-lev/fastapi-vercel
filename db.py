@@ -1,4 +1,5 @@
 import os
+import json
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import QueuePool
@@ -10,10 +11,19 @@ from utils.query_monitor import pool_monitor
 
 logger = get_logger("database")
 
+# Custom JSON serializer that preserves UTF-8 encoding
+def json_serializer(obj):
+    """Serialize JSON with ensure_ascii=False to preserve UTF-8 characters (Russian, etc.)"""
+    return json.dumps(obj, ensure_ascii=False)
+
 # Test-friendly engine: use SQLite when NODE_ENV=test
 if os.getenv("NODE_ENV") == "test":
     test_db_url = os.getenv("SQLALCHEMY_TEST_DATABASE_URL", "sqlite:///./test.db")
-    engine = create_engine(test_db_url, connect_args={"check_same_thread": False})
+    engine = create_engine(
+        test_db_url,
+        connect_args={"check_same_thread": False},
+        json_serializer=json_serializer
+    )
     # Auto-create tables for tests
     try:
         from models import Base  # Local import to avoid circular during prod startup
@@ -25,6 +35,8 @@ else:
     # Optimized PostgreSQL connection configuration
     engine = create_engine(
         settings.POSTGRES_URL,
+        # JSON serialization with UTF-8 support
+        json_serializer=json_serializer,
         # Connection pool configuration for high performance
         poolclass=QueuePool,
         pool_size=20,  # Number of connections to maintain in the pool
