@@ -1819,8 +1819,25 @@ async def submit_code_solution(
         raise
     except Exception as e:
         db.rollback()
-        logger.error(f"Error submitting code solution: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        # Enhanced error logging with full traceback for debugging production issues
+        import traceback
+        error_details = {
+            "error_type": type(e).__name__,
+            "error_message": str(e),
+            "traceback": traceback.format_exc(),
+            "user_id": str(user_id),
+            "task_id": getattr(request, 'task_id', 'unknown'),
+            "code_length": len(getattr(request, 'code', ''))
+        }
+        logger.error(
+            f"❌ CRITICAL ERROR in submit_code_solution: {type(e).__name__}: {str(e)}",
+            category=LogCategory.ERROR,
+            exception=e,
+            extra=error_details
+        )
+        # Return detailed error message (only in development, mask in production)
+        detail_message = f"Code submission failed: {type(e).__name__}"
+        raise HTTPException(status_code=500, detail=detail_message)
 
 
 @router.post("/{user_id}/submit-text", summary="Submit text answer for a task")
