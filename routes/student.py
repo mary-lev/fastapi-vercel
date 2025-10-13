@@ -660,9 +660,38 @@ async def get_lesson_summary(
                     StudentLessonAnalysis.lesson_id == lesson_id
                 ).first()
 
+                # Determine if we need to regenerate the analysis
+                should_regenerate = False
+
                 if existing_analysis:
-                    lesson_analysis = existing_analysis
+                    # Calculate how much progress has been made since last analysis
+                    old_completion = existing_analysis.analysis.get('completion_percentage', 0) if existing_analysis.analysis else 0
+                    completion_delta = completion_percentage - old_completion
+
+                    # Regenerate if:
+                    # 1. Completion increased by 20% or more (significant progress)
+                    # 2. Student reached 100% completion (milestone)
+                    if completion_delta >= 20:
+                        should_regenerate = True
+                        logger.info(
+                            f"Lesson analysis needs regeneration: completion went from {old_completion}% to {completion_percentage}%",
+                            category=LogCategory.PERFORMANCE
+                        )
+                    elif completion_percentage == 100 and old_completion < 100:
+                        should_regenerate = True
+                        logger.info(
+                            f"Lesson analysis needs regeneration: student completed the lesson",
+                            category=LogCategory.PERFORMANCE
+                        )
+                    else:
+                        # Analysis is still fresh, use it
+                        lesson_analysis = existing_analysis
                 else:
+                    # No analysis exists, need to create one
+                    should_regenerate = True
+
+                # Schedule regeneration if needed
+                if should_regenerate:
                     # Schedule background task with separate DB session
                     background_tasks.add_task(
                         _run_lesson_analysis_background,
@@ -670,9 +699,12 @@ async def get_lesson_summary(
                         lesson_id
                     )
                     logger.info(
-                        f"Lesson analysis scheduled for user {user.id}, lesson {lesson_id}",
+                        f"Lesson analysis scheduled for user {user.id}, lesson {lesson_id} (completion: {completion_percentage}%)",
                         category=LogCategory.PERFORMANCE
                     )
+                    # Don't use old analysis since we're regenerating
+                    lesson_analysis = None
+
             except Exception as e:
                 # Log error but don't block response
                 logger.error(
@@ -1577,7 +1609,23 @@ async def submit_code_solution(
             )
             # Pass submission as a dict with 'code' key as expected by evaluate_code_submission
             submission_dict = {"code": request.code}
-            evaluation = evaluate_code_submission(submission_dict, output, task, course_language)
+
+            # Fetch previous attempts for context-aware feedback
+            previous_attempts = (
+                db.query(TaskAttempt)
+                .filter(TaskAttempt.user_id == user.id, TaskAttempt.task_id == request.task_id)
+                .order_by(TaskAttempt.submitted_at)
+                .all()
+            )
+
+            evaluation = evaluate_code_submission(
+                submission_dict,
+                output,
+                task,
+                course_language,
+                previous_attempts,
+                student_first_name=user.first_name
+            )
             # evaluation is a SubmissionGrader object with is_solved and feedback attributes
             is_successful = evaluation.is_solved if hasattr(evaluation, "is_solved") else False
             feedback = evaluation.feedback if hasattr(evaluation, "feedback") else "Evaluation completed"

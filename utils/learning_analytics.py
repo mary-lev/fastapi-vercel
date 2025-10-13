@@ -608,7 +608,7 @@ def generate_lesson_student_summary_prompt(
     # Build personalization context
     personalization = ""
     if user.first_name:
-        personalization = f"\n\nStudent's first name: {user.first_name.upper()}\nUse it naturally in your message."
+        personalization = f"\n\nStudent's first name: {user.first_name.capitalize()}\nUse it naturally in your message."
 
     # Build previous messages context
     previous_context = ""
