@@ -104,6 +104,9 @@ class Task(Base):
     max_attempts = Column(Integer, nullable=True)  # NULL means unlimited
     attempt_strategy = Column(String(20), default="unlimited", nullable=False)  # 'unlimited', 'single'
 
+    # AI-generated task summary (what skill/knowledge this task tests)
+    task_summary = Column(Text, nullable=True)  # Pre-generated once per task, reused for all student analyses
+
     __mapper_args__ = {"polymorphic_on": type, "polymorphic_identity": "task"}
 
     tags = relationship("Tag", secondary=task_tags, backref="tasks", cascade="all")

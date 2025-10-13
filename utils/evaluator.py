@@ -57,7 +57,7 @@ def provide_code_feedback(
     )
 
     completion = client.beta.chat.completions.parse(
-        model="gpt-5",
+        model="gpt-5-mini",
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
@@ -98,7 +98,7 @@ def provide_text_feedback(
     )
 
     completion = client.beta.chat.completions.parse(
-        model="gpt-5",
+        model="gpt-5-mini",
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},

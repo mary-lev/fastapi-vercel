@@ -22,7 +22,8 @@ from models import (
 # ===============================================================================
 
 # Default LLM model for all analytics
-LLM_MODEL_NAME = "gpt-5"
+# Using gpt-5-mini for 4-5x cost savings while maintaining good technical quality
+LLM_MODEL_NAME = "gpt-5-mini"
 
 
 # ===============================================================================
@@ -177,42 +178,131 @@ def _format_attempts_for_llm(attempts: List[TaskAttempt], max_show: int = 20) ->
     if len(attempts) <= max_show:
         # Show all attempts
         formatted_attempts = []
-        for i, attempt in enumerate(attempts):
-            status = "SUCCESS" if attempt.is_successful else "FAILED"
-            code_preview = attempt.attempt_content[:500] if attempt.attempt_content else "[No code]"
-
-            # Get AI feedback if available
-            feedback_preview = ""
-            if hasattr(attempt, 'ai_feedback') and attempt.ai_feedback:
-                feedback = attempt.ai_feedback[0].feedback[:200]
-                feedback_preview = f"Feedback: {feedback}...\n"
+        for i, attempt in enumerate(attempts, 1):
+            status = "✓" if attempt.is_successful else "✗"
+            code = attempt.attempt_content[:600] if attempt.attempt_content else "[No code submitted]"
 
             formatted_attempts.append(
-                f"Attempt {i+1}: {status}\n"
-                f"Code:\n{code_preview}...\n"
-                f"{feedback_preview}"
+                f"Attempt {i} [{status}]:\n{code}"
             )
-        return "\n".join(formatted_attempts)
+        return "\n\n".join(formatted_attempts)
     else:
-        # Outlier case: show first 5 + last 15
+        # Outlier case: show first 5 + last 15 (for students with many attempts)
         first_five = attempts[:5]
         last_fifteen = attempts[-15:]
 
-        formatted = "FIRST 5 ATTEMPTS:\n"
-        for i, attempt in enumerate(first_five):
-            status = "SUCCESS" if attempt.is_successful else "FAILED"
-            code_preview = attempt.attempt_content[:300] if attempt.attempt_content else "[No code]"
-            formatted += f"Attempt {i+1}: {status}\nCode: {code_preview}...\n\n"
+        formatted_attempts = []
 
-        formatted += f"\n... [{len(attempts) - 20} attempts omitted] ...\n\n"
+        # First 5
+        for i, attempt in enumerate(first_five, 1):
+            status = "✓" if attempt.is_successful else "✗"
+            code = attempt.attempt_content[:400] if attempt.attempt_content else "[No code]"
+            formatted_attempts.append(f"Attempt {i} [{status}]:\n{code}")
 
-        formatted += "LAST 15 ATTEMPTS:\n"
+        # Gap indicator
+        formatted_attempts.append(f"... [{len(attempts) - 20} attempts omitted] ...")
+
+        # Last 15
         for i, attempt in enumerate(last_fifteen):
-            status = "SUCCESS" if attempt.is_successful else "FAILED"
-            code_preview = attempt.attempt_content[:300] if attempt.attempt_content else "[No code]"
-            formatted += f"Attempt {len(attempts)-15+i+1}: {status}\nCode: {code_preview}...\n\n"
+            attempt_num = len(attempts) - 15 + i + 1
+            status = "✓" if attempt.is_successful else "✗"
+            code = attempt.attempt_content[:400] if attempt.attempt_content else "[No code]"
+            formatted_attempts.append(f"Attempt {attempt_num} [{status}]:\n{code}")
 
-        return formatted
+        return "\n\n".join(formatted_attempts)
+
+
+# ===============================================================================
+# Task Summary Generation (Pre-compute once per task)
+# ===============================================================================
+
+
+def generate_task_summary(task: Task, course: Course) -> Optional[str]:
+    """
+    Generate a one-line summary of what knowledge/skill this task tests and trains.
+
+    This should be called once per task (when task is created/updated) and stored
+    in task.task_summary field. This avoids regenerating the same summary for every
+    student who attempts the task.
+
+    Args:
+        task: Task object with data JSON (contains 'text' instruction and 'code' starter)
+        course: Course object for context (language, etc.)
+
+    Returns:
+        One-line summary string (e.g., "Tests for loop iteration and string indexing")
+        or None if generation fails
+    """
+    # Extract task instruction and starter code from data JSON
+    if not isinstance(task.data, dict):
+        return f"Coding task: {task.task_name}"
+
+    task_instruction = task.data.get('text', '')
+    starter_code = task.data.get('code', '')
+
+    if not task_instruction:
+        # No instruction to analyze
+        return f"Coding task: {task.task_name}"
+
+    # Generate summary using OpenAI
+    try:
+        client = get_openai_client()
+
+        response = client.chat.completions.create(
+            model=LLM_MODEL_NAME,
+            messages=[
+                {
+                    "role": "system",
+                    "content": f"You are an expert programming educator analyzing tasks in a {course.language or 'Python'} course. Generate concise, specific summaries of what skills/knowledge each task tests."
+                },
+                {
+                    "role": "user",
+                    "content": f"""Analyze this programming task and generate a HIGH-LEVEL, CONCEPTUAL summary (max 100 characters) of what programming concept/skill it teaches.
+
+TASK: {task.task_name}
+TYPE: {task.type}
+
+INSTRUCTION:
+{task_instruction}
+
+STARTER CODE:
+{starter_code if starter_code else '[No starter code]'}
+
+Requirements:
+- Focus on the CORE CONCEPT being taught, not specific task details
+- Be abstract and generalizable (e.g., "string slicing" not "slice [4:8]")
+- Use programming terminology, not task-specific values
+- Keep it short and conceptual
+- Start with "Tests..." or "Practices..." or "Applies..."
+- DO NOT repeat specific variable names, indices, or task details
+
+Good examples (abstract, conceptual):
+- "Tests basic string indexing and slicing with step parameter"
+- "Practices list comprehension with conditional filtering"
+- "Applies dictionary methods for data aggregation"
+- "Tests loop iteration with range and enumerate functions"
+
+Bad examples (too specific, repeating task):
+- "Tests getting first char, slice [4:8], and every second char"
+- "Practices creating list with numbers 1 to 10 using append"
+- "Tests printing 'Python' character by character"
+
+Generate ONLY the one-line conceptual summary, no additional text."""
+                }
+            ]
+        )
+
+        summary = response.choices[0].message.content.strip()
+
+        # Ensure it's not too long
+        if len(summary) > 200:
+            summary = summary[:197] + "..."
+
+        return summary
+
+    except Exception as e:
+        print(f"Failed to generate task summary for task {task.id}: {str(e)}")
+        return f"{task.type.replace('_', ' ').title()}: {task.task_name}"
 
 
 # ===============================================================================
@@ -240,113 +330,67 @@ def generate_task_analysis_prompt(
     """
     time_data = calculate_time_gaps(attempts)
 
-    # Extract comprehensive task information from data JSON
-    task_info = []
+    # Extract task information from data JSON (text and code fields)
+    task_instruction = ""
+    starter_code = ""
 
     if isinstance(task.data, dict):
-        # Task description/instructions (handle both 'text' and 'description' field names)
-        description = task.data.get('text') or task.data.get('description', '')
-        if description:
-            task_info.append(f"TASK INSTRUCTIONS:\n{description}")
+        task_instruction = task.data.get('text', 'No instruction provided')
+        starter_code = task.data.get('code', '')
 
-        # Task requirements/objectives
-        requirements = task.data.get('requirements', [])
-        if requirements:
-            task_info.append("REQUIREMENTS:\n" + "\n".join(f"- {req}" for req in requirements))
+    # Get pre-generated task summary (what this task tests/trains)
+    task_summary = task.task_summary or f"Coding task: {task.task_name}"
 
-        # Starter code/template (handle 'code', 'starter_code', 'template', 'code_template')
-        starter_code = (
-            task.data.get('code') or
-            task.data.get('starter_code') or
-            task.data.get('template') or
-            task.data.get('code_template')
-        )
-        if starter_code:
-            # Clean up if it's just a placeholder
-            if starter_code and not starter_code.strip().startswith('#'):
-                task_info.append(f"STARTER CODE PROVIDED:\n{starter_code}")
-            elif starter_code and len(starter_code.strip()) > 20:  # More than just "# Your code here"
-                task_info.append(f"STARTER CODE PROVIDED:\n{starter_code}")
+    system_prompt = f"""You are an expert programming educator analyzing student learning patterns in a {course.language or 'Python'} course.
 
-        # Correct answer (for reference - helps LLM understand what's expected)
-        correct_answer = task.data.get('correct_answer')
-        if correct_answer and correct_answer != starter_code:
-            # Only show first 200 chars to give context without spoiling
-            preview = correct_answer[:200] + "..." if len(correct_answer) > 200 else correct_answer
-            task_info.append(f"EXPECTED SOLUTION PATTERN (reference):\n{preview}")
+Analyze attempts to identify: error patterns, learning progression, concept gaps, strengths, and difficulty appropriateness.
+Be specific and reference actual code patterns."""
 
-        # Expected output/behavior
-        expected_output = task.data.get('expected_output') or task.data.get('expected_behavior')
-        if expected_output:
-            task_info.append(f"EXPECTED OUTPUT:\n{expected_output}")
+    # Generate human-readable attempt summary
+    successful_count = len([a for a in attempts if a.is_successful])
+    failed_count = len([a for a in attempts if not a.is_successful])
 
-        # Test cases (if visible to student)
-        test_cases = task.data.get('test_cases', [])
-        if test_cases and len(test_cases) > 0:
-            # Show first 2-3 test cases as examples
-            visible_tests = test_cases[:3]
-            test_desc = "\n".join([
-                f"- Input: {tc.get('input', 'N/A')} → Expected: {tc.get('expected', 'N/A')}"
-                for tc in visible_tests if isinstance(tc, dict)
-            ])
-            if test_desc:
-                task_info.append(f"TEST CASES (sample):\n{test_desc}")
+    if len(attempts) == 1:
+        if attempts[0].is_successful:
+            attempt_summary = "Solved on first attempt"
+        else:
+            attempt_summary = "Made 1 attempt (not yet solved)"
+    else:
+        if successful_count > 0:
+            # Find which attempt succeeded
+            for i, a in enumerate(attempts, 1):
+                if a.is_successful:
+                    attempt_summary = f"Solved on attempt {i} of {len(attempts)}"
+                    break
+        else:
+            attempt_summary = f"Made {len(attempts)} attempts (not yet solved)"
 
-        # Hints or learning objectives
-        hints = task.data.get('hints', [])
-        if hints:
-            task_info.append("HINTS PROVIDED:\n" + "\n".join(f"- {hint}" for hint in hints[:3]))
+    user_prompt = f"""STUDENT ID: {user.id}
+COURSE ID: {course.id}
 
-        learning_objectives = task.data.get('learning_objectives', [])
-        if learning_objectives:
-            task_info.append("LEARNING OBJECTIVES:\n" + "\n".join(f"- {obj}" for obj in learning_objectives))
+TASK TESTS:
+{task_summary}
 
-    task_details = "\n\n".join(task_info) if task_info else "No detailed task information available"
+INSTRUCTION:
+{task_instruction}
 
-    system_prompt = f"""You are an expert programming educator analyzing a student's learning patterns in a {course.language or 'Python'} programming course.
+STARTER CODE:
+{starter_code if starter_code else '[No starter code]'}
 
-Analyze the student's task attempts to identify:
-1. What knowledge/skill this task tests and trains (one-line summary)
-2. Error patterns and misconceptions
-3. Learning progression (struggle → breakthrough vs smooth)
-4. Concept gaps that need reinforcement
-5. Strengths demonstrated
-6. Whether difficulty level is appropriate
+ATTEMPTS: {attempt_summary}
+Time spent: {time_data['total_time_spent']}
 
-Provide structured analysis focusing on actionable insights for personalized learning.
-Be specific and reference actual code patterns when possible."""
-
-    user_prompt = f"""STUDENT: {user.username} (ID: {user.id})
-COURSE: {course.title}
-
-TASK: {task.task_name}
-TASK TYPE: {task.type}
-POINTS: {task.points}
-
-TASK DETAILS:
-{task_details}
-
-STUDENT ATTEMPTS: {len(attempts)} total
-- Successful: {len([a for a in attempts if a.is_successful])}
-- Failed: {len([a for a in attempts if not a.is_successful])}
-
-TIME PATTERN:
-- Total time: {time_data['total_time_spent']}
-- Time gaps between attempts: {', '.join(time_data['attempt_time_gaps'])}
-
-ATTEMPT HISTORY:
+ALL ATTEMPTS:
 {_format_attempts_for_llm(attempts, max_show=20)}
 
-ANALYSIS REQUIREMENTS:
-1. task_summary: One-line summary of what knowledge/skill this task tests and trains (e.g., "Tests dictionary comprehension and .get() idiom for word frequency counting")
-2. error_patterns: List 2-3 specific error patterns (e.g., "off-by-one errors in loop range", "confusion between append() and extend()")
-3. learning_progression: Classify as ONE of: "immediate_success", "struggle_then_breakthrough", "persistent_difficulty"
-4. concept_gaps: List 2-3 specific concept gaps if any (be precise: "list comprehension syntax" not just "loops")
-5. strengths: Note 1-2 demonstrated strengths (e.g., "good variable naming", "proper edge case handling")
-6. help_needed: Boolean - true if student needs instructor intervention (same error repeated 3+ times)
-7. difficulty_level: Assess as ONE of: "too_easy", "appropriate", "too_hard"
-
-Respond in JSON format with exactly these keys: task_summary, error_patterns, learning_progression, concept_gaps, strengths, help_needed, difficulty_level"""
+ANALYZE (respond in JSON):
+- error_patterns: List 0-3 specific error patterns (empty if none)
+- learning_progression: "immediate_success" | "struggle_then_breakthrough" | "persistent_difficulty"
+- concept_gaps: List 0-3 specific concept gaps (empty if none)
+- strengths: List 1-2 demonstrated strengths
+- help_needed: true if needs instructor intervention (same error 3+ times)
+- difficulty_level: "too_easy" | "appropriate" | "too_hard"
+"""
 
     return {
         "system": system_prompt,
@@ -359,11 +403,83 @@ Respond in JSON format with exactly these keys: task_summary, error_patterns, le
 # ===============================================================================
 
 
+def _calculate_class_statistics(lesson_id: int, db: Session) -> Dict[str, Any]:
+    """
+    Calculate class-wide statistics for a lesson to provide comparison context.
+
+    Args:
+        lesson_id: Lesson ID to get stats for
+        db: Database session
+
+    Returns:
+        Dictionary with class averages and formatted comparison text
+    """
+    # Get all lesson analyses for this lesson (from other students)
+    all_lesson_analyses = db.query(StudentLessonAnalysis).filter(
+        StudentLessonAnalysis.lesson_id == lesson_id
+    ).all()
+
+    if not all_lesson_analyses or len(all_lesson_analyses) < 3:
+        # Not enough data for meaningful comparison
+        return {
+            'comparison_text': 'CLASS COMPARISON: Not enough class data available yet for comparison.',
+            'avg_completion': None,
+            'avg_retention': None,
+            'avg_attempts': None
+        }
+
+    # Calculate class averages
+    completions = [la.completion_percentage for la in all_lesson_analyses]
+    avg_completion = sum(completions) / len(completions)
+
+    retentions = [la.analysis.get('retention_score', 0) for la in all_lesson_analyses]
+    avg_retention = sum(retentions) / len(retentions)
+
+    # Get all task analyses for this lesson to calculate average attempts
+    all_task_analyses = db.query(StudentTaskAnalysis).join(
+        Task, StudentTaskAnalysis.task_id == Task.id
+    ).join(
+        Topic, Task.topic_id == Topic.id
+    ).filter(
+        Topic.lesson_id == lesson_id
+    ).all()
+
+    if all_task_analyses:
+        # Calculate average attempts per student
+        student_avg_attempts = {}
+        for ta in all_task_analyses:
+            if ta.user_id not in student_avg_attempts:
+                student_avg_attempts[ta.user_id] = []
+            student_avg_attempts[ta.user_id].append(ta.total_attempts)
+
+        # Calculate class average (average of each student's average)
+        student_averages = [sum(attempts) / len(attempts) for attempts in student_avg_attempts.values() if attempts]
+        class_avg_attempts = sum(student_averages) / len(student_averages) if student_averages else None
+    else:
+        class_avg_attempts = None
+
+    # Format comparison text
+    comparison_lines = ["CLASS COMPARISON (for calibration):"]
+    comparison_lines.append(f"- Class average completion: {avg_completion:.1f}%")
+    comparison_lines.append(f"- Class average retention: {avg_retention:.2f}")
+    if class_avg_attempts:
+        comparison_lines.append(f"- Class average attempts per task: {class_avg_attempts:.1f}")
+    comparison_lines.append(f"- Total students analyzed: {len(all_lesson_analyses)}")
+
+    return {
+        'comparison_text': '\n'.join(comparison_lines),
+        'avg_completion': avg_completion,
+        'avg_retention': avg_retention,
+        'avg_attempts': class_avg_attempts
+    }
+
+
 def generate_lesson_analysis_prompt(
     user: User,
     lesson: Lesson,
     course: Course,
-    task_analyses: List[StudentTaskAnalysis]
+    task_analyses: List[StudentTaskAnalysis],
+    db: Session
 ) -> Dict[str, str]:
     """
     Generate LLM prompt for lesson-level synthesis.
@@ -373,55 +489,90 @@ def generate_lesson_analysis_prompt(
         lesson: Lesson object being analyzed
         course: Course object for context
         task_analyses: All StudentTaskAnalysis objects for tasks in this lesson
+        db: Database session for class statistics
 
     Returns:
         Dictionary with 'system' and 'user' prompts
     """
-    # Format task analyses for LLM
+    # Calculate aggregate attempt statistics for this student
+    all_attempts = [ta.total_attempts for ta in task_analyses]
+    avg_attempts = sum(all_attempts) / len(all_attempts) if all_attempts else 0
+
+    # Calculate median
+    sorted_attempts = sorted(all_attempts)
+    if len(sorted_attempts) % 2 == 0:
+        median_attempts = (sorted_attempts[len(sorted_attempts)//2 - 1] + sorted_attempts[len(sorted_attempts)//2]) / 2
+    else:
+        median_attempts = sorted_attempts[len(sorted_attempts)//2]
+
+    # Count learning progression patterns
+    immediate_count = len([ta for ta in task_analyses if ta.analysis.get('learning_progression') == 'immediate_success'])
+    struggle_count = len([ta for ta in task_analyses if ta.analysis.get('learning_progression') == 'struggle_then_breakthrough'])
+    difficult_count = len([ta for ta in task_analyses if ta.analysis.get('learning_progression') == 'persistent_difficulty'])
+
+    # Get class comparison data (if available)
+    class_stats = _calculate_class_statistics(lesson.id, db)
+
+    # Format task analyses for LLM (compressed format)
     formatted_tasks = []
-    for ta in task_analyses:
+    for i, ta in enumerate(task_analyses, 1):
         task = ta.task
-        formatted_tasks.append(f"""
-Task: {task.task_name} ({task.points} points)
-Attempts: {ta.total_attempts} (Success: {ta.final_success})
-Time: {ta.total_time_spent}
-Analysis:
-  - Learning progression: {ta.analysis.get('learning_progression', 'N/A')}
-  - Concept gaps: {', '.join(ta.analysis.get('concept_gaps', []))}
-  - Strengths: {', '.join(ta.analysis.get('strengths', []))}
-""")
+        # Use pre-generated task_summary from task table (what skill this task tests)
+        task_summary = task.task_summary or f"Coding task: {task.task_name}"
+
+        progression = ta.analysis.get('learning_progression', 'N/A')
+        gaps = ta.analysis.get('concept_gaps', [])
+        strengths = ta.analysis.get('strengths', [])
+
+        # Build compressed format
+        parts = [
+            f"{i}. {task_summary} ({ta.total_attempts} attempts)",
+            f"   Progression: {progression}"
+        ]
+
+        if gaps:
+            parts.append(f"   Gaps: {', '.join(gaps)}")
+        if strengths:
+            parts.append(f"   Strengths: {', '.join(strengths)}")
+
+        formatted_tasks.append('\n'.join(parts))
 
     system_prompt = f"""You are an expert programming educator synthesizing a student's lesson-level progress in a {course.language or 'Python'} course.
 
 Analyze patterns across multiple tasks to identify:
 1. Concepts mastered vs struggling
-2. Learning pace (too fast/slow/appropriate)
+2. Content difficulty match (overwhelmed/appropriate/under-challenged) - NOT student speed, but whether content difficulty is well-matched to student's current level
 3. Retention across topics
 4. Help-seeking patterns
 5. Topic dependency issues
 
 Provide actionable insights for lesson design and student support."""
 
-    user_prompt = f"""STUDENT: {user.username} (ID: {user.id})
-COURSE: {course.title}
+    user_prompt = f"""STUDENT ID: {user.id}
+COURSE ID: {course.id}
 LESSON: {lesson.title}
 
-LESSON DESCRIPTION: {lesson.description}
-TOTAL TOPICS: {len(lesson.topics)}
-TOTAL TASKS ANALYZED: {len(task_analyses)}
+DESCRIPTION: {lesson.description}
+TOPICS: {len(lesson.topics)}
+TASKS ANALYZED: {len(task_analyses)}
 
-TASK-LEVEL SUMMARIES:
-{''.join(formatted_tasks)}
+ATTEMPT STATS:
+- Avg: {avg_attempts:.1f}, Median: {median_attempts:.1f}, Range: {min(all_attempts)}-{max(all_attempts)}
+- Patterns: {immediate_count} immediate, {struggle_count} struggle→breakthrough, {difficult_count} persistent
 
-ANALYSIS REQUIREMENTS:
-1. mastered_concepts: List 2-4 concepts that appeared as strengths across multiple tasks
-2. struggling_concepts: List 2-4 concepts that appeared as gaps across multiple tasks
-3. pacing: Assess as ONE of: "too_fast" (student overwhelmed), "appropriate", "too_slow" (student bored)
-4. retention_score: Float 0.0-1.0 indicating how well concepts from early tasks were retained in later tasks
-5. help_seeking_pattern: Assess as ONE of: "too_frequent" (excessive retries without learning), "appropriate", "too_rare" (gives up too easily)
-6. topic_dependencies_issues: List any cases where weak foundation in earlier topic caused issues in later topic
+{class_stats['comparison_text']}
 
-Respond in JSON format with exactly these keys: mastered_concepts, struggling_concepts, pacing, retention_score, help_seeking_pattern, topic_dependencies_issues"""
+TASK SUMMARIES:
+{chr(10).join(formatted_tasks)}
+
+ANALYZE (respond in JSON):
+- mastered_concepts: List 2-4 concepts appearing as strengths across tasks
+- struggling_concepts: List 2-4 concepts appearing as gaps across tasks
+- pacing: "overwhelmed" (struggling, attempts >> class avg) | "appropriate" (attempts ≈ class avg, mix of patterns) | "under_challenged" (1-2 attempts, mostly immediate success)
+- retention_score: Float 0.0-1.0 (tasks showing retention / tasks with opportunity)
+- help_seeking_pattern: "too_frequent" (5+ same errors, no learning) | "appropriate" (productive retries) | "too_rare" (gives up after 1-2 attempts)
+- topic_dependencies_issues: List "Weak [concept] → struggled with [later concept in tasks]"
+"""
 
     return {
         "system": system_prompt,
@@ -434,60 +585,169 @@ Respond in JSON format with exactly these keys: mastered_concepts, struggling_co
 # ===============================================================================
 
 
-def generate_lesson_student_summary_prompt(analysis_data: dict, lesson_title: str) -> str:
+def generate_lesson_student_summary_prompt(
+    analysis_data: dict,
+    lesson_title: str,
+    user: User,
+    task_analyses: List[StudentTaskAnalysis],
+    previous_messages: List[str] = None
+) -> str:
     """
     Generate prompt to create motivational lesson summary for students.
 
     Args:
         analysis_data: The JSON analysis from lesson-level LLM call
         lesson_title: Title of the lesson
+        user: User object for personalization
+        task_analyses: List of StudentTaskAnalysis objects for specific context
+        previous_messages: Optional list of previous motivational messages to avoid repetition
 
     Returns:
         Prompt string for generating student-friendly summary
     """
+    # Build personalization context
+    personalization = ""
+    if user.first_name:
+        personalization = f"\n\nStudent's first name: {user.first_name.upper()}\nUse it naturally in your message."
+
+    # Build previous messages context
+    previous_context = ""
+    if previous_messages and len(previous_messages) > 0:
+        previous_context = "\n\nPREVIOUS MESSAGES TO THIS STUDENT:\n"
+        for i, msg in enumerate(previous_messages[-3:], 1):  # Show last 3 messages max
+            previous_context += f"{i}. {msg}\n"
+        previous_context += "\n⚠️ CRITICAL: Do NOT repeat phrases, vocabulary, or concepts from above. Show progression and use completely different language."
+
+    # Build specific learning journey context
+    journey_details = "\n\nLEARNING JOURNEY IN THIS LESSON:\n"
+
+    # Find struggle-to-success stories
+    struggle_stories = []
+    for i, ta in enumerate(task_analyses, 1):
+        if ta.analysis.get('learning_progression') == 'struggle_then_breakthrough':
+            task_summary = ta.task.task_summary or ta.task.task_name
+            attempts = ta.total_attempts
+            concepts = ta.analysis.get('concept_gaps', [])
+            struggle_stories.append(f"Task {i}: {task_summary[:60]} - {attempts} attempts, overcame: {', '.join(concepts[:2])}")
+
+    if struggle_stories:
+        journey_details += "Struggles → Breakthroughs:\n"
+        for story in struggle_stories[:2]:  # Show max 2 stories
+            journey_details += f"  • {story}\n"
+
+    # Find immediate successes (for showing confidence)
+    immediate_wins = []
+    for i, ta in enumerate(task_analyses, 1):
+        if ta.analysis.get('learning_progression') == 'immediate_success':
+            task_summary = ta.task.task_summary or ta.task.task_name
+            strengths = ta.analysis.get('strengths', [])
+            if strengths:
+                immediate_wins.append(f"Task {i}: {task_summary[:60]} - {strengths[0]}")
+
+    if immediate_wins:
+        journey_details += "\nImmediate Successes (shows mastery):\n"
+        for win in immediate_wins[:2]:  # Show max 2
+            journey_details += f"  • {win}\n"
+
+    # Learning pattern metadata
+    retention = analysis_data.get('retention_score', 0)
+    pacing = analysis_data.get('pacing', 'appropriate')
+    help_seeking = analysis_data.get('help_seeking_pattern', 'appropriate')
+
+    learning_pattern = f"\n\nLEARNING PATTERN:\n"
+    learning_pattern += f"- Retention: {retention:.0%} (how much they remember across tasks)\n"
+    learning_pattern += f"- Pacing: {pacing} (content difficulty match)\n"
+    learning_pattern += f"- Help-seeking: {help_seeking}\n"
+
+    # Generic phrases to avoid
+    avoid_phrases = """
+STRICTLY AVOID these generic phrases:
+❌ "отличная работа"
+❌ "вы на правильном пути" / "на верном пути"
+❌ "продолжайте в том же духе"
+❌ "особенно впечатляет"
+❌ "замечательно продвигаетесь"
+❌ "уверенно работаете"
+❌ "готовы к более сложным заданиям"
+"""
+
     return f"""Based on this technical analysis of a student's progress in "{lesson_title}":
 
 {json.dumps(analysis_data, indent=2, ensure_ascii=False)}
+{personalization}
+{journey_details}
+{learning_pattern}
+{previous_context}
+{avoid_phrases}
 
-Write a brief (2-3 sentences), encouraging message for the student that:
-- Acknowledges their effort and specific progress in this lesson
-- Highlights 1-2 concepts they've mastered
-- Offers constructive guidance if they struggled with something (frame positively)
-- Uses motivational tone appropriate for learning programming
+🎯 YOUR TASK: Write a PERSONAL, NARRATIVE-DRIVEN message (2-3 sentences) that feels like a real teacher watched this specific student's journey.
 
-Avoid: technical jargon, mentioning "analysis", being overly critical
-Focus on: growth mindset, specific achievements, readiness for next lesson
+CREATE A NARRATIVE ARC:
+1. OPEN with a specific struggle-to-success moment OR reference a specific task number
+2. USE a vivid metaphor relating programming to everyday life
+3. ACKNOWLEDGE their learning style (retention {retention:.0%}, pacing: {pacing})
+4. CLOSE with forward-looking anticipation (what's next)
 
-Example tone: "Great work on {lesson_title}! You've really mastered loops and conditionals, and your problem-solving approach is getting stronger. Keep practicing with nested structures – you're on the right track!"
+REQUIREMENTS:
+✓ Use polite Russian "вы" (not "ты")
+✓ Start with their first name naturally
+✓ Reference at least ONE specific task number or struggle mentioned above
+✓ Include ONE vivid, memorable metaphor
+✓ Show transformation (from confusion → clarity, from struggling → mastering)
+✓ Use COMPLETELY NEW vocabulary (check previous messages!)
+✓ Be specific about THIS lesson (not generic praise)
 
-Write ONLY the student message, no additional commentary."""
+STYLE:
+- Conversational, warm, observant (like you watched them work)
+- Show you understand their SPECIFIC journey
+- Use fresh, vivid language (metaphors, comparisons)
+- Celebrate specific victories, not abstract concepts
+
+BAD (generic, repetitive):
+"Мария, отличная работа! Вы уверенно работаете со списками. Продолжайте в том же духе."
+
+GOOD (specific, narrative, personal):
+"Мария, задание 7 с сортировкой явно заставило задуматься — но теперь вы разбираетесь в методах списков как опытный библиотекарь в каталоге! С вашей способностью запоминать концепции (90%), словари покорятся вам с той же лёгкостью."
+
+Write ONLY the student message in Russian, no commentary."""
 
 
-def generate_course_student_summary_prompt(analysis_data: dict, course_title: str) -> str:
+def generate_course_student_summary_prompt(analysis_data: dict, course_title: str, user: User) -> str:
     """
     Generate prompt to create congratulatory course summary for students.
 
     Args:
         analysis_data: The JSON analysis from course-level LLM call
         course_title: Title of the course
+        user: User object for personalization
 
     Returns:
         Prompt string for generating congratulatory dashboard message
     """
+    # Build personalization context
+    personalization = ""
+    if user.first_name:
+        personalization = f"\n\nStudent's first name: {user.first_name}\nFeel free to use it naturally in your message if appropriate."
+
     return f"""Based on this comprehensive analysis of a student's progress in "{course_title}":
 
 {json.dumps(analysis_data, indent=2, ensure_ascii=False)}
+{personalization}
 
 Write a congratulatory message (3-4 sentences) for the student's dashboard that:
+- Use polite Russian address "вы" (not informal "ты") while maintaining a friendly, encouraging tone
+- If first name is provided above, you may use it naturally in a warm greeting
 - Celebrates their course completion with specific achievements
 - Highlights 2-3 core strengths they've developed
 - Acknowledges growth areas and frames them as future opportunities
 - Encourages continued learning with enthusiasm
 
-Avoid: generic praise, mentioning "analysis", dwelling on weaknesses
-Focus on: transformation, specific skills gained, readiness for advanced topics, pride in achievement
+Avoid: generic praise, mentioning "analysis", dwelling on weaknesses, using informal "ты"
+Focus on: transformation, specific skills gained, readiness for advanced topics, pride in achievement, polite but warm and friendly tone
 
-Example tone: "Congratulations on completing {course_title}! You've transformed from a beginner into a confident programmer with strong problem-solving and debugging skills. Your persistence through challenging topics like recursion really paid off. You're well-prepared for advanced programming – keep building amazing things!"
+Examples of good tone:
+- "Алексей, поздравляем с завершением курса! Вы проделали большой путь и освоили все базовые концепции программирования. Ваша настойчивость и внимание к деталям впечатляют – продолжайте в том же духе!"
+- "Поздравляем с завершением курса! Вы отлично справились со всеми темами и готовы к более сложным задачам."
 
 Write ONLY the congratulatory message, no additional commentary."""
 
@@ -717,20 +977,19 @@ def _generate_professor_notes_from_analysis(
     Generate detailed professor notes from structured analysis.
 
     Args:
-        analysis: Dictionary from TaskAnalysisSchema
+        analysis: Dictionary from TaskAnalysisSchema (no longer includes task_summary)
         task_name: Name of the task
         attempt_count: Number of attempts
         total_time: Human-readable total time
 
     Returns:
         Formatted professor notes string
+
+    Note: task_summary is no longer part of analysis dict. It's pre-generated
+    and stored in task.task_summary field for efficiency.
     """
     notes = f"Task: {task_name}\n"
     notes += f"Attempts: {attempt_count} over {total_time}\n\n"
-
-    # Add task summary if available
-    if 'task_summary' in analysis and analysis['task_summary']:
-        notes += f"Task Summary: {analysis['task_summary']}\n\n"
 
     notes += f"Learning Progression: {analysis['learning_progression']}\n"
     notes += f"Difficulty Assessment: {analysis['difficulty_level']}\n"
@@ -833,7 +1092,7 @@ async def analyze_lesson_progress(
         return existing_analysis
 
     # Generate lesson analysis prompt
-    prompt_data = generate_lesson_analysis_prompt(user, lesson, course, task_analyses)
+    prompt_data = generate_lesson_analysis_prompt(user, lesson, course, task_analyses, db)
 
     # Call OpenAI with structured output
     try:
@@ -857,9 +1116,22 @@ async def analyze_lesson_progress(
         # Convert to dict for JSON storage
         analysis_dict = analysis_result.model_dump()
 
+        # Get previous lesson analyses for this student in the same course to avoid repetition
+        previous_analyses = db.query(StudentLessonAnalysis).join(
+            Lesson, StudentLessonAnalysis.lesson_id == Lesson.id
+        ).filter(
+            StudentLessonAnalysis.user_id == user_id,
+            Lesson.course_id == course.id,
+            StudentLessonAnalysis.lesson_id != lesson_id,  # Exclude current lesson
+            StudentLessonAnalysis.student_summary.isnot(None)  # Only those with summaries
+        ).order_by(StudentLessonAnalysis.analyzed_at).all()
+
+        # Extract previous messages (last 3 to show progression)
+        previous_messages = [la.student_summary for la in previous_analyses if la.student_summary]
+
         # Second call: Generate motivational student summary
         summary_prompt = generate_lesson_student_summary_prompt(
-            analysis_dict, lesson.title
+            analysis_dict, lesson.title, user, task_analyses, previous_messages
         )
 
         summary_response = client.chat.completions.create(
@@ -1045,7 +1317,7 @@ async def analyze_course_profile(
 
         # Second call: Generate congratulatory student summary
         summary_prompt = generate_course_student_summary_prompt(
-            profile_dict, course.title
+            profile_dict, course.title, user
         )
 
         summary_response = client.chat.completions.create(
