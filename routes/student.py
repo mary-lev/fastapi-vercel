@@ -1584,10 +1584,15 @@ async def submit_code_solution(
             )
             raise HTTPException(status_code=400, detail=f"Security validation failed: {error_message}")
 
-        # Verify task exists
-        task = db.query(Task).filter(Task.id == request.task_id).first()
+        # Verify task exists and eagerly load relationships to prevent detached instance errors
+        task = db.query(Task).options(joinedload(Task.topic)).filter(Task.id == request.task_id).first()
         if not task:
             raise HTTPException(status_code=404, detail="Task not found")
+
+        # Extract IDs before any commits to avoid detached instance errors
+        task_id = task.id
+        task_type = task.type
+        topic_id = task.topic_id if hasattr(task, 'topic_id') else None
 
         logger.info(f"Code submission received for user {user_id}, task {request.task_id}")
 
@@ -1709,10 +1714,10 @@ async def submit_code_solution(
         )
 
         # NEW: Trigger learning analytics for successful code task submissions (course_id=2 only)
-        if is_successful and task.type == 'code_task':
+        if is_successful and task_type == 'code_task':
             # Get course_id by traversing relationships
             try:
-                topic = db.query(Topic).filter(Topic.id == task.topic_id).first()
+                topic = db.query(Topic).filter(Topic.id == topic_id).first() if topic_id else None
                 if topic:
                     lesson = db.query(Lesson).filter(Lesson.id == topic.lesson_id).first()
                     if lesson and lesson.course_id == 2:
