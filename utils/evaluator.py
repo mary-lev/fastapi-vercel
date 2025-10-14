@@ -26,7 +26,7 @@ class SubmissionGrader(BaseModel):
 
 
 def build_attempt_context(previous_attempts):
-    """Extract and format attempt history context."""
+    """Extract and format attempt history context, including AI feedback."""
     if not previous_attempts:
         return "", 0, 0
 
@@ -37,8 +37,15 @@ def build_attempt_context(previous_attempts):
 
     for i, attempt in enumerate(recent_attempts, 1):
         attempt_status = "✓ Successful" if attempt.is_successful else "✗ Failed"
-        code_preview = attempt.attempt_content[:150] if attempt.attempt_content else "[No code]"
-        attempt_context += f"\nAttempt {attempt.attempt_number} [{attempt_status}]:\n{code_preview}...\n"
+        code_content = attempt.attempt_content if attempt.attempt_content else "[No code]"
+        attempt_context += f"\nAttempt {attempt.attempt_number} [{attempt_status}]:\n{code_content}\n"
+
+        # Include AI feedback if available (show in full for effective anti-repetition)
+        # Note: ai_feedback is a list (backref), so we get the last feedback if multiple exist
+        if hasattr(attempt, 'ai_feedback') and attempt.ai_feedback:
+            feedback_obj = attempt.ai_feedback[-1]  # Get most recent feedback
+            feedback_text = feedback_obj.feedback
+            attempt_context += f"AI Feedback given: {feedback_text}\n"
 
     # Calculate failed attempts
     failed_count = len([a for a in previous_attempts if not a.is_successful])
@@ -56,106 +63,56 @@ def get_socratic_instructions(use_socratic, attempt_count, failed_count):
     if not use_socratic:
         return ""
 
-    base_instructions = """
-SOCRATIC METHOD REQUIREMENTS:
-You are a Socratic teacher who guides through questions, not answers.
-
-CORE RULES:
-1. NEVER provide working code or exact solutions
-2. NEVER name the specific method they should use (like .count() or .lower())
-3. Always respond with questions that lead to discovery
-4. Use student's code as a starting point for inquiry
-
-QUESTIONING PATTERNS BY ATTEMPT:
-"""
-
     # Adjust questioning based on attempt count
-    if attempt_count == 0:  # First attempt
-        level = "- Broad questions: 'What are you trying to achieve?', 'What's the main goal?'\n"
-        level += "- LIMIT: 1 sentence with 1-2 short questions maximum\n"
-    elif attempt_count <= 2:  # Early attempts
-        level = "- Focused questions: 'What does this method do?', 'Why this result?'\n"
-        level += "- LIMIT: 1-2 sentences with 2-3 questions maximum\n"
-    elif attempt_count <= 4:  # Middle attempts
-        level = "- Narrower hints: 'What if you changed...?', 'What alternatives exist?'\n"
-        level += "- LIMIT: 2-3 sentences with 3-4 questions maximum\n"
-    else:  # Many attempts (struggling)
-        level = "- Specific guidance: 'Try breaking the task into parts...', 'First solve the issue with...'\n"
-        level += "- LIMIT: 3-4 sentences with 4-5 questions maximum\n"
+    if attempt_count == 0:
+        level = "Attempt 0: Broad questions. LIMIT: 1 sentence, 1-2 questions\n"
+    elif attempt_count <= 2:
+        level = "Attempts 1-2: Focused questions about code behavior. LIMIT: 1-2 sentences, 2-3 questions\n"
+    elif attempt_count <= 4:
+        level = "Attempts 3-4: Narrower hints with 'What if...?'. LIMIT: 2-3 sentences, 3-4 questions\n"
+    else:
+        level = "Attempts 5+: Step-by-step guidance. LIMIT: 3-4 sentences, 4-5 questions\n"
 
-    examples = """
-EXAMPLE TRANSFORMATIONS:
-DON'T: "Use .lower().count('substring')"
-DO: "If all letters had the same case, would searching be easier?"
+    return f"""SOCRATIC METHOD:
+You are a Socratic teacher. Guide students to discover solutions through questions.
 
-DON'T: "The .find() method returns an index, not a count"
-DO: "What does 0 mean in the context of searching? Is it a count or something else?"
+CORE PRINCIPLES:
+- NEVER provide working code or method names (like .count(), .lower())
+- Ask questions that lead to discovery
+- Use student's code as starting point for inquiry
 
-DON'T: "You need a for loop to count"
-DO: "How can you go through all elements? What happens to each element?"
+{level}
+Examples:
+❌ "Use .lower().count()" → ✓ "If all letters had same case, would searching be easier?"
+❌ "You need a for loop" → ✓ "How can you go through all elements?"
 """
-
-    return base_instructions + level + "\n" + examples
 
 
 def build_system_prompt(language_instruction, socratic_instructions, use_socratic):
     """Build the complete system prompt (always in English)."""
     if use_socratic:
-        evaluation_section = """
-Please follow these steps to evaluate the student's answer:
-1. Carefully read the task description and the student's current code.
-2. Review the student's previous attempts to understand their learning progression.
-3. Determine if the code correctly solves the task (set is_solved accordingly).
-4. If SOLVED: Congratulate the student and briefly explain what they did right.
-5. If NOT SOLVED: Analyze misconceptions and craft guiding questions.
-"""
         feedback_section = """
-After your analysis, provide feedback based on solution status:
+**CORRECT CODE (is_solved=true)**:
+- If previous attempts = 0: Celebrate first-try success (1-2 sentences, explain what they applied)
+- If previous attempts 1-2: Warm congratulations (2 sentences: achievement + key technique)
+- If previous attempts 3+: EMOTIONAL & BRIEF (1-2 sentences: celebration of perseverance, minimal technical detail)
 
-**IF THE CODE IS CORRECT (is_solved=true)**:
-- Congratulate the student warmly
-- Briefly explain what concept/technique they successfully applied
-- IMPORTANT: Check the "Number of previous attempts" field:
-  - If previous attempts = 0: This is their first success! Just congratulate the achievement.
-  - If previous attempts > 0: Acknowledge their improvement/perseverance.
-- Keep it concise (1-2 sentences)
-- Examples:
-  - First attempt: "Отлично, Мария! Вы правильно поняли, что строки неизменяемы, и присвоили результат обратно переменной."
-  - After failed attempts: "Отлично, Мария! Теперь вы учли неизменяемость строк — отличная работа над ошибками!"
-
-**IF THE CODE IS INCORRECT (is_solved=false)**:
-- Use SOCRATIC questioning approach:
-  - Ask guiding questions instead of providing answers
-  - Help students discover their misconceptions through inquiry
-  - Use "What if..." and "Why do you think..." patterns
-  - Progressively narrow the scope based on attempt history
-  - NEVER give the direct solution or exact method names
-  - Follow the length limits based on attempt count
+**INCORRECT CODE (is_solved=false)**:
+- **CRITICAL: AVOID REPETITION** - Check "AI Feedback given" in learning history. Do NOT repeat previous hints
+- Build progressively: address different aspects, go deeper, provide new perspective
+- Use "What if..." and "Why do you think..." questioning patterns
+- Follow length limits specified in user message
 """
     else:
-        evaluation_section = """
-Please follow these steps to evaluate the student's answer:
-1. Carefully read the task description and the student's current code.
-2. Review the student's previous attempts to understand their learning progression.
-3. Analyze the code for syntax errors, logical errors, and any discrepancies.
-4. Check if the code solves the given task correctly and efficiently.
-5. Look for any potential improvements or best practices.
-6. Consider the attempt history: Are they making progress? Repeating mistakes?
-"""
         feedback_section = """
-After your analysis, provide feedback that:
-- Acknowledges their progress if they're improving from previous attempts
-- Offers more specific hints if they're stuck (multiple failed attempts)
-- Encourages persistence and learning from mistakes
-- Guides them in the right direction without giving away the solution
-- Is constructive, supportive, and personalized to their journey
+Provide feedback that:
+- Acknowledges progress from previous attempts
+- Offers specific hints when stuck (multiple failed attempts)
+- Guides without revealing solution
+- **AVOID REPETITION**: Check "AI Feedback given" to build upon previous guidance
 """
 
-    return f"""You are an AI assistant tasked with evaluating a student's Python code submission.
-You will be provided with the task description, the student's answer, and their previous attempts.
-Your job is to analyze the code and provide contextual, progressive feedback.
-
-{evaluation_section}
+    return f"""Evaluate student's Python code submission with contextual, progressive feedback.
 
 {socratic_instructions}
 
@@ -163,41 +120,32 @@ Your job is to analyze the code and provide contextual, progressive feedback.
 
 {language_instruction}
 
-Remember: Students learn by struggling and overcoming challenges. Your feedback should help them discover the solution themselves."""
+Students learn through struggle. Help them discover solutions themselves."""
 
 
 def build_user_prompt(task, answer, output, attempt_context, use_socratic, attempt_count, student_first_name=None):
     """Build the user prompt with appropriate instructions."""
-    # Add student name context for gender-aware verb forms (especially important for Russian)
-    student_context = ""
-    if student_first_name:
-        student_context = f"\n\n**Student's first name**: {student_first_name} (use this to infer gender for correct verb forms)"
+    student_context = f"\n**Student name**: {student_first_name}" if student_first_name else ""
 
-    base_prompt = f"""Here is the task description: {task.data}.
-The student's current answer is: {answer}
-The output of the code is: {output}
+    # Only include output if it's not empty
+    output_section = f"\n\n**Execution output:**\n{output}" if output and output.strip() else ""
+
+    prompt = f"""Task: {task.data}
+
+**Student's submitted code:**
+{answer}{output_section}
 {attempt_context}{student_context}
 
-**Number of previous attempts: {attempt_count}**"""
+**Attempts: {attempt_count}**"""
 
     if use_socratic:
-        guidance = "\n\nFirst, determine if the code correctly solves the task:\n"
-        guidance += "- If CORRECT (is_solved=true): Congratulate the student in 1-2 sentences, explaining what they did right.\n"
-        guidance += "  - ONLY mention 'progress' or 'improvement' if previous attempts > 0. Otherwise, just congratulate the achievement.\n"
-        guidance += "- If INCORRECT (is_solved=false): "
-
-        if attempt_count == 0:
-            guidance += "Provide 1 brief sentence with 1-2 short questions that help the student think about the problem."
-        elif attempt_count <= 2:
-            guidance += "Provide 1-2 sentences with 2-3 questions that help them understand what their code is actually doing."
-        elif attempt_count <= 4:
-            guidance += "Provide 2-3 sentences with 3-4 questions about the gap between their approach and the solution."
-        else:
-            guidance += "Provide 3-4 sentences with 4-5 supportive questions that break down the problem into smaller steps."
+        if attempt_count > 0:
+            prompt += "\n\nIMPORTANT: Review previous 'AI Feedback given' above. Do NOT repeat hints."
+        prompt += "\n\nEvaluate if code solves task correctly. Apply Socratic method and length limits from system instructions."
     else:
-        guidance = "\n\nGenerate the feedback. Be polite, laconic, and contextual.\nRespond in 1-2 sentences that acknowledge their journey and guide them forward."
+        prompt += "\n\nProvide brief, contextual feedback (1-2 sentences)."
 
-    return base_prompt + guidance
+    return prompt
 
 
 def provide_code_feedback(
