@@ -141,8 +141,8 @@ def check_connection_pool_health() -> HealthCheckResult:
 
         duration_ms = (time.time() - start_time) * 1000
 
-        # Calculate utilization
-        total_connections = pool_size + overflow
+        # Calculate utilization (overflow can be negative, so use max(0, overflow))
+        total_connections = pool_size + max(0, overflow)
         utilization = (checked_out / total_connections * 100) if total_connections > 0 else 0
 
         # Determine status based on utilization

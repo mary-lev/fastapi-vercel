@@ -1585,6 +1585,11 @@ async def submit_code_solution(
             raise HTTPException(status_code=400, detail=f"Security validation failed: {error_message}")
 
         # Verify task exists and eagerly load relationships to prevent detached instance errors
+        logger.info(
+            f"⏱️  [TIMING] Querying task {request.task_id}",
+            category=LogCategory.PERFORMANCE,
+            extra={"step": "task_query_start", "timestamp": datetime.utcnow().isoformat()}
+        )
         task = db.query(Task).options(joinedload(Task.topic)).filter(Task.id == request.task_id).first()
         if not task:
             raise HTTPException(status_code=404, detail="Task not found")
@@ -1594,10 +1599,20 @@ async def submit_code_solution(
         task_type = task.type
         topic_id = task.topic_id if hasattr(task, 'topic_id') else None
 
-        logger.info(f"Code submission received for user {user_id}, task {request.task_id}")
+        logger.info(
+            f"⏱️  [TIMING] Task query complete, starting code execution",
+            category=LogCategory.PERFORMANCE,
+            extra={"step": "code_execution_start", "timestamp": datetime.utcnow().isoformat()}
+        )
 
         # Run the code first to check for syntax errors
         result = run_code(request.code)
+
+        logger.info(
+            f"⏱️  [TIMING] Code execution complete",
+            category=LogCategory.PERFORMANCE,
+            extra={"step": "code_execution_done", "timestamp": datetime.utcnow().isoformat()}
+        )
 
         if not result.get("success"):
             # Code has errors, still record the attempt but mark as failed
@@ -1616,11 +1631,21 @@ async def submit_code_solution(
             submission_dict = {"code": request.code}
 
             # Fetch previous attempts for context-aware feedback
+            logger.info(
+                f"⏱️  [TIMING] Loading previous attempts",
+                category=LogCategory.PERFORMANCE,
+                extra={"step": "load_attempts_start", "timestamp": datetime.utcnow().isoformat()}
+            )
             previous_attempts = (
                 db.query(TaskAttempt)
                 .filter(TaskAttempt.user_id == user.id, TaskAttempt.task_id == request.task_id)
                 .order_by(TaskAttempt.submitted_at)
                 .all()
+            )
+            logger.info(
+                f"⏱️  [TIMING] Previous attempts loaded ({len(previous_attempts)} attempts), starting evaluation",
+                category=LogCategory.PERFORMANCE,
+                extra={"step": "evaluation_start", "timestamp": datetime.utcnow().isoformat(), "attempt_count": len(previous_attempts)}
             )
 
             evaluation = evaluate_code_submission(
@@ -1630,6 +1655,11 @@ async def submit_code_solution(
                 course_language,
                 previous_attempts,
                 student_first_name=user.first_name
+            )
+            logger.info(
+                f"⏱️  [TIMING] Evaluation complete (OpenAI call done)",
+                category=LogCategory.PERFORMANCE,
+                extra={"step": "evaluation_done", "timestamp": datetime.utcnow().isoformat()}
             )
             # evaluation is a SubmissionGrader object with is_solved and feedback attributes
             is_successful = evaluation.is_solved if hasattr(evaluation, "is_solved") else False
