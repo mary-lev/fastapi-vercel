@@ -4,7 +4,7 @@ Handles the hierarchical course structure: courses → lessons → topics → ta
 """
 
 from datetime import datetime
-from fastapi import APIRouter, HTTPException, Depends, Path
+from fastapi import APIRouter, HTTPException, Depends, Path, Query
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import func
@@ -538,7 +538,7 @@ async def get_course_lessons(course_id: int = Path(..., description="Course ID")
 async def get_lesson(
     course_id: int = Path(..., description="Course ID"),
     lesson_id: int = Path(..., description="Lesson ID"),
-    user_id: Optional[Union[int, str]] = None,
+    user_id: Optional[Union[int, str]] = Query(None, description="User ID for personalized content"),
     db: Session = Depends(get_db),
 ):
     """Get lesson details with topics and tasks"""
@@ -558,10 +558,12 @@ async def get_lesson(
         resolved_user_id = None
         if user_id:
             try:
-                if isinstance(user_id, int):
-                    user = db.query(User).filter(User.id == user_id).first()
-                else:
-                    # Handle string user IDs (internal_user_id, username, etc.)
+                # Try to parse as integer first (handles both int and numeric strings)
+                try:
+                    user_id_int = int(user_id)
+                    user = db.query(User).filter(User.id == user_id_int).first()
+                except (ValueError, TypeError):
+                    # Not a number - try as string identifier
                     user = db.query(User).filter(User.internal_user_id == user_id).first()
                     if not user:
                         user = db.query(User).filter(User.username == user_id).first()
@@ -636,6 +638,43 @@ async def get_lesson(
 
         # Topics and tasks are already eagerly loaded, so no additional queries
         for topic in sorted(lesson.topics, key=lambda t: t.topic_order):
+            # CHECK IF THIS IS A PERSONAL TOPIC
+            is_personal_topic = getattr(topic, 'is_personal', False)
+
+            if is_personal_topic:
+                # Personal topic logic: only show if user is logged in
+                if not resolved_user_id:
+                    # Not logged in → skip this topic entirely
+                    continue
+
+                # Fetch ONLY tasks generated for THIS user
+                topic_tasks = db.query(Task).filter(
+                    Task.topic_id == topic.id,
+                    Task.is_generated == True,
+                    Task.generated_for_user_id == resolved_user_id,
+                    Task.is_active == True
+                ).order_by(Task.order).all()
+
+                # If no personalized tasks exist for this user, skip topic
+                if not topic_tasks:
+                    continue
+            else:
+                # Regular topic logic: show all regular tasks
+                topic_tasks = list(topic.tasks)  # Regular tasks
+
+                # Optionally: add user-generated tasks to regular topics (for future use)
+                if resolved_user_id:
+                    generated_tasks = (
+                        db.query(Task)
+                        .filter(
+                            Task.topic_id == topic.id,
+                            Task.is_generated == True,
+                            Task.generated_for_user_id == resolved_user_id,
+                        )
+                        .all()
+                    )
+                    topic_tasks.extend(generated_tasks)
+
             topic_data = {
                 "id": topic.id,
                 "title": topic.title,
@@ -644,24 +683,9 @@ async def get_lesson(
                 "content_file_md": topic.content_file_md,
                 "concepts": topic.concepts,
                 "topic_order": topic.topic_order,
+                "is_personal": is_personal_topic,  # Add field to response
                 "tasks": [],
             }
-
-            # Get all tasks for this topic (including user-specific generated tasks)
-            topic_tasks = list(topic.tasks)  # Regular tasks
-
-            # If user_id is provided, also fetch generated tasks for this user
-            if resolved_user_id:
-                generated_tasks = (
-                    db.query(Task)
-                    .filter(
-                        Task.topic_id == topic.id,
-                        Task.is_generated == True,
-                        Task.generated_for_user_id == resolved_user_id,
-                    )
-                    .all()
-                )
-                topic_tasks.extend(generated_tasks)
 
             # Sort all tasks by order
             for task in sorted(topic_tasks, key=lambda t: t.order):

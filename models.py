@@ -391,6 +391,7 @@ class Topic(Base):
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
     lesson_id = Column(Integer, ForeignKey("lessons.id"), nullable=False)
     topic_order = Column(Integer, nullable=False)
+    is_personal = Column(Boolean, default=False, nullable=False, index=True)
 
     lesson = relationship("Lesson", back_populates="topics")  # Add this line
     tasks = relationship("Task", backref="topic", lazy="select", order_by="Task.order")
