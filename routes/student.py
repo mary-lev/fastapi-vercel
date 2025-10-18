@@ -665,7 +665,7 @@ async def get_lesson_summary(
 
                 if existing_analysis:
                     # Calculate how much progress has been made since last analysis
-                    old_completion = existing_analysis.analysis.get('completion_percentage', 0) if existing_analysis.analysis else 0
+                    old_completion = float(existing_analysis.completion_percentage) if existing_analysis.completion_percentage else 0
                     completion_delta = completion_percentage - old_completion
 
                     # Regenerate if:
