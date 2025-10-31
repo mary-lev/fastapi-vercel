@@ -707,7 +707,7 @@ async def get_lesson(
                     user_solution = user_solutions_dict.get(task.id)
                     user_attempts = user_attempts_dict.get(task.id, [])
 
-                    # Determine task state
+                    # Determine task state - will be refined below based on task type
                     task_data["is_solved"] = user_solution is not None
                     task_data["has_attempts"] = len(user_attempts) > 0
                     task_data["attempt_count"] = len(user_attempts)
@@ -739,7 +739,13 @@ async def get_lesson(
                         task_data["solution_id"] = user_solution.id
                         task_data["completed_at"] = user_solution.completed_at
                         task_data["is_correct"] = getattr(user_solution, "is_correct", True)
-                        task_data["is_solved"] = True
+
+                        # For assignment_submission tasks, is_solved should match is_correct
+                        # For other tasks, is_solved = True if solution exists
+                        if task.type == "assignment_submission":
+                            task_data["is_solved"] = task_data["is_correct"]
+                        else:
+                            task_data["is_solved"] = True
                     elif not is_quiz_task or not user_attempts:
                         # No solution and either not a quiz or no attempts
                         task_data["is_correct"] = None

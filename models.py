@@ -202,6 +202,22 @@ class SingleQuestionTask(Task):
             self.max_attempts = None  # NULL = unlimited
 
 
+class AssignmentSubmission(Task):
+    """Assignment submission task - allows file uploads and text submissions"""
+    __tablename__ = "assignment_submissions"
+    id = Column(Integer, ForeignKey("tasks.id", ondelete="CASCADE"), primary_key=True)
+
+    __mapper_args__ = {"polymorphic_identity": "assignment_submission"}
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Assignment submissions typically allow unlimited resubmissions
+        if "attempt_strategy" not in kwargs:
+            self.attempt_strategy = "unlimited"
+        if "max_attempts" not in kwargs:
+            self.max_attempts = None
+
+
 class TaskAttempt(Base):
     __tablename__ = "task_attempts"
 
@@ -234,6 +250,12 @@ class TaskSolution(Base):
     is_correct = Column(Boolean, default=False, nullable=False)
     points_earned = Column(Integer, nullable=True)
 
+    # File upload fields for assignment submissions
+    file_path = Column(String, nullable=True)  # Path to uploaded file
+    file_name = Column(String, nullable=True)  # Original filename
+    file_size = Column(Integer, nullable=True)  # File size in bytes
+    file_type = Column(String, nullable=True)  # MIME type
+
     user = relationship("User", backref="task_solutions")
     related_task = relationship("Task", back_populates="solutions")
 
@@ -241,6 +263,7 @@ class TaskSolution(Base):
     __table_args__ = (
         Index("idx_task_solutions_user_task", "user_id", "task_id"),
         Index("idx_task_solutions_completed_at", "completed_at"),
+        Index("idx_task_solutions_file_path", "file_path"),
     )
 
 

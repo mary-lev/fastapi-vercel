@@ -14,7 +14,7 @@ import uuid
 import json
 
 # Import consolidated v1 routers ONLY
-from routes import learning, student, professor, auth, users, telegram_auth, auth_demo, task_attempts, student_form
+from routes import learning, student, professor, professor_local, auth, users, telegram_auth, auth_demo, task_attempts, student_form, assignments
 from config import settings
 from utils.auth_middleware import add_auth_context_to_request
 
@@ -236,6 +236,12 @@ app.include_router(
     },
 )
 
+# # Include professor_local router for task generation and management
+# app.include_router(
+#     professor_local.router,
+#     tags=["👨‍🏫 Professor Tools"],
+# )
+
 app.include_router(
     auth.router,
     prefix="/api/v1/auth",
@@ -311,6 +317,21 @@ app.include_router(
     student_form.router,
     prefix="/api/v1/students",
     tags=["👨‍🎓 Student Progress"],
+    responses={
+        **{
+            code: response
+            for code, response in __import__(
+                "schemas.openapi_models", fromlist=["COMMON_RESPONSES"]
+            ).COMMON_RESPONSES.items()
+        }
+    },
+)
+
+# Assignment submission endpoints
+app.include_router(
+    assignments.router,
+    prefix="/api/v1/assignments",
+    tags=["📝 Assignments"],
     responses={
         **{
             code: response
