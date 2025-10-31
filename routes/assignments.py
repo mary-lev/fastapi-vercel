@@ -35,7 +35,8 @@ class ScreenshotValidation(BaseModel):
     contains_error: bool = False
 
 # Configuration
-UPLOAD_DIR = "uploads/assignments"
+# Use /tmp for serverless environments (Vercel), local path otherwise
+UPLOAD_DIR = os.getenv("UPLOAD_DIR", "/tmp/uploads/assignments" if os.getenv("VERCEL") else "uploads/assignments")
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 ALLOWED_FILE_TYPES = {
     "image/jpeg", "image/jpg", "image/png", "image/gif",
@@ -46,8 +47,17 @@ ALLOWED_FILE_TYPES = {
     "application/zip"
 }
 
-# Ensure upload directory exists
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+# Lazy directory creation - only when needed, not at import time
+def ensure_upload_dir():
+    """Ensure upload directory exists (lazy initialization)"""
+    try:
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+    except OSError as e:
+        logger.error(f"Failed to create upload directory: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Upload directory not available. Please contact administrator."
+        )
 
 
 def get_file_extension(content_type: str) -> str:
@@ -216,6 +226,9 @@ async def submit_assignment(
         file_type = None
 
         if file:
+            # Ensure upload directory exists (lazy initialization)
+            ensure_upload_dir()
+
             # Validate file size
             file.file.seek(0, 2)  # Seek to end
             file_size = file.file.tell()
