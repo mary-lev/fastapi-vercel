@@ -283,3 +283,188 @@ def evaluate_text_submission(answer, task, language="English"):
     """
     feedback = provide_text_feedback(answer, task, language)
     return feedback
+
+
+def build_screenshot_system_prompt(language_instruction, task_description, task_title):
+    """Build the system prompt for screenshot evaluation (similar to code evaluation)."""
+
+    # Extract just the text description if task_description is a dict
+    description_text = task_description
+    has_starter_code = False
+
+    if isinstance(task_description, dict):
+        if 'text' in task_description:
+            description_text = task_description['text']
+        if 'code' in task_description:
+            has_starter_code = True
+
+    starter_code_note = ""
+    if has_starter_code:
+        starter_code_note = """
+**CRITICAL INSTRUCTION:**
+The task description includes "starter code" (a draft/template provided to students).
+This starter code is NOT the student's solution - it's just a starting point.
+The student's ACTUAL CODE is visible in the screenshot.
+Evaluate ONLY what you see in the screenshot image, not the starter code in the text description.
+"""
+
+    return f"""Evaluate student's assignment screenshot submission with clear, constructive feedback.
+
+{language_instruction}
+
+ASSIGNMENT TASK:
+Title: {task_title}
+Description: {description_text}
+
+{starter_code_note}
+
+EVALUATION PRINCIPLES:
+- Verify the screenshot demonstrates completion according to the assignment requirements
+- Check for all required elements mentioned in the task description
+- Look for visible errors or issues in the screenshot
+- Analyze the CODE VISIBLE IN THE SCREENSHOT (not any starter code in the description)
+- Provide clear guidance without simply giving the answer
+
+FEEDBACK GUIDELINES:
+**CORRECT SUBMISSION (is_solved=true)**:
+- Congratulate the student warmly (1-2 sentences)
+- Acknowledge what they demonstrated correctly
+- Be encouraging and positive
+
+**INCORRECT SUBMISSION (is_solved=false)**:
+- Point out what's missing or incorrect (be specific)
+- Provide a helpful hint on how to fix the issue
+- Keep feedback brief but actionable (2-3 sentences)
+- If screenshot doesn't match the assignment, politely ask to retake it
+
+Students learn through doing. Help them understand what's needed to complete the assignment successfully."""
+
+
+def build_screenshot_user_prompt(task, task_title, attempt_context, attempt_count, student_first_name=None):
+    """Build the user prompt for screenshot evaluation with context."""
+    student_context = f"\n**Student name**: {student_first_name}" if student_first_name else ""
+
+    # Extract task description (exclude starter code to avoid confusion)
+    task_description = task.data
+    if isinstance(task.data, dict):
+        # For assignment_submission tasks with code field, only show the text description
+        if 'text' in task.data:
+            task_description = task.data['text']
+        if 'code' in task.data:
+            # Include starter code separately, clearly labeled
+            starter_code = task.data['code']
+            task_description += f"\n\n**Starter Code (draft provided to student - NOT their solution):**\n```python\n{starter_code}\n```"
+
+    prompt = f"""Task Instructions: {task_description}
+
+**Student submitted screenshot for assignment:** '{task_title}'
+
+**IMPORTANT: The screenshot shows the student's ACTUAL CODE and output. The starter code above is just a DRAFT/TEMPLATE provided to the student - it is NOT their solution. Evaluate based on what you SEE in the screenshot, not the starter code.**{attempt_context}{student_context}
+
+**Attempts: {attempt_count}**"""
+
+    if attempt_count > 0:
+        prompt += "\n\nIMPORTANT: Review previous submissions and feedback above. Do NOT repeat previous hints. Provide fresh perspective."
+
+    prompt += "\n\nEvaluate if the screenshot demonstrates successful completion of the assignment. Provide brief, specific feedback."
+
+    return prompt
+
+
+def provide_screenshot_feedback(
+    image_base64: str,
+    mime_type: str,
+    task: dict,
+    language: str = "Russian",
+    previous_attempts: list = None,
+    student_first_name: str = None,
+):
+    """
+    Provide AI-generated feedback for screenshot submission.
+
+    This function evaluates screenshots (e.g., Python installation, VS Code setup, etc.)
+    based on the task description provided, with support for attempt history and progressive feedback.
+
+    Args:
+        image_base64: Base64-encoded image data
+        mime_type: MIME type of the image (e.g., 'image/png')
+        task: Task object with description and title
+        language: Language for feedback (English/Russian)
+        previous_attempts: List of previous TaskAttempt objects for context
+        student_first_name: Student's first name for personalization
+
+    Returns:
+        SubmissionGrader with feedback and is_solved status
+    """
+    language_instruction = get_language_instruction(language)
+
+    # Extract task description and title
+    task_description = task.data if isinstance(task.data, str) else str(task.data)
+    task_title = task.task_name if hasattr(task, 'task_name') else "Assignment"
+
+    # Build context from previous attempts if available
+    attempt_context, attempt_count, failed_count = build_attempt_context(previous_attempts)
+
+    # Build system prompt (similar to code evaluation)
+    system_prompt = build_screenshot_system_prompt(
+        language_instruction,
+        task_description,
+        task_title
+    )
+
+    # Build user prompt with context
+    user_prompt = build_screenshot_user_prompt(
+        task,
+        task_title,
+        attempt_context,
+        attempt_count,
+        student_first_name
+    )
+
+    # Call OpenAI Vision API with structured output
+    completion = client.beta.chat.completions.parse(
+        model="gpt-5-mini",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": user_prompt},
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:{mime_type};base64,{image_base64}",
+                            "detail": "low"  # Use low detail for faster/cheaper processing
+                        }
+                    }
+                ]
+            }
+        ],
+        response_format=SubmissionGrader,
+    )
+
+    result = completion.choices[0].message.parsed
+    return result
+
+
+def evaluate_screenshot_submission(image_base64, mime_type, task, language="Russian", previous_attempts=None, student_first_name=None):
+    """
+    Evaluate a screenshot submission for an assignment task.
+
+    :param image_base64: Base64-encoded image data
+    :param mime_type: MIME type of the image
+    :param task: a task object
+    :param language: language for AI feedback
+    :param previous_attempts: list of previous TaskAttempt objects for context
+    :param student_first_name: student's first name for personalization
+    :return: SubmissionGrader with feedback and is_solved status
+    """
+    feedback = provide_screenshot_feedback(
+        image_base64,
+        mime_type,
+        task,
+        language,
+        previous_attempts,
+        student_first_name
+    )
+    return feedback

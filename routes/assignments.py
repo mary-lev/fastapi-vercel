@@ -76,20 +76,36 @@ def get_file_extension(content_type: str) -> str:
     return extensions.get(content_type, "")
 
 
-def validate_python_screenshot(file_path: str) -> ScreenshotValidation:
+def validate_assignment_screenshot(
+    task: Task,
+    file_path: str,
+    language: str = "Russian",
+    user_id: int = None,
+    db: Session = None,
+    student_first_name: str = None
+) -> ScreenshotValidation:
     """
-    Validate Python installation screenshot using LLM (similar to evaluator.py pattern)
+    Validate assignment screenshot using LLM with task-specific instructions.
+
+    This function follows the same pattern as evaluate_code_submission in evaluator.py,
+    adapting prompts dynamically based on the task description and supporting attempt history.
 
     Args:
+        task: Task object containing description and instructions
         file_path: Path to the uploaded screenshot
+        language: Language for feedback (default: Russian)
+        user_id: User ID for fetching previous attempts (optional)
+        db: Database session for fetching previous attempts (optional)
+        student_first_name: Student's first name for personalization (optional)
 
     Returns:
-        ScreenshotValidation with feedback in Russian
+        ScreenshotValidation with feedback in specified language
     """
     if not OPENAI_ENABLED:
         return ScreenshotValidation(
             is_valid=True,
-            feedback="Скриншот загружен успешно! Преподаватель проверит его вручную.",
+            feedback="Скриншот загружен успешно! Преподаватель проверит его вручную." if language == "Russian"
+                     else "Screenshot uploaded successfully! Professor will review manually.",
             contains_error=False
         )
 
@@ -103,61 +119,56 @@ def validate_python_screenshot(file_path: str) -> ScreenshotValidation:
         mime_types = {'.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif'}
         mime_type = mime_types.get(extension, 'image/jpeg')
 
-        # Simple prompt in Russian for screenshot analysis
-        system_prompt = """Ты - помощник преподавателя по программированию.
-Твоя задача - проверить скриншот установки Python и дать краткую обратную связь студенту.
+        # Fetch previous attempts if user_id and db are provided
+        previous_attempts = None
+        if user_id and db:
+            from models import TaskAttempt
+            previous_attempts = (
+                db.query(TaskAttempt)
+                .filter(TaskAttempt.user_id == user_id, TaskAttempt.task_id == task.id)
+                .order_by(TaskAttempt.submitted_at)
+                .all()
+            )
 
-ВАЖНО: Отвечай ТОЛЬКО на русском языке. Используй вежливую форму обращения (вы, вам, вас).
+        # Use the enhanced evaluator function from utils/evaluator.py
+        from utils.evaluator import provide_screenshot_feedback
 
-Проверь скриншот на наличие:
-1. Окна терминала/командной строки
-2. Команды python --version или python3 --version
-3. Вывода с версией Python (например "Python 3.11.5")
-4. Или ошибки при установке/запуске Python
-
-Дай краткий ответ (2-3 предложения):
-- Если видна версия Python - поздравь студента с успешной установкой
-- Если видна ошибка - дай короткую инструкцию как её исправить
-- Если не видно ни версии, ни ошибки - попроси переделать скриншот"""
-
-        user_prompt = "Проанализируй этот скриншот установки Python и дай краткую обратную связь студенту:"
-
-        # Call OpenAI Vision API with structured output
-        completion = openai_client.beta.chat.completions.parse(
-            model="gpt-5-mini",  # Using GPT-5 Mini for vision
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": user_prompt},
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:{mime_type};base64,{base64_image}",
-                                "detail": "low"  # Use low detail for faster/cheaper processing
-                            }
-                        }
-                    ]
-                }
-            ],
-            response_format=ScreenshotValidation,
+        result = provide_screenshot_feedback(
+            image_base64=base64_image,
+            mime_type=mime_type,
+            task=task,
+            language=language,
+            previous_attempts=previous_attempts,
+            student_first_name=student_first_name
         )
 
-        result = completion.choices[0].message.parsed
+        # Convert SubmissionGrader to ScreenshotValidation
+        validation_result = ScreenshotValidation(
+            is_valid=result.is_solved,
+            feedback=result.feedback,
+            contains_error=not result.is_solved  # If not solved, consider it contains error
+        )
+
         logger.info(f"Screenshot validation completed", extra={
-            "is_valid": result.is_valid,
-            "contains_error": result.contains_error
+            "task_id": task.id,
+            "task_name": task.task_name if hasattr(task, 'task_name') else "Assignment",
+            "is_valid": validation_result.is_valid,
+            "contains_error": validation_result.contains_error,
+            "has_attempt_history": previous_attempts is not None and len(previous_attempts) > 0
         })
 
-        return result
+        return validation_result
 
     except Exception as e:
         logger.error(f"Screenshot validation failed: {str(e)}")
         # Return neutral response on error
+        fallback_message = (
+            "Скриншот загружен! Преподаватель проверит его дополнительно." if language == "Russian"
+            else "Screenshot uploaded! Professor will review additionally."
+        )
         return ScreenshotValidation(
             is_valid=True,
-            feedback="Скриншот загружен! Преподаватель проверит его дополнительно.",
+            feedback=fallback_message,
             contains_error=False
         )
 
@@ -267,6 +278,33 @@ async def submit_assignment(
                 logger.error(f"File upload failed: {str(e)}")
                 raise HTTPException(status_code=500, detail="Failed to save file")
 
+        # Create TaskAttempt record (for consistency with code tasks and to track attempt history)
+        from models import TaskAttempt
+
+        # Get current attempt number
+        current_attempts = (
+            db.query(TaskAttempt)
+            .filter(TaskAttempt.user_id == user.id, TaskAttempt.task_id == task_id)
+            .count()
+        )
+        attempt_number = current_attempts + 1
+
+        # Create attempt record with file info in attempt_content
+        attempt_content = f"File: {file.filename if file else 'No file'}"
+        if content:
+            attempt_content = f"{content}\n\n{attempt_content}"
+
+        task_attempt = TaskAttempt(
+            user_id=user.id,
+            task_id=task_id,
+            attempt_number=attempt_number,
+            attempt_content=attempt_content,
+            submitted_at=datetime.now(),
+            is_successful=False  # Will be updated after validation
+        )
+        db.add(task_attempt)
+        db.flush()  # Get attempt ID for later use
+
         # Create or update task solution
         existing_solution = db.query(TaskSolution).filter(
             TaskSolution.user_id == user.id,
@@ -312,13 +350,28 @@ async def submit_assignment(
         # Flush to get solution.id before validation
         db.flush()
 
-        # Validate screenshot if it's an image (for Python installation task)
+        # Validate screenshot if it's an image (for assignment_submission tasks)
         validation_feedback = None
         if file_path and file_type and file_type.startswith('image/'):
             # Only validate for assignment_submission tasks
             if task.type == "assignment_submission":
                 try:
-                    validation = validate_python_screenshot(file_path)
+                    # Get course language for feedback (default to Russian)
+                    course_language = (
+                        task.topic.lesson.course.language
+                        if task.topic and task.topic.lesson and task.topic.lesson.course
+                        else "Russian"
+                    )
+
+                    # Validate screenshot with task-specific instructions and attempt history
+                    validation = validate_assignment_screenshot(
+                        task=task,
+                        file_path=file_path,
+                        language=course_language,
+                        user_id=user.id,
+                        db=db,
+                        student_first_name=user.first_name if hasattr(user, 'first_name') else None
+                    )
                     validation_feedback = validation.feedback
 
                     # Update solution with validation results
@@ -326,19 +379,37 @@ async def submit_assignment(
                         # Success - award full points
                         solution.is_correct = True
                         solution.points_earned = task.points
+                        task_attempt.is_successful = True
                     elif validation.contains_error:
                         # Contains error - partial points, needs manual review
                         solution.is_correct = False
                         solution.points_earned = int(task.points * 0.5)  # 50% for attempt
+                        task_attempt.is_successful = False
 
                     # Append validation feedback to solution content
+                    feedback_label = "[Автоматическая проверка]" if course_language == "Russian" else "[Automated Review]"
                     if solution.solution_content:
-                        solution.solution_content += f"\n\n[Автоматическая проверка]\n{validation.feedback}"
+                        solution.solution_content += f"\n\n{feedback_label}\n{validation.feedback}"
                     else:
-                        solution.solution_content = f"[Автоматическая проверка]\n{validation.feedback}"
+                        solution.solution_content = f"{feedback_label}\n{validation.feedback}"
+
+                    # Save AI feedback to database (similar to code task submissions)
+                    from models import AIFeedback
+                    if validation.feedback:
+                        ai_feedback_entry = AIFeedback(
+                            user_id=user.id,
+                            task_id=task_id,
+                            task_attempt_id=task_attempt.id,
+                            feedback=validation.feedback,
+                            created_at=datetime.now()
+                        )
+                        db.add(ai_feedback_entry)
 
                     logger.info(f"Screenshot validated", extra={
                         "solution_id": solution.id,
+                        "task_id": task.id,
+                        "user_id": user.id,
+                        "attempt_number": attempt_number,
                         "is_valid": validation.is_valid,
                         "contains_error": validation.contains_error
                     })
@@ -360,6 +431,7 @@ async def submit_assignment(
             "solution_id": solution.id,
             "task_id": task_id,
             "user_id": user_id,
+            "attempt_number": attempt_number,
             "file_uploaded": file_path is not None,
             "file_name": file_name,
             "file_size": file_size,

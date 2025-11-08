@@ -8,7 +8,7 @@ from openai import OpenAI
 from db import SessionLocal  # Keep for backwards compatibility in utility files
 
 from models import Lesson, Topic, Task as DBTask
-from models import TrueFalseQuiz, MultipleSelectQuiz, CodeTask, SingleQuestionTask
+from models import TrueFalseQuiz, MultipleSelectQuiz, CodeTask, SingleQuestionTask, AssignmentSubmission
 from sqlalchemy import func
 
 # Removed missing imports - functions implemented locally
@@ -89,6 +89,7 @@ class TaskType(str, Enum):
     # true_false = "true_false"
     code = "code"
     single_question = "single_question"
+    assignment_submission = "assignment_submission"
 
 
 class Task(BaseModel):
@@ -129,6 +130,7 @@ type_mapping = {
     # "true_false": "TrueFalse",
     "code": "Code",
     "single_question": "SingleQuestion",
+    "assignment_submission": "AssignmentSubmission",
 }
 
 
@@ -139,6 +141,7 @@ task_model_mapping = {
     "TrueFalseQuiz": TrueFalseQuiz,
     "Code": CodeTask,
     "SingleQuestion": SingleQuestionTask,
+    "AssignmentSubmission": AssignmentSubmission,
 }
 
 
@@ -189,6 +192,10 @@ def process_task(task, index, topic_id, db=None):
 
     elif lesson_type == "SingleQuestion":
         data["question"] = task.question
+
+    elif lesson_type == "AssignmentSubmission":
+        data["text"] = task.question
+        # All assignment instructions are in the question field
 
     else:
         # Handle unknown types
