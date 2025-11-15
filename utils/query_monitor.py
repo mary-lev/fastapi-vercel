@@ -309,12 +309,12 @@ class ConnectionPoolMonitor:
             self.pool_stats = stats
 
             # Log high utilization
-            if stats["utilization_percent"] > 80:
-                logger.warning(
-                    f"High connection pool utilization: {stats['utilization_percent']:.1f}%",
-                    category=LogCategory.PERFORMANCE,
-                    extra=stats,
-                )
+            # if stats["utilization_percent"] > 80:
+            #     logger.warning(
+            #         f"High connection pool utilization: {stats['utilization_percent']:.1f}%",
+            #         category=LogCategory.PERFORMANCE,
+            #         extra=stats,
+            #     )
 
     def get_pool_health(self) -> Dict[str, Any]:
         """Get connection pool health status"""

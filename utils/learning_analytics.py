@@ -22,7 +22,7 @@ from models import (
 # ===============================================================================
 
 # Default LLM model for all analytics
-# Using gpt-5-mini for 4-5x cost savings while maintaining good technical quality
+# Using gpt-5-mini for cost savings while maintaining good technical quality
 LLM_MODEL_NAME = "gpt-5-mini"
 
 
@@ -1053,10 +1053,11 @@ async def analyze_lesson_progress(
     topics = db.query(Topic).filter(Topic.lesson_id == lesson_id).all()
     topic_ids = [t.id for t in topics]
 
-    # Get all ACTIVE code tasks in these topics
+    # Get all ACTIVE tasks that use TaskAttempt tracking (code_task + assignment_submission)
+    # Note: We only analyze tasks tracked via TaskAttempt, not quizzes (which are quick and don't need detailed analysis)
     tasks = db.query(Task).filter(
         Task.topic_id.in_(topic_ids),
-        Task.type == 'code_task',
+        Task.type.in_(['code_task', 'assignment_submission']),
         Task.is_active == True
     ).all()
 

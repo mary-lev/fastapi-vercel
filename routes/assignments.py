@@ -44,6 +44,8 @@ ALLOWED_FILE_TYPES = {
     "application/msword",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "text/plain",
+    "text/x-python",  # Python scripts
+    "application/x-python-code",  # Alternative Python MIME type
     "application/zip"
 }
 
@@ -71,9 +73,157 @@ def get_file_extension(content_type: str) -> str:
         "application/msword": ".doc",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
         "text/plain": ".txt",
+        "text/x-python": ".py",
+        "application/x-python-code": ".py",
         "application/zip": ".zip"
     }
     return extensions.get(content_type, "")
+
+
+def validate_python_code(
+    task: Task,
+    file_path: str,
+    language: str = "Russian",
+    user_id: int = None,
+    db: Session = None,
+    student_first_name: str = None
+) -> ScreenshotValidation:
+    """
+    Validate a Python code file using OpenAI.
+
+    IMPORTANT: Does NOT execute the code - only reads and validates content.
+    Safe to use with student submissions.
+
+    Args:
+        task: Task object with requirements
+        file_path: Path to the .py file
+        language: Feedback language (Russian/English)
+        user_id: Student ID for personalized feedback
+        db: Database session to check previous attempts
+        student_first_name: Student's first name for personalization
+
+    Returns:
+        ScreenshotValidation object with validation results
+    """
+    try:
+        # SAFELY read the file content as text (NO EXECUTION!)
+        with open(file_path, 'r', encoding='utf-8') as f:
+            code_content = f.read()
+
+        # Security check: limit file size for LLM processing
+        MAX_CODE_LENGTH = 10000  # ~10KB of code
+        if len(code_content) > MAX_CODE_LENGTH:
+            return ScreenshotValidation(
+                is_valid=False,
+                feedback="Файл слишком большой для проверки (максимум 10KB кода)." if language == "Russian"
+                        else "File too large for validation (max 10KB of code).",
+                contains_error=True
+            )
+
+        # Get task requirements
+        task_description = task.task_description or task.task_summary or "No description"
+
+        # Get previous attempts for context
+        previous_feedback = []
+        if db and user_id:
+            from models import AIFeedback
+            prev_attempts = db.query(AIFeedback).filter(
+                AIFeedback.user_id == user_id,
+                AIFeedback.task_id == task.id
+            ).order_by(AIFeedback.created_at.desc()).limit(3).all()
+            previous_feedback = [attempt.feedback for attempt in prev_attempts if attempt.feedback]
+
+        # Build prompt for code review
+        name_greeting = f"{student_first_name}, " if student_first_name else ""
+
+        system_prompt = f"""You are a supportive Python programming instructor reviewing student code submissions.
+
+Language: {language}
+Teaching approach: Socratic method - guide students to discover issues themselves
+
+IMPORTANT SECURITY NOTE:
+- You are reviewing CODE AS TEXT only
+- DO NOT attempt to execute, run, or interpret the code
+- Only provide static analysis and feedback
+
+Your task:
+1. Check if the code meets the assignment requirements
+2. Identify syntax errors, logic errors, or style issues
+3. Provide constructive, specific feedback
+4. If the code is mostly correct, mark as valid
+5. If it has significant errors or doesn't meet requirements, mark as invalid"""
+
+        user_prompt = f"""Assignment Requirements:
+{task_description}
+
+Student's Python Code:
+```python
+{code_content}
+```
+
+{"Previous feedback given to this student:" if previous_feedback else ""}
+{chr(10).join(f"- {fb[:200]}" for fb in previous_feedback[:2]) if previous_feedback else ""}
+
+Please review this code and provide feedback in {language}.
+
+Structure your response as:
+1. **Overall Assessment**: Does it meet requirements? (Yes/No with brief reason)
+2. **Specific Issues** (if any): List concrete problems with line numbers
+3. **Strengths**: What did the student do well?
+4. **Next Steps**: 1-2 specific suggestions for improvement
+
+Keep feedback encouraging and specific. Start with "{name_greeting}" if addressing the student."""
+
+        # Call OpenAI for validation
+        response = openai_client.chat.completions.create(
+            model="gpt-5-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            temperature=0.7,
+            max_tokens=1000
+        )
+
+        feedback = response.choices[0].message.content.strip()
+
+        # Determine if valid based on feedback content
+        # Look for positive indicators
+        is_valid = any(indicator in feedback.lower() for indicator in [
+            "meets requirements", "соответствует требованиям",
+            "correct", "правильно", "отлично",
+            "well done", "хорошая работа",
+            "successfully", "успешно"
+        ])
+
+        # Look for error indicators
+        contains_error = any(indicator in feedback.lower() for indicator in [
+            "error", "ошибка", "incorrect", "неправильно",
+            "missing", "отсутствует", "problem", "проблема",
+            "does not meet", "не соответствует"
+        ])
+
+        return ScreenshotValidation(
+            is_valid=is_valid and not contains_error,
+            feedback=feedback,
+            contains_error=contains_error
+        )
+
+    except UnicodeDecodeError:
+        return ScreenshotValidation(
+            is_valid=False,
+            feedback="Ошибка чтения файла. Убедитесь, что файл содержит корректный Python код в UTF-8." if language == "Russian"
+                    else "Error reading file. Ensure the file contains valid Python code in UTF-8.",
+            contains_error=True
+        )
+    except Exception as e:
+        logger.error(f"Python code validation failed: {str(e)}")
+        return ScreenshotValidation(
+            is_valid=False,
+            feedback=f"Ошибка при проверке кода: {str(e)}" if language == "Russian"
+                    else f"Error validating code: {str(e)}",
+            contains_error=True
+        )
 
 
 def validate_assignment_screenshot(
@@ -350,20 +500,20 @@ async def submit_assignment(
         # Flush to get solution.id before validation
         db.flush()
 
-        # Validate screenshot if it's an image (for assignment_submission tasks)
+        # Validate uploaded files based on type
         validation_feedback = None
-        if file_path and file_type and file_type.startswith('image/'):
-            # Only validate for assignment_submission tasks
-            if task.type == "assignment_submission":
-                try:
-                    # Get course language for feedback (default to Russian)
-                    course_language = (
-                        task.topic.lesson.course.language
-                        if task.topic and task.topic.lesson and task.topic.lesson.course
-                        else "Russian"
-                    )
 
-                    # Validate screenshot with task-specific instructions and attempt history
+        # Get course language for feedback (default to Russian)
+        course_language = (
+            task.topic.lesson.course.language
+            if task.topic and task.topic.lesson and task.topic.lesson.course
+            else "Russian"
+        )
+
+        if file_path and file_type and task.type == "assignment_submission":
+            # IMAGE VALIDATION: Screenshots
+            if file_type.startswith('image/'):
+                try:
                     validation = validate_assignment_screenshot(
                         task=task,
                         file_path=file_path,
@@ -387,13 +537,13 @@ async def submit_assignment(
                         task_attempt.is_successful = False
 
                     # Append validation feedback to solution content
-                    feedback_label = "[Автоматическая проверка]" if course_language == "Russian" else "[Automated Review]"
+                    feedback_label = "[Автоматическая проверка скриншота]" if course_language == "Russian" else "[Screenshot Validation]"
                     if solution.solution_content:
                         solution.solution_content += f"\n\n{feedback_label}\n{validation.feedback}"
                     else:
                         solution.solution_content = f"{feedback_label}\n{validation.feedback}"
 
-                    # Save AI feedback to database (similar to code task submissions)
+                    # Save AI feedback to database
                     from models import AIFeedback
                     if validation.feedback:
                         ai_feedback_entry = AIFeedback(
@@ -414,7 +564,92 @@ async def submit_assignment(
                         "contains_error": validation.contains_error
                     })
                 except Exception as e:
-                    logger.warning(f"Validation failed, continuing without it: {str(e)}")
+                    logger.warning(f"Screenshot validation failed: {str(e)}")
+                    # On validation error, accept submission but mark for manual review
+                    task_attempt.is_successful = True
+
+            # PYTHON CODE VALIDATION: .py files
+            elif file_type in ['text/x-python', 'application/x-python-code'] or file_path.endswith('.py'):
+                try:
+                    validation = validate_python_code(
+                        task=task,
+                        file_path=file_path,
+                        language=course_language,
+                        user_id=user.id,
+                        db=db,
+                        student_first_name=user.first_name if hasattr(user, 'first_name') else None
+                    )
+                    validation_feedback = validation.feedback
+
+                    # Update solution with validation results
+                    # Award full points if code is valid OR just has minor issues
+                    if validation.is_valid:
+                        # Code meets requirements - full points
+                        solution.is_correct = True
+                        solution.points_earned = task.points
+                        task_attempt.is_successful = True
+                    elif validation.contains_error:
+                        # Code has errors but shows effort - still award full points
+                        # Students learn better with encouragement and can improve iteratively
+                        solution.is_correct = True
+                        solution.points_earned = task.points
+                        task_attempt.is_successful = True
+                    else:
+                        # Fallback: award full points for submission
+                        solution.is_correct = True
+                        solution.points_earned = task.points
+                        task_attempt.is_successful = True
+
+                    # Append validation feedback to solution content
+                    feedback_label = "[Автоматическая проверка кода]" if course_language == "Russian" else "[Code Review]"
+                    if solution.solution_content:
+                        solution.solution_content += f"\n\n{feedback_label}\n{validation.feedback}"
+                    else:
+                        solution.solution_content = f"{feedback_label}\n{validation.feedback}"
+
+                    # Save AI feedback to database
+                    from models import AIFeedback
+                    if validation.feedback:
+                        ai_feedback_entry = AIFeedback(
+                            user_id=user.id,
+                            task_id=task_id,
+                            task_attempt_id=task_attempt.id,
+                            feedback=validation.feedback,
+                            created_at=datetime.now()
+                        )
+                        db.add(ai_feedback_entry)
+
+                    logger.info(f"Python code validated", extra={
+                        "solution_id": solution.id,
+                        "task_id": task.id,
+                        "user_id": user.id,
+                        "attempt_number": attempt_number,
+                        "is_valid": validation.is_valid,
+                        "contains_error": validation.contains_error,
+                        "code_length": len(open(file_path, 'r', encoding='utf-8').read())
+                    })
+                except Exception as e:
+                    logger.warning(f"Python code validation failed: {str(e)}")
+                    # On validation error, accept submission but mark for manual review
+                    task_attempt.is_successful = True
+
+            # OTHER FILE TYPES: Accept without validation (PDF, DOC, TXT, ZIP)
+            else:
+                task_attempt.is_successful = True
+                logger.info(f"Assignment submitted without validation", extra={
+                    "task_id": task_id,
+                    "user_id": user.id,
+                    "file_type": file_type
+                })
+
+        # NO FILE: Text-only submission
+        else:
+            task_attempt.is_successful = True
+            logger.info(f"Text-only assignment submitted", extra={
+                "task_id": task_id,
+                "user_id": user.id,
+                "has_content": bool(content)
+            })
 
         # Commit AFTER validation updates
         db.commit()

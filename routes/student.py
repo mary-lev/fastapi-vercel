@@ -530,19 +530,23 @@ async def get_lesson_summary(
 
         # Get all ACTIVE tasks for proper completion counting
         active_tasks = db.query(Task).join(Topic).filter(Topic.lesson_id == lesson_id, Task.is_active == True).all()
-        code_task_ids = [t.id for t in active_tasks if t.type == "code_task"]
+
+        # Tasks that use TaskAttempt for completion tracking (code_task + assignment_submission)
+        task_attempt_ids = [t.id for t in active_tasks if t.type in ["code_task", "assignment_submission"]]
+
+        # Tasks that use TaskSolution for completion tracking (quizzes)
         quiz_task_ids = [
             t.id for t in active_tasks if t.type in ["true_false_quiz", "multiple_select_quiz", "single_question_task"]
         ]
 
-        # Count completed ACTIVE tasks (code tasks from TaskAttempt + quiz tasks from TaskSolution)
-        code_completed = 0
-        if code_task_ids:
-            code_completed = (
+        # Count completed ACTIVE tasks (TaskAttempt-based tasks + quiz tasks from TaskSolution)
+        task_attempt_completed = 0
+        if task_attempt_ids:
+            task_attempt_completed = (
                 db.query(func.count(func.distinct(TaskAttempt.task_id)))
                 .filter(
                     TaskAttempt.user_id == user.id,
-                    TaskAttempt.task_id.in_(code_task_ids),
+                    TaskAttempt.task_id.in_(task_attempt_ids),
                     TaskAttempt.is_successful == True,
                 )
                 .scalar()
@@ -562,18 +566,18 @@ async def get_lesson_summary(
                 or 0
             )
 
-        completed_tasks = code_completed + quiz_completed
+        completed_tasks = task_attempt_completed + quiz_completed
 
         # Calculate accuracy rate based on unique tasks attempted vs completed
         # Use subqueries to ensure accurate distinct counting
         from sqlalchemy import and_, exists, distinct
 
-        # Count unique ACTIVE tasks attempted (code tasks from TaskAttempt + quiz tasks from TaskSolution)
-        code_tasks_attempted = 0
-        if code_task_ids:
-            code_tasks_attempted = (
+        # Count unique ACTIVE tasks attempted (TaskAttempt-based tasks + quiz tasks from TaskSolution)
+        task_attempt_tasks_attempted = 0
+        if task_attempt_ids:
+            task_attempt_tasks_attempted = (
                 db.query(func.count(func.distinct(TaskAttempt.task_id)))
-                .filter(TaskAttempt.user_id == user.id, TaskAttempt.task_id.in_(code_task_ids))
+                .filter(TaskAttempt.user_id == user.id, TaskAttempt.task_id.in_(task_attempt_ids))
                 .scalar()
                 or 0
             )
@@ -587,7 +591,7 @@ async def get_lesson_summary(
                 or 0
             )
 
-        tasks_attempted = code_tasks_attempted + quiz_tasks_attempted
+        tasks_attempted = task_attempt_tasks_attempted + quiz_tasks_attempted
 
         # Tasks completed successfully is already calculated above as completed_tasks
         tasks_completed_successfully = completed_tasks
@@ -610,10 +614,11 @@ async def get_lesson_summary(
             # Ensure accuracy never exceeds 100%
             accuracy_rate = min(accuracy_rate, 100.0)
 
-        # Calculate time spent per task, then sum up (only for code tasks since quiz tasks are typically quick)
+        # Calculate time spent per task, then sum up (for TaskAttempt-based tasks: code + assignments)
+        # Quiz tasks are typically quick, so we don't track time for them
         time_spent_minutes = 0.0
-        if code_tasks_attempted > 0:
-            # Get first and last attempt per ACTIVE CODE task to calculate time spent on each task
+        if task_attempt_tasks_attempted > 0:
+            # Get first and last attempt per ACTIVE task to calculate time spent on each task
             task_time_data = (
                 db.query(
                     TaskAttempt.task_id,
@@ -621,7 +626,7 @@ async def get_lesson_summary(
                     func.max(TaskAttempt.submitted_at).label("last_attempt"),
                     func.count(TaskAttempt.id).label("attempt_count"),
                 )
-                .filter(TaskAttempt.user_id == user.id, TaskAttempt.task_id.in_(code_task_ids))
+                .filter(TaskAttempt.user_id == user.id, TaskAttempt.task_id.in_(task_attempt_ids))
                 .group_by(TaskAttempt.task_id)
                 .all()
             )
