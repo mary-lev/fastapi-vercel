@@ -740,12 +740,14 @@ async def get_lesson(
                         task_data["completed_at"] = user_solution.completed_at
                         task_data["is_correct"] = getattr(user_solution, "is_correct", True)
 
-                        # For assignment_submission tasks, is_solved should match is_correct
-                        # For other tasks, is_solved = True if solution exists
-                        if task.type == "assignment_submission":
-                            task_data["is_solved"] = task_data["is_correct"]
-                        else:
+                        # Determine is_solved based on task type
+                        # Code tasks: solution exists = solved (is_correct is always True for code tasks)
+                        # All other tasks (quizzes, assignments): is_solved should match is_correct
+                        if task.type == "code_task":
                             task_data["is_solved"] = True
+                        else:
+                            # For quizzes and assignments, check if answer was correct
+                            task_data["is_solved"] = task_data["is_correct"]
                     elif not is_quiz_task or not user_attempts:
                         # No solution and either not a quiz or no attempts
                         task_data["is_correct"] = None
