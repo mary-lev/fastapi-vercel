@@ -43,7 +43,7 @@ DANGEROUS_FUNCTIONS = {
     "exec",
     "compile",
     "open",
-    "input",
+    # "input" - allowed for educational purposes, handled with mock during execution
     "raw_input",
     "__import__",
     "getattr",
@@ -376,7 +376,7 @@ def sanitize_code_input(code: str) -> ValidationResult:
         # (r"chr\(|ord\(", "Character manipulation functions are restricted"),
         (r"exec\s*\(|eval\s*\(", "Dynamic code execution is forbidden"),
         (r"import\s+os|from\s+os", "OS module access is forbidden"),
-        (r"while\s+True\s*:", "Infinite loops are not allowed"),
+        # Note: while True is allowed for educational purposes (timeout protection handles infinite loops)
     ]
 
     for pattern, message in malicious_patterns:

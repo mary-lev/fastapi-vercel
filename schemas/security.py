@@ -10,14 +10,16 @@ from utils.security_validation import validate_code_request, validate_text_reque
 class SecureCompileRequest(BaseModel):
     """Secure version of CompileRequest with input validation"""
 
-    code: str = Field(..., description="Code to compile/run", min_length=1, max_length=10000)
+    code: str = Field(default="", description="Code to compile/run", max_length=10000)
     language: str = Field(
         default="python", description="Programming language", pattern="^(python)$"  # Only allow python for now
     )
 
     @validator("code")
     def validate_code_security(cls, v):
-        """Validate code for security issues"""
+        """Validate code for security issues. Empty code is allowed (returns empty output)."""
+        if not v or not v.strip():
+            return ""  # Allow empty code - will be handled in endpoint
         is_valid, error_message = validate_code_request(v, "python")
         if not is_valid:
             raise ValueError(error_message)

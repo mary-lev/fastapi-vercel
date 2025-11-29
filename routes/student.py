@@ -1473,8 +1473,14 @@ async def compile_code(
         check_code_execution_limits(str(user.id))
 
         if not request.code:
-            logger.warning("Empty code submission", category=LogCategory.CODE_EXECUTION, user_id=str(user.id))
-            raise HTTPException(status_code=400, detail="No code provided")
+            # Return empty output for empty code instead of error
+            logger.debug("Empty code submission - returning empty output", category=LogCategory.CODE_EXECUTION, user_id=str(user.id))
+            return {
+                "status": "success",
+                "output": "",
+                "error": "",
+                "execution_time": 0.0
+            }
 
         # Additional security validation
         is_valid, error_message = validate_code_request(request.code, request.language)
@@ -1610,8 +1616,20 @@ async def submit_code_solution(
             extra={"step": "code_execution_start", "timestamp": datetime.utcnow().isoformat()}
         )
 
-        # Run the code first to check for syntax errors
-        result = run_code(request.code)
+        # Check if code uses input() - skip execution and send directly to LLM
+        uses_input = "input(" in request.code
+
+        if uses_input:
+            # For code with input(), skip execution and evaluate directly with LLM
+            result = {"success": True, "output": "[Код с input() - оценивается напрямую]"}
+            logger.info(
+                f"⏱️  [TIMING] Code uses input() - skipping execution, will evaluate with LLM",
+                category=LogCategory.PERFORMANCE,
+                extra={"step": "input_detected", "timestamp": datetime.utcnow().isoformat()}
+            )
+        else:
+            # Run the code first to check for syntax errors
+            result = run_code(request.code)
 
         logger.info(
             f"⏱️  [TIMING] Code execution complete",
@@ -1966,17 +1984,24 @@ async def submit_text_answer(
                     },
                 )
 
-        # Evaluate the text answer
-        # Get course language for AI feedback
-        course_language = (
-            task.topic.lesson.course.language
-            if task.topic and task.topic.lesson and task.topic.lesson.course
-            else "English"
-        )
-        evaluation = evaluate_text_submission(request.user_answer, task, course_language)
-        # evaluation is a SubmissionGrader object with is_solved and feedback attributes
-        is_successful = evaluation.is_solved if hasattr(evaluation, "is_solved") else False
-        feedback = evaluation.feedback if hasattr(evaluation, "feedback") else "Evaluation completed"
+        # For single_question_task: auto-accept without AI evaluation
+        # These are self-reflection/feedback tasks where any answer is valid
+        if task.type == "single_question_task":
+            is_successful = True
+            feedback = "Спасибо за ваш ответ! Задание выполнено."
+            logger.info(f"Single question task auto-accepted for task {request.task_id}, user {user_id}")
+        else:
+            # Evaluate the text answer with AI for other task types
+            # Get course language for AI feedback
+            course_language = (
+                task.topic.lesson.course.language
+                if task.topic and task.topic.lesson and task.topic.lesson.course
+                else "English"
+            )
+            evaluation = evaluate_text_submission(request.user_answer, task, course_language)
+            # evaluation is a SubmissionGrader object with is_solved and feedback attributes
+            is_successful = evaluation.is_solved if hasattr(evaluation, "is_solved") else False
+            feedback = evaluation.feedback if hasattr(evaluation, "feedback") else "Evaluation completed"
 
         # Get current attempt number
         current_attempts = (

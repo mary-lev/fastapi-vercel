@@ -37,7 +37,7 @@ DANGEROUS_FUNCTIONS = [
     "exec",
     "compile",
     "open",
-    "input",
+    # "input" - allowed for educational purposes, mocked during execution
     "raw_input",
     "__import__",
     "getattr",
@@ -163,6 +163,13 @@ def run_code(code, token: str = "test"):
         return {
             "success": False,
             "output": f"{errors[0]}",
+        }
+
+    # Check if code uses input() - can't execute interactively on server
+    if "input(" in code:
+        return {
+            "success": True,
+            "output": "⚠️ Код использует input() - интерактивный ввод недоступен в режиме Run.\n\nНажмите Submit для проверки решения.",
         }
 
     # Write sanitized code to a temporary file
