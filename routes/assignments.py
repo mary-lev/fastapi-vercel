@@ -44,6 +44,8 @@ ALLOWED_FILE_TYPES = {
     "application/msword",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "text/plain",
+    "text/markdown",  # Markdown files
+    "text/x-markdown",  # Alternative Markdown MIME type
     "text/x-python",  # Python scripts
     "application/x-python-code",  # Alternative Python MIME type
     "application/zip"
@@ -73,6 +75,8 @@ def get_file_extension(content_type: str) -> str:
         "application/msword": ".doc",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
         "text/plain": ".txt",
+        "text/markdown": ".md",
+        "text/x-markdown": ".md",
         "text/x-python": ".py",
         "application/x-python-code": ".py",
         "application/zip": ".zip"
@@ -223,6 +227,100 @@ Keep feedback encouraging and specific. Start with "{name_greeting}" if addressi
             feedback=f"Ошибка при проверке кода: {str(e)}" if language == "Russian"
                     else f"Error validating code: {str(e)}",
             contains_error=True
+        )
+
+
+def validate_text_file(
+    task: Task,
+    file_path: str,
+    language: str = "Russian",
+    user_id: int = None,
+    db: Session = None,
+    student_first_name: str = None
+) -> ScreenshotValidation:
+    """
+    Validate a text/markdown file using LLM with task-specific instructions.
+
+    This function follows the same pattern as validate_assignment_screenshot,
+    adapting prompts dynamically based on the task description and supporting attempt history.
+
+    Args:
+        task: Task object containing description and instructions
+        file_path: Path to the uploaded text/markdown file
+        language: Language for feedback (default: Russian)
+        user_id: User ID for fetching previous attempts (optional)
+        db: Database session for fetching previous attempts (optional)
+        student_first_name: Student's first name for personalization (optional)
+
+    Returns:
+        ScreenshotValidation with feedback in specified language
+    """
+    if not OPENAI_ENABLED:
+        return ScreenshotValidation(
+            is_valid=True,
+            feedback="Файл загружен успешно! Преподаватель проверит его вручную." if language == "Russian"
+                     else "File uploaded successfully! Professor will review manually.",
+            contains_error=False
+        )
+
+    try:
+        # Read file content
+        with open(file_path, 'r', encoding='utf-8') as f:
+            file_content = f.read()
+
+        # Fetch previous attempts if user_id and db are provided
+        previous_attempts = None
+        if user_id and db:
+            from models import TaskAttempt
+            previous_attempts = (
+                db.query(TaskAttempt)
+                .filter(TaskAttempt.user_id == user_id, TaskAttempt.task_id == task.id)
+                .order_by(TaskAttempt.submitted_at)
+                .all()
+            )
+
+        # Use the enhanced evaluator function from utils/evaluator.py
+        from utils.evaluator import provide_document_feedback
+
+        result = provide_document_feedback(
+            file_content=file_content,
+            task=task,
+            language=language,
+            previous_attempts=previous_attempts,
+            student_first_name=student_first_name
+        )
+
+        # Convert SubmissionGrader to ScreenshotValidation
+        validation_result = ScreenshotValidation(
+            is_valid=result.is_solved,
+            feedback=result.feedback,
+            contains_error=not result.is_solved
+        )
+
+        logger.info(f"Document validation completed", extra={
+            "task_id": task.id,
+            "task_name": task.task_name if hasattr(task, 'task_name') else "Assignment",
+            "is_valid": validation_result.is_valid,
+            "contains_error": validation_result.contains_error,
+            "has_attempt_history": previous_attempts is not None and len(previous_attempts) > 0
+        })
+
+        return validation_result
+
+    except UnicodeDecodeError:
+        return ScreenshotValidation(
+            is_valid=False,
+            feedback="Ошибка чтения файла. Убедитесь, что файл в кодировке UTF-8." if language == "Russian"
+                    else "Error reading file. Ensure the file is in UTF-8 encoding.",
+            contains_error=True
+        )
+    except Exception as e:
+        logger.error(f"Text file validation failed: {str(e)}")
+        return ScreenshotValidation(
+            is_valid=True,
+            feedback="Файл загружен! Преподаватель проверит его дополнительно." if language == "Russian"
+                    else "File uploaded! Professor will review additionally.",
+            contains_error=False
         )
 
 
@@ -633,7 +731,63 @@ async def submit_assignment(
                     # On validation error, accept submission but mark for manual review
                     task_attempt.is_successful = True
 
-            # OTHER FILE TYPES: Accept without validation (PDF, DOC, TXT, ZIP)
+            # MARKDOWN/TEXT FILE VALIDATION: .md and .txt files
+            elif file_type in ['text/markdown', 'text/x-markdown', 'text/plain'] or file_path.endswith(('.md', '.txt')):
+                try:
+                    validation = validate_text_file(
+                        task=task,
+                        file_path=file_path,
+                        language=course_language,
+                        user_id=user.id,
+                        db=db,
+                        student_first_name=user.first_name if hasattr(user, 'first_name') else None
+                    )
+                    validation_feedback = validation.feedback
+
+                    # Update solution with validation results
+                    if validation.is_valid and not validation.contains_error:
+                        # Success - award full points
+                        solution.is_correct = True
+                        solution.points_earned = task.points
+                        task_attempt.is_successful = True
+                    else:
+                        # Contains issues - partial points, student can resubmit
+                        solution.is_correct = False
+                        solution.points_earned = int(task.points * 0.5)  # 50% for attempt
+                        task_attempt.is_successful = False
+
+                    # Append validation feedback to solution content
+                    feedback_label = "[Автоматическая проверка документа]" if course_language == "Russian" else "[Document Review]"
+                    if solution.solution_content:
+                        solution.solution_content += f"\n\n{feedback_label}\n{validation.feedback}"
+                    else:
+                        solution.solution_content = f"{feedback_label}\n{validation.feedback}"
+
+                    # Save AI feedback to database
+                    from models import AIFeedback
+                    if validation.feedback:
+                        ai_feedback_entry = AIFeedback(
+                            user_id=user.id,
+                            task_id=task_id,
+                            task_attempt_id=task_attempt.id,
+                            feedback=validation.feedback,
+                            created_at=datetime.now()
+                        )
+                        db.add(ai_feedback_entry)
+
+                    logger.info(f"Text/Markdown file validated", extra={
+                        "solution_id": solution.id,
+                        "task_id": task.id,
+                        "user_id": user.id,
+                        "attempt_number": attempt_number,
+                        "is_valid": validation.is_valid,
+                        "file_type": file_type
+                    })
+                except Exception as e:
+                    logger.warning(f"Text file validation failed: {str(e)}")
+                    task_attempt.is_successful = True
+
+            # OTHER FILE TYPES: Accept without validation (PDF, DOC, ZIP)
             else:
                 task_attempt.is_successful = True
                 logger.info(f"Assignment submitted without validation", extra={
