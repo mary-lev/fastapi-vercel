@@ -29,6 +29,8 @@ ALLOWED_MODULES = [
     "statistics",
     "decimal",
     "fractions",
+    "pandas",
+    "numpy",
 ]
 
 # List of dangerous functions (expanded)
