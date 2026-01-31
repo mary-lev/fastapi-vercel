@@ -179,16 +179,24 @@ def run_code(code, token: str = "test"):
         temp_file.write(code)
 
     try:
+        # Inherit system environment to access installed packages (pandas, numpy, etc.)
+        # Then override specific variables for reproducibility
+        exec_env = os.environ.copy()
+        exec_env["PYTHONHASHSEED"] = "0"
+        # Add custom dependencies path if it exists
+        deps_path = str(Path(__file__).resolve().parent / "dependencies")
+        if "PYTHONPATH" in exec_env:
+            exec_env["PYTHONPATH"] = f"{deps_path}:{exec_env['PYTHONPATH']}"
+        else:
+            exec_env["PYTHONPATH"] = deps_path
+
         result = subprocess.run(
             [sys.executable, file_path],
             capture_output=True,
             text=True,
             timeout=5,
             check=True,
-            env={
-                "PYTHONHASHSEED": "0",
-                "PYTHONPATH": str(Path(__file__).resolve().parent / "dependencies"),  # Include dependencies
-            },
+            env=exec_env,
         )
         logger.info(f"Result: {result}")
 
