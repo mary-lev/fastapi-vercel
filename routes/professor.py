@@ -14,8 +14,10 @@ from pydantic import BaseModel
 from models import User, Task, TaskAttempt, TaskSolution, Course, Topic, Lesson, StudentFormSubmission
 from db import get_db
 from utils.logging_config import logger
+from utils.auth_dependencies import require_api_key
 
-router = APIRouter()
+# Every professor/admin endpoint requires the backend API key
+router = APIRouter(dependencies=[Depends(require_api_key)])
 
 
 # Pydantic models

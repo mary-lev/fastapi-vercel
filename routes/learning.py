@@ -18,6 +18,7 @@ from utils.cache_manager import cache_manager, cache_key_for_course, invalidate_
 
 logger = get_logger("routes.learning")
 from schemas.validation import TaskUpdateSchema
+from utils.auth_dependencies import require_api_key
 from config import settings
 import json
 
@@ -1021,6 +1022,7 @@ async def update_task(
     topic_id: int = Path(..., description="Topic ID"),
     task_id: int = Path(..., description="Task ID"),
     db: Session = Depends(get_db),
+    api_key: str = Depends(require_api_key),
 ):
     """
     Update task data - migrated from original task.py

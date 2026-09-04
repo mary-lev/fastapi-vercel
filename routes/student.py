@@ -871,6 +871,7 @@ async def submit_task_attempt(
     user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"),
     submission: SubmissionRequest = ...,
     db: Session = Depends(get_db),
+    api_key: str = Depends(require_api_key),
 ):
     """Submit a task attempt - supports both integer and string user IDs"""
     try:
@@ -970,6 +971,7 @@ async def submit_task_solution(
     user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"),
     solution: SolutionRequest = ...,
     db: Session = Depends(get_db),
+    api_key: str = Depends(require_api_key),
 ):
     """Submit a task solution (when task is completed correctly) - supports flexible user ID formats"""
     try:
@@ -1213,6 +1215,7 @@ async def enroll_user_in_course(
     user_id: Union[int, str] = Path(..., description="User ID (integer or string/UUID)"),
     course_id: int = ...,
     db: Session = Depends(get_db),
+    api_key: str = Depends(require_api_key),
 ):
     """
     Enroll a user in a course - supports both integer and string user IDs
@@ -1408,6 +1411,7 @@ async def compile_code(
     request: SecureCompileRequest,
     user_id: Union[int, str] = Path(..., description="User ID (for auth/tracking)", example="usr_abc123def456"),
     db: Session = Depends(get_db),
+    api_key: str = Depends(require_api_key),
 ):
     """
     ## Secure Code Compilation & Execution
@@ -1560,6 +1564,7 @@ async def submit_code_solution(
     background_tasks: BackgroundTasks,
     user_id: Union[int, str] = Path(..., description="User ID"),
     db: Session = Depends(get_db),
+    api_key: str = Depends(require_api_key),
 ):
     """
     Submit code as a solution for a specific task.
@@ -1903,6 +1908,7 @@ async def submit_text_answer(
     request: SecureTextSubmitRequest,
     user_id: Union[int, str] = Path(..., description="User ID"),
     db: Session = Depends(get_db),
+    api_key: str = Depends(require_api_key),
 ):
     """
     Submit a text answer for quiz-type tasks.

@@ -10,6 +10,7 @@ from datetime import datetime
 from db import get_db
 from models import StudentFormSubmission, User
 from utils.logging_config import logger
+from utils.auth_dependencies import require_api_key
 
 router = APIRouter()
 
@@ -287,7 +288,9 @@ async def get_all_student_forms(limit: int = 100, offset: int = 0, db: Session =
 
 
 @router.delete("/student-form/{internal_user_id}")
-async def delete_student_form(internal_user_id: str, db: Session = Depends(get_db)):
+async def delete_student_form(
+    internal_user_id: str, db: Session = Depends(get_db), api_key: str = Depends(require_api_key)
+):
     """
     Delete student form submission by internal user ID
 
@@ -320,7 +323,7 @@ async def delete_student_form(internal_user_id: str, db: Session = Depends(get_d
 
 
 @router.post("/student-form/debug")
-async def debug_student_form(request: Request):
+async def debug_student_form(request: Request, api_key: str = Depends(require_api_key)):
     """
     Debug endpoint to see exactly what data is being sent
     """
