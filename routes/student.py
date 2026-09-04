@@ -998,11 +998,11 @@ async def submit_task_solution(
 
         if existing_solution and is_quiz_task and task.attempt_strategy != "unlimited":
             raise HTTPException(status_code=409, detail="Quiz tasks can only be solved once")
-        elif existing_solution and not is_quiz_task:
-            # For code tasks, update the existing solution
+        elif existing_solution:
+            # One solution row per user and task: update it instead of inserting a duplicate
             import json
 
-            logger.info(f"Updating existing solution for code task {solution.task_id} by user {user_id}")
+            logger.info(f"Updating existing solution for task {solution.task_id} by user {user_id}")
             existing_solution.solution_content = (
                 json.dumps(solution.solution_data)
                 if isinstance(solution.solution_data, dict)
