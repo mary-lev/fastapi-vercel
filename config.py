@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     )
 
     # OpenAI models: feedback/grading (every student submission) and content generation
-    FEEDBACK_MODEL: str = "gpt-5-mini"
+    FEEDBACK_MODEL: str = "gpt-5.6-luna"
     GENERATION_MODEL: str = "gpt-5"
 
     # Testing configuration
