@@ -180,13 +180,12 @@ Keep feedback encouraging and specific. Start with "{name_greeting}" if addressi
 
         # Call OpenAI for validation
         response = openai_client.chat.completions.create(
-            model="gpt-5-mini",
+            model=settings.FEEDBACK_MODEL,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
-            temperature=0.7,
-            max_tokens=1000
+            max_completion_tokens=1000,
         )
 
         feedback = response.choices[0].message.content.strip()

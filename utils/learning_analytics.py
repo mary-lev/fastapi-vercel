@@ -23,7 +23,9 @@ from models import (
 
 # Default LLM model for all analytics
 # Using gpt-5-mini for cost savings while maintaining good technical quality
-LLM_MODEL_NAME = "gpt-5-mini"
+from config import settings
+
+LLM_MODEL_NAME = settings.FEEDBACK_MODEL
 
 
 # ===============================================================================

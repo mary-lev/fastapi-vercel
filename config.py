@@ -33,6 +33,10 @@ class Settings(BaseSettings):
         '{"id": 1, "img": "/images/client/avatar-02.png", "name": "Silvio Peroni", "type": "Director of Second Cycle Degree in Digital Humanities and Digital Knowledge", "desc": "Associate Professor / Department of Classical Philology and Italian Studies", "social": [{"link": "https://x.com/essepuntato", "icon": "twitter"}, {"link": "https://www.linkedin.com/in/essepuntato/", "icon": "linkedin"}]}'
     )
 
+    # OpenAI models: feedback/grading (every student submission) and content generation
+    FEEDBACK_MODEL: str = "gpt-5-mini"
+    GENERATION_MODEL: str = "gpt-5"
+
     # Testing configuration
     TEST_API_BASE_URL: str = "http://localhost:8000"
 

@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from openai import OpenAI
 
 from dotenv import load_dotenv
+from config import settings
 
 load_dotenv()
 
@@ -204,7 +205,7 @@ def provide_code_feedback(
     )
 
     completion = client.beta.chat.completions.parse(
-        model="gpt-5-mini",
+        model=settings.FEEDBACK_MODEL,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
@@ -244,7 +245,7 @@ def provide_text_feedback(
     )
 
     completion = client.beta.chat.completions.parse(
-        model="gpt-5-mini",
+        model=settings.FEEDBACK_MODEL,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
@@ -475,7 +476,7 @@ def provide_screenshot_feedback(
 
     # Call OpenAI Vision API with structured output
     completion = client.beta.chat.completions.parse(
-        model="gpt-5-mini",
+        model=settings.FEEDBACK_MODEL,
         messages=[
             {"role": "system", "content": system_prompt},
             {
@@ -573,7 +574,7 @@ def provide_document_feedback(
 
     # Call OpenAI API with structured output
     completion = client.beta.chat.completions.parse(
-        model="gpt-5-mini",
+        model=settings.FEEDBACK_MODEL,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}

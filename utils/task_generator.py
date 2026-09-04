@@ -15,6 +15,7 @@ from sqlalchemy import func
 
 from dotenv import load_dotenv
 from utils.structured_logging import get_logger
+from config import settings
 
 load_dotenv()
 
@@ -425,7 +426,7 @@ def generate_tasks(
     """
     try:
         completion = client.beta.chat.completions.parse(
-            model="gpt-5",
+            model=settings.GENERATION_MODEL,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
@@ -546,12 +547,11 @@ async def generate_adaptive_task(
 
         # Generate the adaptive task using OpenAI
         completion = client.beta.chat.completions.parse(
-            model="gpt-5",
+            model=settings.GENERATION_MODEL,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
-            temperature=0.3,  # Lower temperature for more focused remediation
             response_format=AdaptiveTask,
         )
 
@@ -573,7 +573,7 @@ async def generate_adaptive_task(
             generated_for_user_id=user_id,
             source_task_id=failed_task_id,
             generation_prompt=system_prompt + "\n\n" + user_prompt,
-            ai_model_used="gpt-5",
+            ai_model_used=settings.GENERATION_MODEL,
         )
 
         db.add(new_task)

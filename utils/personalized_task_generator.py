@@ -15,6 +15,7 @@ from models import (
 from utils.learning_analytics import get_openai_client, LLM_MODEL_NAME
 from utils.task_generator import process_task, get_language_instruction
 from utils.structured_logging import get_logger
+from config import settings
 
 logger = get_logger("personalized_tasks")
 
@@ -450,7 +451,7 @@ KEY REQUIREMENTS:
 
     try:
         response = client.beta.chat.completions.parse(
-            model="gpt-5",
+            model=settings.GENERATION_MODEL,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
@@ -484,7 +485,7 @@ KEY REQUIREMENTS:
             new_task.is_generated = True
             new_task.generated_for_user_id = user_id
             new_task.generation_prompt = system_prompt + "\n\n" + user_prompt
-            new_task.ai_model_used = "gpt-5"
+            new_task.ai_model_used = settings.GENERATION_MODEL
             new_task.is_active = True
             new_task.task_link = f"{topic_id}-personal-{user_id}-{index+1}"
 
