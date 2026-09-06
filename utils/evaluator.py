@@ -59,10 +59,46 @@ def build_attempt_context(previous_attempts):
     return attempt_context, len(previous_attempts), failed_count
 
 
+# Escalation: Socratic questions first, real help once the student is stuck on one task.
+DIRECT_HELP_AFTER_FAILURES = 2  # 3rd attempt on the task: name the fix
+WORKED_EXAMPLE_AFTER_FAILURES = 4  # 5th attempt: show the corrected line(s)
+
+
+def get_help_mode(failed_count: int) -> str:
+    """'socratic' | 'direct' | 'worked_example' depending on failed attempts on this task."""
+    if failed_count >= WORKED_EXAMPLE_AFTER_FAILURES:
+        return "worked_example"
+    if failed_count >= DIRECT_HELP_AFTER_FAILURES:
+        return "direct"
+    return "socratic"
+
+
+DIRECT_HELP_INSTRUCTIONS = """DIRECT HELP MODE (the student has already failed this task {failed} times):
+Stop asking questions. Give real help in plain statements.
+- Name the exact function, operator or construct to use (e.g. "use int(year_str)", "use // and %").
+- Quote the line that is wrong and say in one sentence why it is wrong.
+- If the output is already correct but a requirement is violated, say so explicitly and name the requirement.
+- If the student is one step away, say "yes, this line is right; now do the same for ..." instead of listing what is missing.
+- Do NOT paste the complete solution; the student writes the code.
+- Do not repeat a hint that "AI Feedback given" already contains; if it did not work, explain differently.
+LIMIT: 2-4 sentences, no more than one question, and only if it is a real check ("what does int('1917') return?")."""
+
+WORKED_EXAMPLE_INSTRUCTIONS = """WORKED EXAMPLE MODE (the student has failed this task {failed} times):
+Show one corrected line (or the smallest fragment) for ONE of the required parts, with a one-sentence explanation,
+then tell the student to apply the same pattern to the remaining parts. Point at their own code.
+Do NOT paste the complete solution. No questions. LIMIT: 3-5 sentences plus the example line."""
+
+
 def get_socratic_instructions(use_socratic, attempt_count, failed_count):
-    """Generate Socratic method instructions (always in English for AI)."""
+    """Generate guidance instructions (always in English for AI): Socratic first, direct help when stuck."""
     if not use_socratic:
         return ""
+
+    mode = get_help_mode(failed_count)
+    if mode == "direct":
+        return DIRECT_HELP_INSTRUCTIONS.format(failed=failed_count)
+    if mode == "worked_example":
+        return WORKED_EXAMPLE_INSTRUCTIONS.format(failed=failed_count)
 
     # Adjust questioning based on attempt count
     if attempt_count == 0:
@@ -89,9 +125,20 @@ Examples:
 """
 
 
-def build_system_prompt(language_instruction, socratic_instructions, use_socratic):
+def build_system_prompt(language_instruction, socratic_instructions, use_socratic, help_mode="socratic"):
     """Build the complete system prompt (always in English)."""
-    if use_socratic:
+    if use_socratic and help_mode != "socratic":
+        feedback_section = """
+**CORRECT CODE (is_solved=true)**:
+- Warm, brief congratulations (1-2 sentences): name what finally made it work
+
+**INCORRECT CODE (is_solved=false)**:
+- Follow DIRECT HELP / WORKED EXAMPLE MODE from the instructions above: plain statements, concrete fix
+- **AVOID REPETITION**: "AI Feedback given" shows what was already said and did not help
+"""
+        closing = "The student has struggled enough on this task. Be concrete, specific and kind."
+    elif use_socratic:
+        closing = "Students learn through struggle. Help them discover solutions themselves."
         feedback_section = """
 **CORRECT CODE (is_solved=true)**:
 - If previous attempts = 0: Celebrate first-try success (1-2 sentences, explain what they applied)
@@ -105,6 +152,7 @@ def build_system_prompt(language_instruction, socratic_instructions, use_socrati
 - Follow length limits specified in user message
 """
     else:
+        closing = "Students learn through struggle. Help them discover solutions themselves."
         feedback_section = """
 Provide feedback that:
 - Acknowledges progress from previous attempts
@@ -121,10 +169,10 @@ Provide feedback that:
 
 {language_instruction}
 
-Students learn through struggle. Help them discover solutions themselves."""
+{closing}"""
 
 
-def build_user_prompt(task, answer, output, attempt_context, use_socratic, attempt_count, student_first_name=None):
+def build_user_prompt(task, answer, output, attempt_context, use_socratic, attempt_count, student_first_name=None, help_mode="socratic"):
     """Build the user prompt with appropriate instructions."""
     student_context = f"\n**Student name**: {student_first_name}" if student_first_name else ""
 
@@ -139,7 +187,10 @@ def build_user_prompt(task, answer, output, attempt_context, use_socratic, attem
 
 **Attempts: {attempt_count}**"""
 
-    if use_socratic:
+    if use_socratic and help_mode != "socratic":
+        prompt += "\n\nIMPORTANT: Review previous 'AI Feedback given' above; those hints did not work. Do NOT repeat them."
+        prompt += "\n\nEvaluate if code solves task correctly. If not, state plainly what is wrong and exactly what to change, as the system instructions require."
+    elif use_socratic:
         if attempt_count > 0:
             prompt += "\n\nIMPORTANT: Review previous 'AI Feedback given' above. Do NOT repeat hints."
         prompt += "\n\nEvaluate if code solves task correctly. Apply Socratic method and length limits from system instructions."
@@ -186,11 +237,14 @@ def provide_code_feedback(
         failed_count
     )
 
+    help_mode = get_help_mode(failed_count) if use_socratic_method else "socratic"
+
     # Build system prompt (always in English)
     system_prompt = build_system_prompt(
         language_instruction,
         socratic_instructions,
-        use_socratic_method
+        use_socratic_method,
+        help_mode=help_mode,
     )
 
     # Build user prompt with guidance
@@ -201,7 +255,8 @@ def provide_code_feedback(
         attempt_context,
         use_socratic_method,
         attempt_count,
-        student_first_name
+        student_first_name,
+        help_mode=help_mode,
     )
 
     completion = client.beta.chat.completions.parse(
